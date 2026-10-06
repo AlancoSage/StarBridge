@@ -40,6 +40,8 @@
 
 ## 1. 启动主程序
 
+Windows 用户可完整解压部署包后，双击 **install.cmd** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续双击 **start.cmd**，停止双击 **stop.cmd**。已有配置与数据会保留，详见 [Windows 双击部署](docs/windows-installation.md)。
+
 Windows PowerShell，在项目根目录执行：
 
 ```powershell
@@ -48,7 +50,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m starbridge init
 ```
 
-如果已有 `config.toml`，跳过 `init`；它不会覆盖已有配置。也可以运行 `start.ps1`，自动准备环境。
+如果已有 `config.toml`，跳过 `init`；它不会覆盖已有配置。也可以运行 `start.ps1`，使用相同的自动部署流程。
 
 首次登录从 `config.toml` 获取 `app.admin_token`。启动后在面板的「机器人连接」和「服务器列表」中设置账号、管理员和群号即可，无需手动修改配置文件。配置文件中的对应字段如下，便于了解两端设置的关系：
 
