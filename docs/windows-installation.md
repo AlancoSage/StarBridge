@@ -1,10 +1,17 @@
-# Windows 双击部署
+# Windows 安装与运行
 
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 
 Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。本指南中的 `星桥.bat` 仅用于 Windows。
 
-## 三步开始
+可以选择双击自动部署，也可以按步骤手动安装：
+
+| 方式 | 适用情况 | 教程 |
+| --- | --- | --- |
+| 双击安装 | 希望自动准备环境并后台运行 | [方式一：双击安装](#方式一-双击安装) |
+| 手动安装 | 希望自己安装 Python、依赖并通过终端运行 | [方式二：Windows 手动安装](#方式二-windows-手动安装) |
+
+## 方式一：双击安装
 
 1. 下载星桥 Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
 2. 双击根目录唯一的 **星桥.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
@@ -26,22 +33,98 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 
 请保留完整项目目录。虚拟环境与项目专用 Python 使用绝对路径，安装后移动目录可能需要将 `.venv` 改名后重新安装。不要删除配置和数据目录。
 
-## 可选：Windows 手动安装
+## 方式二：Windows 手动安装
 
-已经安装 Python 3.11+、希望自己管理运行环境时，在项目根目录执行 PowerShell 命令。通常使用上面的 BAT 即可，无需再执行本节。
+以下步骤使用 **Windows PowerShell**，每一步成功后再执行下一步。可以直接选择此方式完成部署。
+
+### 1. 安装并检查 Python
+
+从 [Python 官方 Windows 下载页](https://www.python.org/downloads/windows/) 获取 Python **3.11+** 的 Windows installer；可以选用与自动安装一致的 Python 3.13。根据机器选择 64-bit 或 ARM64 安装程序。使用常规 EXE 安装程序时，保留 pip 组件，并勾选 **Add python.exe to PATH**。
+
+安装完成后重新打开 PowerShell，检查版本和解释器位置：
 
 ```powershell
 python --version
+python -c "import sys; print(sys.executable); assert sys.version_info >= (3, 11), 'Python 3.11+ required'"
+```
+
+版本检查通过后继续。如果 `python` 打开 Microsoft Store 或提示找不到命令，先检查 Python 是否安装、重新打开终端，或使用实际的 Python 路径创建虚拟环境，见下方示例。
+
+### 2. 解压项目并进入目录
+
+完整解压取得的星桥项目包，例如放到 `D:\StarBridge`。在 PowerShell 中进入该目录：
+
+```powershell
+Set-Location -LiteralPath 'D:\StarBridge'
+Test-Path -LiteralPath 'requirements.lock.txt'
+Test-Path -LiteralPath 'starbridge\__main__.py'
+```
+
+将示例路径替换为自己的项目目录。两个文件检查都应返回 `True`；若返回 `False`，先检查是否只解压了部分文件，或进入了外层目录。
+
+### 3. 创建虚拟环境并安装依赖
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --only-binary=:all: -r requirements.lock.txt
 .\.venv\Scripts\python.exe -m pip check
+```
+
+`pip check` 应显示 `No broken requirements found.`。每条命令执行完成后应无错误；不要在依赖安装失败时继续启动。
+
+没有将 Python 加入 PATH 时，可以用完整路径替代上面的第一条命令；下面路径只是示例，需替换为自己的解释器位置：
+
+```powershell
+& 'C:\Python313\python.exe' -m venv .venv
+```
+
+之后仍使用 `.\.venv\Scripts\python.exe` 安装依赖和启动。无需激活虚拟环境，也无需调整 PowerShell 的执行策略；直接调用环境中的解释器即可，见 [Python venv 说明](https://docs.python.org/3/library/venv.html)。
+
+### 4. 生成初始配置
+
+仅在尚未存在 `config.toml` 时初始化：
+
+```powershell
 if (-not (Test-Path -LiteralPath config.toml)) {
     .\.venv\Scripts\python.exe -m starbridge init --config config.toml
 }
+```
+
+该命令生成初始配置和随机令牌。已有配置时会跳过，保留 `config.toml` 与玩家数据，不需要手动复制示例配置或填入占位令牌。
+
+### 5. 启动 Bot 并登录面板
+
+在同一个项目根目录执行：
+
+```powershell
 .\.venv\Scripts\python.exe -m starbridge run --config config.toml
 ```
 
-手动命令是前台运行，按 Ctrl+C 停止。BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；不要同时启动前台和后台实例。
+保持此终端打开，在浏览器访问 `http://127.0.0.1:8088/`。首次登录使用 `config.toml` 中 `[app]` 下的 `admin_token`，进入面板后再设置 QQ 实现端、游戏服务器和关联群。手动启动不会自动打开浏览器。
+
+### 6. 停止与下次启动
+
+手动安装后的命令是前台运行，按 **Ctrl+C** 停止。下次启动只需进入项目目录并运行主程序：
+
+```powershell
+Set-Location -LiteralPath 'D:\StarBridge'
+.\.venv\Scripts\python.exe -m starbridge run --config config.toml
+```
+
+不需要重复创建虚拟环境、安装依赖或初始化配置。需要更新依赖时，先停止 Bot，再按新版本的 `requirements.lock.txt` 安装。
+
+BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；前台实例在其终端按 Ctrl+C 停止，避免同时启动两个实例。希望改用后台运行时，先停止前台实例，再双击 `星桥.bat`，它会检查并复用现有环境与配置。
+
+### 手动安装常见问题
+
+| 提示或现象 | 处理方法 |
+| --- | --- |
+| `python` 找不到或打开商店 | 检查 Python 安装与 PATH，重新打开终端，或用解释器完整路径创建环境 |
+| Python 版本低于 3.11 | 安装受支持的版本，使用该版本重新创建虚拟环境 |
+| 找不到 `requirements.lock.txt` | 完整解压项目，并在包含该文件的根目录执行命令 |
+| 依赖下载失败或缺少对应二进制包 | 检查网络、Python 版本与 CPU 架构，再重新安装依赖 |
+| `No module named starbridge` | 在项目根目录执行，并使用本项目 `.venv` 中的 Python |
+| 8088 端口被占用 | 检查是否已有 Bot 或其他程序运行；停止自己的旧实例后再启动 |
 
 ## 可选命令行操作
 

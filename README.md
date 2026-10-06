@@ -44,14 +44,14 @@
 
 | 系统 | 安装入口 | 启动与停止 |
 | --- | --- | --- |
-| [Windows](docs/windows-installation.md) | 完整解压后双击 `星桥.bat`，自动准备环境 | 同一个脚本菜单内启动、停止和重启 |
+| [Windows](docs/windows-installation.md) | 双击 `星桥.bat` 自动部署，或按教程手动安装 | BAT 菜单管理后台实例；手动前台运行按 Ctrl+C 停止 |
 | [Linux](docs/linux-installation.md) | 安装 Python 3.11+，创建虚拟环境并安装锁定依赖 | 前台命令运行，或可选使用 systemd 后台托管 |
 
 ### Windows
 
-Windows 用户可完整解压部署包后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续仍双击同一个脚本，停止、重启也在脚本菜单内操作。已有配置与数据会保留，详见 [Windows 双击部署](docs/windows-installation.md)。
+Windows 用户可完整解压部署包后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续仍双击同一个脚本，停止、重启也在脚本菜单内操作。已有配置与数据会保留，详见 [Windows 安装与运行](docs/windows-installation.md)。
 
-手动安装时，在项目根目录执行 Windows PowerShell 命令：
+Windows 也支持 [完整手动安装教程](docs/windows-installation.md#方式二-windows-手动安装)，包含 Python 安装、目录检查、依赖、配置、面板登录与故障处理。已经准备好 Python 3.11+ 时，在项目根目录执行 Windows PowerShell 命令：
 
 ```powershell
 python -m venv .venv
