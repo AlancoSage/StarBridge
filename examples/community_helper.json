@@ -1,0 +1,75 @@
+{
+  "api_version": 1,
+  "id": "community_helper",
+  "name": "社群小助手",
+  "version": "1.0.0",
+  "author": "StarBridge",
+  "description": "提供服讯、问候和可选的入服欢迎通知。所有内容可在面板调整。",
+  "settings": {
+    "greeting": {
+      "type": "string",
+      "label": "问候内容",
+      "default": "欢迎来到我们的 Minecraft 社区！",
+      "description": "群内发送「问候」或「问候 名字」时显示。",
+      "max_length": 500
+    },
+    "join_notice": {
+      "type": "boolean",
+      "label": "开启插件入服欢迎",
+      "default": false,
+      "description": "可与内置进退服通知同时发送；只需要一种时，请在消息与事件中关闭内置通知。"
+    },
+    "welcome": {
+      "type": "string",
+      "label": "入服欢迎内容",
+      "default": "欢迎加入，一起愉快地玩耍吧！",
+      "max_length": 500
+    },
+    "community": {
+      "type": "select",
+      "label": "社区类型",
+      "default": "生存",
+      "options": [
+        "生存",
+        "创造",
+        "综合"
+      ]
+    },
+    "recommended_players": {
+      "type": "integer",
+      "label": "建议组队人数",
+      "default": 4,
+      "min": 1,
+      "max": 20
+    },
+    "activity_hours": {
+      "type": "number",
+      "label": "建议活动时长（小时）",
+      "default": 1.5,
+      "min": 0.5,
+      "max": 12
+    }
+  },
+  "rules": [
+    {
+      "event": "group_command",
+      "command": "服讯",
+      "match": "exact",
+      "reply": "{server_name} · {online}\n在线人数：{online_count}\n玩家：{players}\n社区：{settings.community}\n建议 {settings.recommended_players} 人组队，活动 {settings.activity_hours} 小时。",
+      "cooldown": 3
+    },
+    {
+      "event": "group_command",
+      "command": "问候",
+      "match": "prefix",
+      "reply": "{settings.greeting}\n来自：{server_name}\n你的留言：{arg}",
+      "cooldown": 3
+    },
+    {
+      "event": "player_join",
+      "reply": "[{server_name}] 欢迎 {player}！{settings.welcome}",
+      "when": "join_notice",
+      "cooldown": 30
+    }
+  ]
+}

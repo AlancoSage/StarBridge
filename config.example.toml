@@ -1,0 +1,39 @@
+# 运行 python -m starbridge init 自动生成带随机令牌的 config.toml。
+# 所有 QQ 号、群号均使用字符串。推荐通过面板修改并保存设置。
+# 面板保存业务设置后立即生效；监听地址、端口、数据库路径需要在面板中重启。
+[app]
+host = "127.0.0.1"
+port = 8088
+database = "data/starbridge.db"
+admin_token = "CHANGE-ME-admin"
+
+[onebot]
+# NapCat 等实现端配置反向 WebSocket：ws://127.0.0.1:8088/onebot/ws
+token = "CHANGE-ME-onebot"
+# 生产接入建议填写机器人 QQ 号；留空时采用连接头 X-Self-ID。
+self_id = ""
+admins = ["123456789"]
+
+[features]
+qq_to_mc = true
+mc_to_qq = true
+join_quit = true
+unbind_on_leave = false
+set_group_card = false
+
+# 首次启动导入到「扩展 → 关键词回复」插件，此后仅保留为迁移备份。
+[replies]
+"官网" = "欢迎来到服务器！请在面板「扩展 → 关键词回复 → 管理回复」中设置你的官网地址。"
+"规则" = "友善交流，禁止作弊与恶意破坏。"
+
+[[servers]]
+id = "survival"
+name = "生存服"
+token = "CHANGE-ME-bridge"
+groups = ["987654321"]
+
+# 仅 onebot.admins 中的 QQ 可通过“执行 在线检查”调用。
+# 命令内容由本地配置决定，不接受群消息拼接的任意控制台命令。
+[servers.commands]
+"在线检查" = "list"
+"性能检查" = "tps"

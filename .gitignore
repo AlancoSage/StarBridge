@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+config.toml
+*.toml.bak
+.starbridge-*.tmp
+data/
+.tools/
+bridge/target/
+dist/
+
+# 本地环境、日志与私密凭据
+.env
+.env.*
+!.env.example
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+Thumbs.db

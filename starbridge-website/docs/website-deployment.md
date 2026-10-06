@@ -1,0 +1,173 @@
+# 社区官网部署与玩家信息 API
+
+## 可以选择的部署方式
+
+星桥提供完整的社区官网：首页、全部服务器状态、邮箱注册、密码登录、本人档案与邮件找回密码。所有页面为本地 HTML/CSS/JavaScript，无运行时框架、外部字体、图片服务、WebGL 或持续动画；导航只播放一次 160 毫秒淡入，并遵守减少动态效果设置。服务器状态页展示全部已配置服务器，包含未连接项，提供已连接数量及在线人数合计；每 30 秒刷新，后台暂停，回到页面立即刷新，也支持手动刷新。官网不展示公开玩家目录，已有网站仍可通过下述玩家信息 API 接入。
+
+- **独立项目**：`starbridge-website/` 可以单独复制到自己的仓库和服务器，包含独立启动、打包工具、SDK 与文档。Bot 不承载官网静态文件，也不需要网站源目录才能启动。
+- **独立部署**：在「接入空间 → 网站绑定」下载独立项目和 `config.json`，解压项目并替换接入配置，然后部署到自己选择的静态服务器或托管目录。面板下载的是预先生成的项目包；源码修改后运行独立项目的 `build.py` 重新打包。
+- **已有网站**：使用本页接口和部署包中的 `sdk/starbridge.js`，可以自定义界面。
+
+独立项目不含星桥数据库、Bot 配置、密码或任何管理/网站后端密钥。首页介绍、规则、游戏地址、入群链接及公开开关都在星桥面板调整，无需重新打包；网站只通过 HTTP API 读取这些数据。API 地址持久保存在 Bot 接入设置中，下载接入配置后需替换网站根目录的 `config.json`；保存 Bot 设置不会直接修改远端网站文件。
+
+官网采用静态网格、方块装饰和紧凑导航。面板支持 `accent_color`、`secondary_color`（`#RRGGBB` 格式）、`theme_mode`（`system/light/dark`）及 `grid_background`。访客可通过「外观」选择配色和明暗模式，偏好保存在本浏览器 `localStorage`，不修改全站设置；「恢复官网默认外观」清除此偏好。窄屏导航自动放到页底。没有背景视频、加载遮罩、持续动画或模糊滤镜。
+
+## 配置步骤
+
+Bot 面板提供三种官网接入方式：
+
+- **不接入官网**（新安装默认）：Bot 可独立使用。保留已保存的网站地址和官网设置，停止允许该网站来源的跨域请求，旧官网入口不再跳转；不会启动、停止或部署外部网站服务。
+- **使用星桥提供的官网**：下载星桥独立官网项目，自行选择部署位置，填写部署后的地址接入。在 Bot 面板调整官网内容、外观及公开范围。
+- **接入自己的官网**：填写已有官网地址，使用 API/SDK 接入注册、登录、本人信息和服务器状态；页面设计与内容由自己的项目管理，Bot 显示 API 公开范围设置及接口文档。
+
+两种接入方式均需网站地址；它们使用同一套 HTTP API 和来源授权，选择提供的官网不会自动部署网站。不接入官网不关闭公共 API、注册功能或撤销用户令牌；其他手动授权来源仍可使用。
+
+1. 在「网站绑定」选择「使用星桥提供的官网」或「接入自己的官网」，填写网站地址、Bot 公开 API 地址并保存。网站地址支持子目录，例如 `https://www.example.com/community/`；Bot 会自动允许其准确来源 `https://www.example.com`。
+2. 在「成员 → 注册账号」配置 SMTP 和发件人，启用注册。官网登录不依赖注册开关，已注册用户可在停止新注册后继续登录。
+3. 设置官网名称、首页内容、游戏地址、入群链接及公开范围。接入网站无需重复填写注册来源白名单；其他第三方网站可继续在注册设置中加入精确来源，不支持 `*` 或 `file://`。
+4. API 地址填写 `https://bridge.example.com/api/v1`，保存后下载接入配置；同来源反向代理 `/api/v1/` 时可填写 `/api/v1`。
+5. 上传所有网页文件。站点可位于子目录，资源使用相对地址，导航使用 hash，不需要 SPA 重写规则。
+6. 使用测试邮箱验证注册、登录、本人档案和找回密码，再向玩家提供官网地址。
+
+本机在独立项目目录执行 `python serve.py --port 8089 --api-base http://127.0.0.1:8088/api/v1`（Windows 也可运行 `./start.ps1 -ApiBase http://127.0.0.1:8088/api/v1`），Bot 中网站地址填 `http://127.0.0.1:8089/`。启动工具只依赖 Python 3.11+ 标准库，不依赖 Bot 或父目录；`--api-base` 覆盖本次服务的配置，不修改磁盘，不指定时读取项目 `config.json`。正式静态部署不需要 Python。API 的 `127.0.0.1` 对外网玩家指向玩家自己的机器，正式部署须使用玩家可访问的地址。
+
+独立打包：`python build.py --api-base https://bridge.example.com/api/v1`，生成 `dist/StarBridge-website.zip`；`--output` 可指定输出位置。只读取项目固定文件，API 地址写入压缩包，原始配置保持不变。将生成的 ZIP 放到 Bot 的 `dist/StarBridge-website.zip` 后，面板可提供项目下载。
+
+选择「不接入官网」后，即使该来源同时存在于手动白名单，Bot 也拒绝该网站来源的跨域 API 请求；其他手动授权网站不受影响。CORS 不代替身份验证，不阻止非浏览器客户端，关闭接入不会撤销用户令牌或关闭公共 API。旧 `/community/` 地址在接入时跳转到网站，未接入时返回 404，静态资源不再从 Bot 提供。接入方式保存在 `website_mode`（`none/provided/custom`）；旧版启用的接入设置迁移为 `custom`，关闭的设置迁移为 `none`，不会擅自更换地址。
+
+公网官网和 API 使用 HTTPS，避免浏览器混合内容拦截。独立项目内提供 `nginx.example.conf`，自行填写目录、域名和证书；反向代理应只公开需要的 `/api/v1/` 与官网资源，管理面板可保留在内网。星桥当前以实际 socket 地址限流，不信任任意 `X-Forwarded-For`，经代理的用户可能共用额度。
+
+## 访问权限与数据范围
+
+在「接入空间 → 网站绑定」选择官网类型，填写网站地址和 Bot 公开 API 地址，点击「绑定网站」。API 地址留空时使用当前管理面板来源的 `/api/v1`；正式部署需换成官网访客能访问的地址。已绑定时可「检查 API」或打开网站。检查只验证当前浏览器能读取公开 API，不代表网站已部署或网站访客一定能访问；不会向目标地址发送管理令牌。解除绑定会停止授权网站来源，并保留原地址、内容及账号，后续可重新绑定。
+
+| 接口范围 | 凭据 | 数据 |
+| --- | --- | --- |
+| 官网配置、公开服务器/玩家 | 无 | 面板明确设置的公开资料 |
+| 本人账号及关联档案 | 用户短期 Bearer 令牌 | 本人邮箱、QQ、注册时间、已验证的游戏身份和到访时间 |
+| 自有网站后端查询账号档案 | 注册设置中的网站 API 密钥 | 指定账号的上述本人资料 |
+
+公开玩家对象只有 `name`、`uuid`、`status` 三个字段，不含 QQ、邮箱、IP、归属地、管理备注、封禁或 OP 信息。本人档案也不返回 IP、管理备注、密码哈希或 OP 信息。游戏身份来自 `account_game_links` 中已验证的 UUID 或注册 QQ 对应的实际绑定，**不凭玩家名推测 UUID**。一个账号可关联多个服务器身份，每次最多返回 100 个。
+
+关闭「公开玩家」后，列表和单个玩家信息接口返回 403；本人档案仍可查询。关闭「官网登录」停止新的密码登录，已有短期会话到期/退出/重置密码后失效。新注册成功仍会获得一次短期用户令牌。网站后端密钥与用户令牌不可互换，也不接受管理员或游戏桥接令牌。
+
+## 公共接口
+
+下列路径都相对于星桥地址，GET 不需要凭据。所有 JSON 接口禁止缓存；跨域来源受网站接入及注册来源设置约束，CORS 不代替用户身份验证。
+
+### `GET /api/v1/community/info`
+
+返回 `title, subtitle, description, rules, join_address, group_url, public_players, public_servers, login_enabled, registration_enabled, password_reset_enabled, code_minutes, accent_color, secondary_color, theme_mode, grid_background`。这些均为允许公开的官网内容或功能开关，不返回邮件配置及来源白名单。
+
+### `GET /api/v1/servers`
+
+返回 `{"servers":[{"id":"survival","name":"生存服","connected":true,"online_count":2,"max_players":20}]}`。关闭公开服务器时返回 403。`connected` 表示游戏桥接心跳在 15 秒内，断开时人数与人数上限为 `null`；未连接不等于确认游戏服务器关机。不会返回服务器令牌、群号或远程命令。
+
+### `GET /api/v1/players?q=Steve&page=1&page_size=24`
+
+`q` 为玩家名/UUID 模糊搜索（最多 64 字符）；`page` 范围 1–10000，`page_size` 范围 1–50，默认 24。结果：
+
+```json
+{"players":[{"name":"Steve","uuid":"12345678-1234-1234-1234-123456789abc","status":"online"}],"page":1,"page_size":24,"total":1}
+```
+
+列表来自星桥记录的未删除玩家档案，注册账号尚未到访或关联游戏身份时不会凭空生成游戏 UUID。状态为 `online`、`offline` 或 `unknown`。仅用当前有效心跳确认在线/离线，断连或缺少足够数据时为 `unknown`。
+
+### `GET /api/v1/players/{uuid}`
+
+返回 `{"player":{"name":"Steve","uuid":"...","status":"unknown"}}`。不存在返回 404；UUID 格式错误返回 400；公开开关与列表一致。
+
+## 用户登录和本人信息
+
+### `POST /api/v1/account/login`
+
+`Content-Type: application/json`，请求 `{"player":"Steve","password":"注册时设置的密码"}`。
+
+成功返回 `{account, access_token, token_type:"Bearer", expires_in:3600}`。账号包含 `id,player,email,qq,created,has_password`。密码使用既有 PBKDF2 验证，账号不存在/无密码/密码错误统一返回 401 `credentials_invalid`。有持久限流和密码计算并发上限；429 表示额度用完，503 可表示登录关闭或验证繁忙。密码不会写入日志。
+
+### `GET /api/v1/me/profile`
+
+请求头 `Authorization: Bearer <用户 access_token>`。返回：
+
+```json
+{
+  "account":{"id":"c0ff3cb2-5c57-4b12-a9a5-7e88d8ab239f","player":"Steve","email":"123456789@qq.com","qq":"123456789","created":1780000000,"has_password":true},
+  "game_profiles":[{"name":"Steve","uuid":"12345678-1234-1234-1234-123456789abc","server":"survival","server_name":"生存服","status":"online","first_seen":1780000000,"last_seen":1780001000}],
+  "truncated":false
+}
+```
+
+时间为 Unix 秒。不会把同名的陌生玩家作为本人身份。游戏档案尚未关联时 `game_profiles` 为空；普通注册与游戏登录/QQ 绑定流程仍独立。
+
+### `POST /api/v1/account/logout`
+
+带当前用户 Bearer 令牌，返回 `{"logged_out":true}`，只撤销该会话。前端同时清理本地令牌；不存在或过期的令牌返回 401。
+
+官网示例将短期令牌保存在当前标签页 `sessionStorage`，不保存密码，不在 URL 中放令牌。关闭标签页后浏览器会清理该会话存储；服务端令牌最多有效一小时，找回/修改密码会撤销该账号所有已有令牌。自有网站可验证用户令牌后创建自己的会话，但必须自行处理到期与撤销。
+
+## 官网自助中心
+
+登录后的账号页面新增本人绑定管理、白名单申请进度和处罚记录。已有网站可以使用：
+
+- `GET /api/v1/me/services`：返回可申请的服务器、本人绑定、最近 50 个申请、最近 50 条成功执行的踢出/封禁/解封记录及 `whitelist_enabled`。
+- `POST /api/v1/me/bind`：`{server, code}`；绑定码来自游戏内 `/qbind`，只绑定到当前账号已验证的 QQ，消费后不可重用。
+- `POST /api/v1/me/unbind`：`{server}`；只解除本人 QQ 在此服的绑定及对应本人游戏身份关联，撤销该 UUID 的当前游戏认证会话。
+- `POST /api/v1/me/whitelist`：`{server, reason}`；玩家名和 QQ 由当前注册账号决定，复用 Bot 申请开关、注册/绑定要求、冷却和人工审核流程。
+
+所有接口需要 `Authorization: Bearer <用户短期令牌>`，不接受网站后端密钥、游戏密钥或管理员登录令牌。不能传入其他 QQ、玩家名或账号 ID。不会返回管理审核备注、IP、处罚执行输出或其他账号资料。身份已有其他账号关联时不允许抢占，需管理员核实。申请进度与处罚页面只显示本人记录，取消绑定后对应的身份记录不会继续作为本人身份展示。
+
+SDK 增加 `services(token)`、`bind(token,server,code)`、`unbind(token,server)` 和 `applyWhitelist(token,server,reason)`；这些同样只接受用户令牌。
+
+## 注册与找回密码接口
+
+复用已有接口：
+
+- `POST /api/v1/registration/request`：`{player,email}`，发送验证邮件，返回 `challenge_id`。
+- `POST /api/v1/registration/resend`：`{challenge_id}`，受重发冷却限制，返回新的挑战信息。
+- `POST /api/v1/registration/verify`：`{challenge_id,code,password}`，完成注册并得到一小时用户令牌。官网要求设置 8–128 位密码。
+- `GET /api/v1/account/password/info`：密码邮件功能状态。
+- `POST /api/v1/account/password/request`：`{player,email}`，发送密码设置验证码。
+- `POST /api/v1/account/password/verify`：`{challenge_id,code,password}`，验证后更新密码并撤销旧用户和游戏登录会话。
+
+详细字段、邮件配置和群命令见 [账号 API 文档](account-api.md)。邮件验证码只能成功消费一次，不要在生产环境绕过验证。
+
+## 已有网站接入示例
+
+```js
+import {createStarBridgeClient} from './sdk/starbridge.js';
+const bridge = createStarBridgeClient('https://bridge.example.com');
+const info = await bridge.communityInfo();
+const directory = await bridge.players({q:'Steve',page:1,pageSize:24});
+const result = await bridge.login(playerInput, passwordInput);
+const profile = await bridge.profile(result.access_token);
+await bridge.logout(result.access_token);
+```
+
+SDK 保留原来的 `createStarBridgeRegistration`、`info/apply/resend/verify/account/requestPassword/setPassword` 方法，新增 `communityInfo/servers/players/player/login/logout/profile`。可传后端来源或包含 `/api/v1` 的完整地址。使用 DOM `textContent` 展示 API 文本，避免把用户或管理员输入当 HTML 执行。
+
+### 网站服务端查询
+
+`GET /api/v1/accounts/{account_id}/profile`，请求头 `Authorization: Bearer <网站后端 API 密钥>`，返回与本人接口相同的结构。原 `GET /api/v1/accounts/{account_id}` 继续只返回账号资料。
+
+自有网站必须先校验本网站用户身份，再确定其允许查询的账号 ID；不可把这个接口代理成任意访客可按 ID 读取私人资料的接口。网站密钥只存服务端环境变量，不写入前端包：
+
+```python
+import json, os, uuid
+from urllib.request import Request, urlopen
+
+def starbridge_profile(verified_account_id):
+    # verified_account_id 必须来自本网站已验证的用户会话。
+    base = os.environ['STARBRIDGE_API_BASE'].rstrip('/')
+    account_id = str(uuid.UUID(verified_account_id))
+    req = Request(f'{base}/accounts/{account_id}/profile', headers={
+        'Authorization': 'Bearer ' + os.environ['STARBRIDGE_WEBSITE_KEY']
+    })
+    with urlopen(req, timeout=10) as response:
+        return json.load(response)
+```
+
+`STARBRIDGE_API_BASE` 例如 `https://bridge.example.com/api/v1`。后端查询每实际来源地址最多 100 次/10 分钟，公共读取最多 300 次/分钟。建议复用结果减少请求，私人数据不进入公开 CDN 缓存。
+
+## 备份与恢复
+
+官网内容及接入设置 `data/website-settings.json` 加入星桥备份；账号、绑定、实际 UUID 关联位于数据库内。恢复会撤销所有临时用户令牌。独立网站源码和部署文件由网站项目单独备份；Bot 数据备份不包含它们。旧版无接入字段的备份默认不启用网站接入，恢复后检查网站地址、公开范围与文案。

@@ -1,0 +1,9 @@
+# 主程序地址；跨机器部署时改为主程序的地址。
+endpoint: "http://127.0.0.1:8088"
+server-id: "survival"
+# 填写主程序 config.toml 中对应 servers 项目的 token。
+token: "CHANGE-ME"
+# 启动时的完整命令白名单；连接新版主程序后按面板设置自动同步。
+allowed-commands:
+  - "list"
+  - "tps"

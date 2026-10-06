@@ -1,0 +1,23 @@
+name: StarBridge
+version: 0.5.0
+main: cn.starbridge.StarBridgePlugin
+api-version: '1.20'
+description: QQ and Minecraft community bridge
+author: StarBridge
+softdepend: [AuthMe]
+commands:
+  login:
+    description: Log in with the password registered on the website
+    usage: /login <password>
+    aliases: [l]
+  qqlogin:
+    description: Confirm this game login through the bound QQ account
+    usage: /qqlogin
+    aliases: [ql]
+  qbind:
+    description: Generate a QQ binding verification code
+    usage: /qbind
+    permission: starbridge.bind
+permissions:
+  starbridge.bind:
+    default: true
