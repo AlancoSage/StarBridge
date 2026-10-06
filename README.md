@@ -40,17 +40,46 @@
 
 ## 1. 启动主程序
 
+按部署系统选择安装方式：
+
+| 系统 | 安装入口 | 启动与停止 |
+| --- | --- | --- |
+| [Windows](docs/windows-installation.md) | 完整解压后双击 `星桥.bat`，自动准备环境 | 同一个脚本菜单内启动、停止和重启 |
+| [Linux](docs/linux-installation.md) | 安装 Python 3.11+，创建虚拟环境并安装锁定依赖 | 前台命令运行，或可选使用 systemd 后台托管 |
+
+### Windows
+
 Windows 用户可完整解压部署包后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续仍双击同一个脚本，停止、重启也在脚本菜单内操作。已有配置与数据会保留，详见 [Windows 双击部署](docs/windows-installation.md)。
 
-Windows PowerShell，在项目根目录执行：
+手动安装时，在项目根目录执行 Windows PowerShell 命令：
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m starbridge init
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt
+if (-not (Test-Path -LiteralPath config.toml)) {
+    .\.venv\Scripts\python.exe -m starbridge init
+}
+.\.venv\Scripts\python.exe -m starbridge run
 ```
 
 如果已有 `config.toml`，跳过 `init`；它不会覆盖已有配置。也可以双击 `星桥.bat`，使用相同的自动部署流程。
+
+### Linux
+
+在已安装 Python 3.11+ 与 venv 的环境中，进入项目根目录执行：
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.lock.txt
+if [ ! -f config.toml ]; then
+    .venv/bin/python -m starbridge init
+fi
+.venv/bin/python -m starbridge run
+```
+
+前台运行按 Ctrl+C 停止。系统依赖、远程面板访问、后台运行和开机启动见 [Linux 安装与运行](docs/linux-installation.md)。
+
+### 登录面板并接入
 
 首次登录从 `config.toml` 获取 `app.admin_token`。启动后在面板的「机器人连接」和「服务器列表」中设置账号、管理员和群号即可，无需手动修改配置文件。配置文件中的对应字段如下，便于了解两端设置的关系：
 
@@ -68,12 +97,6 @@ groups = ["你的QQ群号"]
 ```
 
 这段仅说明需要修改的字段，完整格式以生成的文件为准。请不要把示例中文文字直接作为令牌。每类令牌必须不同。
-
-启动：
-
-```powershell
-.\.venv\Scripts\python.exe -m starbridge run
-```
 
 打开 [管理面板](http://127.0.0.1:8088)，输入 `app.admin_token`。运行概览每 5 秒刷新，令牌仅保存在当前页面内存中，自动刷新不会覆盖正在编辑的内容。
 
@@ -107,8 +130,6 @@ groups = ["你的QQ群号"]
 保存会校验重复群号、服务器 ID、令牌及字段格式，原子替换配置文件，并将上一版存为 `config.toml.bak`。多个页面编辑产生冲突时会拒绝覆盖，可点击「重新载入」。数据库、令牌和备份文件均保存在本机，请勿公开。
 
 修改 OneBot 令牌或机器人账号会断开旧连接，需要同步到 QQ 实现端。修改服务器 ID / 令牌也需要同步到游戏插件；可在「服务器列表 → 安装插件」中填写游戏服可访问的主程序地址并下载完整 `config.yml`。外部 QQ 登录仍在 NapCat 等实现端完成。
-
-Linux 对应使用 `python3 -m venv .venv` 和 `.venv/bin/python`。
 
 通过 `星桥.bat` 启动的 Bot 在后台运行，可在同一脚本菜单中停止或重启；手动前台运行时按 Ctrl+C 停止。重复双击会复用此目录的后台进程。
 

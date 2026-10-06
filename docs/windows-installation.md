@@ -2,6 +2,8 @@
 
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 
+Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。本指南中的 `星桥.bat` 仅用于 Windows。
+
 ## 三步开始
 
 1. 下载星桥 Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
@@ -23,6 +25,23 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 窗口中的 `0` 仅关闭窗口，后台 Bot 继续运行；`3` 停止 Bot；`4` 重启 Bot。关闭窗口后仍可再次双击同一个脚本进行操作。本脚本没有创建系统服务或开机计划任务。
 
 请保留完整项目目录。虚拟环境与项目专用 Python 使用绝对路径，安装后移动目录可能需要将 `.venv` 改名后重新安装。不要删除配置和数据目录。
+
+## 可选：Windows 手动安装
+
+已经安装 Python 3.11+、希望自己管理运行环境时，在项目根目录执行 PowerShell 命令。通常使用上面的 BAT 即可，无需再执行本节。
+
+```powershell
+python --version
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --only-binary=:all: -r requirements.lock.txt
+.\.venv\Scripts\python.exe -m pip check
+if (-not (Test-Path -LiteralPath config.toml)) {
+    .\.venv\Scripts\python.exe -m starbridge init --config config.toml
+}
+.\.venv\Scripts\python.exe -m starbridge run --config config.toml
+```
+
+手动命令是前台运行，按 Ctrl+C 停止。BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；不要同时启动前台和后台实例。
 
 ## 可选命令行操作
 
