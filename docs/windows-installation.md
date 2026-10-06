@@ -5,7 +5,7 @@
 ## 三步开始
 
 1. 下载星桥 Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
-2. 双击根目录的 **install.cmd**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。
+2. 双击根目录唯一的 **星桥.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
 3. 管理面板就绪后自动打开浏览器。首次登录使用本地 `config.toml` 的 `app.admin_token`；进入面板填写机器人连接、服务器和关联群。
 
 Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PATH，无需 Git、Java 或显卡。QQ 登录实现端与 Minecraft 服务器仍由用户单独接入。ARM64 使用 Python 官方 ARM64 安装包，依赖安装需要该架构可用的二进制包。
@@ -14,27 +14,33 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 
 | 文件 | 用途 |
 | --- | --- |
-| `install.cmd` | 首次部署；失败后可重新双击继续 |
-| `start.cmd` | 后续启动；环境就绪时跳过重复安装 |
-| `stop.cmd` | 停止此目录内的后台 Bot |
+| `星桥.bat` | 自动安装并启动；窗口内选择打开面板、启动、停止、重启或关闭窗口 |
 | `config.toml` | 本地运行配置，包含首次登录令牌 |
 | `data/server.log`、`data/server-error.log` | 启动输出与错误日志 |
 
-重复启动会核对 PID、Python 路径和启动命令，只复用本项目的实例。端口被其他程序占用时提示错误，不关闭其他程序或擅自修改端口。重新安装不覆盖 `config.toml` 和 `data`。Windows 重启后双击 `start.cmd`；本脚本没有创建系统服务或开机计划任务。
+重复启动会核对 PID、Python 路径和启动命令，只复用本项目的实例。端口被其他程序占用时提示错误，不关闭其他程序或擅自修改端口。重新安装不覆盖 `config.toml` 和 `data`。Windows 重启后再次双击 `星桥.bat`。
+
+窗口中的 `0` 仅关闭窗口，后台 Bot 继续运行；`3` 停止 Bot；`4` 重启 Bot。关闭窗口后仍可再次双击同一个脚本进行操作。本脚本没有创建系统服务或开机计划任务。
 
 请保留完整项目目录。虚拟环境与项目专用 Python 使用绝对路径，安装后移动目录可能需要将 `.venv` 改名后重新安装。不要删除配置和数据目录。
 
-## 可选命令行参数
+## 可选命令行操作
 
-```powershell
-# 指定已安装的 Python
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -PythonPath 'C:\Python313\python.exe'
-
-# 仅准备环境与配置，不启动
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -NoStart
-
-# 启动，但不打开浏览器
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -NoBrowser
+```bat
+rem 启动；默认操作，通常直接双击即可
+call "星桥.bat" start
+rem 停止，不先启动
+call "星桥.bat" stop
+rem 重启
+call "星桥.bat" restart
+rem 仅安装环境与配置，不启动
+call "星桥.bat" install
+rem 自动化调用：不打开浏览器，不显示菜单，不等待按键
+call "星桥.bat" start quiet
+call "星桥.bat" stop quiet
+rem 可选：指定已安装的 Python，未指定时自动查找
+set "STARBRIDGE_PYTHON=C:\Python313\python.exe"
+call "星桥.bat" install quiet
 ```
 
 双击入口只对本次 PowerShell 进程使用执行策略参数，不永久修改系统执行策略。组织策略禁止脚本运行时，需由管理员按组织规则处理。

@@ -40,7 +40,7 @@
 
 ## 1. 启动主程序
 
-Windows 用户可完整解压部署包后，双击 **install.cmd** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续双击 **start.cmd**，停止双击 **stop.cmd**。已有配置与数据会保留，详见 [Windows 双击部署](docs/windows-installation.md)。
+Windows 用户可完整解压部署包后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续仍双击同一个脚本，停止、重启也在脚本菜单内操作。已有配置与数据会保留，详见 [Windows 双击部署](docs/windows-installation.md)。
 
 Windows PowerShell，在项目根目录执行：
 
@@ -50,7 +50,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m starbridge init
 ```
 
-如果已有 `config.toml`，跳过 `init`；它不会覆盖已有配置。也可以运行 `start.ps1`，使用相同的自动部署流程。
+如果已有 `config.toml`，跳过 `init`；它不会覆盖已有配置。也可以双击 `星桥.bat`，使用相同的自动部署流程。
 
 首次登录从 `config.toml` 获取 `app.admin_token`。启动后在面板的「机器人连接」和「服务器列表」中设置账号、管理员和群号即可，无需手动修改配置文件。配置文件中的对应字段如下，便于了解两端设置的关系：
 
@@ -110,7 +110,7 @@ groups = ["你的QQ群号"]
 
 Linux 对应使用 `python3 -m venv .venv` 和 `.venv/bin/python`。
 
-本次开发已在后台启动本地服务，可用 `stop.ps1` 停止；以后通过 `start.ps1` 前台启动时按 Ctrl+C 停止。端口已被占用时，不要重复启动主程序。
+通过 `星桥.bat` 启动的 Bot 在后台运行，可在同一脚本菜单中停止或重启；手动前台运行时按 Ctrl+C 停止。重复双击会复用此目录的后台进程。
 
 ## 2. 连接 QQ
 
@@ -255,7 +255,7 @@ tests/                      HTTP / WebSocket / SQLite 测试
 config.example.toml         示例配置
 config.toml                 本机配置与随机令牌（不提交）
 data/starbridge.db           运行时数据库（不提交）
-start.ps1                   Windows 启动脚本
+星桥.bat                    Windows 一键安装、启动、停止与重启
 ```
 
 通信标准：[OneBot 11](https://github.com/botuniverse/onebot-11)。

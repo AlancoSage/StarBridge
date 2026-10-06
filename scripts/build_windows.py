@@ -11,7 +11,7 @@ from starbridge import __version__
 
 def build(output):
     names = ['README.md', 'config.example.toml', 'requirements.txt', 'requirements.lock.txt',
-             'install.cmd', 'install.ps1', 'start.cmd', 'start.ps1', 'stop.cmd', 'stop.ps1']
+             '星桥.bat']
     extensions = {'starbridge': {'.py', '.js', '.css', '.html'}, 'scripts': {'.py'},
                   'docs': {'.md'}, 'examples': {'.json', '.js'}}
     for directory in extensions:

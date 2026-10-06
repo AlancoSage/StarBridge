@@ -53,9 +53,10 @@ class WindowsInstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
             for name in ['README.md','config.example.toml','requirements.txt','requirements.lock.txt',
-                         'install.cmd','install.ps1','start.cmd','start.ps1','stop.cmd','stop.ps1']:
+                         '星桥.bat']:
                 (root/name).write_text('deployment file',encoding='utf-8')
             private=['config.toml','data/player.db','.runtime/python.exe','scripts/local.env',
+                     'install.ps1','start.cmd','stop.ps1',
                      'starbridge/private.key','starbridge/__pycache__/cached.py']
             public=['starbridge/app.py','scripts/windows_runtime.py','docs/install.md','examples/helper.json']
             for name in private+public:
@@ -66,6 +67,8 @@ class WindowsInstallerTests(unittest.TestCase):
                 builder.build(output)
             with zipfile.ZipFile(output) as archive:
                 names=archive.namelist()
+                self.assertEqual([name for name in names if name.count('/') == 1
+                                  and name.endswith(('.bat','.cmd','.ps1'))], ['StarBridge/星桥.bat'])
                 for name in private:
                     self.assertNotIn('StarBridge/'+name,names)
                 for name in public:
