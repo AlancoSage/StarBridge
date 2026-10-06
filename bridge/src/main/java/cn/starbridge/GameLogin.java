@@ -9,10 +9,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
@@ -34,7 +32,7 @@ final class GameLogin implements Listener {
         long authMeDeadline;
         long deadline = System.currentTimeMillis() + 120000, lastCommand;
         Connection(Player player) {
-            uuid = player.getUniqueId(); name = player.getName();
+            uuid = BukkitCompatibility.identity(player); name = player.getName();
             ip = player.getAddress() != null && player.getAddress().getAddress() != null
                 ? player.getAddress().getAddress().getHostAddress() : "";
         }
@@ -64,18 +62,23 @@ final class GameLogin implements Listener {
         this.plugin = plugin; this.transport = transport;
         protectCommandLogs();
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        Bukkit.getScheduler().runTaskTimer(plugin, this::checkTimeouts, 20, 20);
-        for (Player player : Bukkit.getOnlinePlayers()) begin(player);
+        for (String name : Arrays.asList("PlayerInteractAtEntityEvent", "PlayerSwapHandItemsEvent", "PlayerItemConsumeEvent", "PlayerPickupItemEvent", "PlayerEditBookEvent")) {
+            BukkitCompatibility.optionalEvent(plugin, "org.bukkit.event.player." + name, event -> gateOptional(event, "getPlayer"));
+        }
+        BukkitCompatibility.optionalEvent(plugin, "org.bukkit.event.entity.EntityPickupItemEvent", event -> gateOptional(event, "getEntity"));
+        BukkitCompatibility.optionalEvent(plugin, "org.bukkit.event.inventory.InventoryDragEvent", event -> gateOptional(event, "getWhoClicked"));
+        BukkitCompatibility.repeat(plugin, this::checkTimeouts, 20, 20);
+        for (Player player : BukkitCompatibility.players()) begin(player);
     }
 
     boolean locked(Player player) {
         if (policyKnown && !required) return false;
-        Connection connection = connections.get(player.getUniqueId());
+        Connection connection = connections.get(BukkitCompatibility.identity(player));
         return !policyKnown || connection == null || !connection.authenticated;
     }
 
     String nonce(Player player) {
-        Connection connection = connections.get(player.getUniqueId());
+        Connection connection = connections.get(BukkitCompatibility.identity(player));
         return connection == null ? "" : connection.nonce;
     }
 
@@ -120,7 +123,7 @@ final class GameLogin implements Listener {
                 || !configureEngine()
                 || passwordLogin && !protectCommandLogs())) {
             policyKnown = false;
-            for (Player player : Bukkit.getOnlinePlayers()) player.kickPlayer("星桥游戏认证尚未就绪，请联系管理员检查登录引擎、AuthMe API 与认证设置。");
+            for (Player player : BukkitCompatibility.players()) player.kickPlayer("星桥游戏认证尚未就绪，请联系管理员检查登录引擎、AuthMe API 与认证设置。");
             return;
         }
         if (!required) {
@@ -128,14 +131,14 @@ final class GameLogin implements Listener {
             return;
         }
         if (previousKnown && (!previousRequired || !previousRevision.equals(revision))) {
-            for (Player player : Bukkit.getOnlinePlayers()) begin(player);
+            for (Player player : BukkitCompatibility.players()) begin(player);
         }
         if (response.has("authentication_results")) for (JsonElement element : response.getAsJsonArray("authentication_results")) {
             JsonObject result = element.getAsJsonObject();
             Connection connection = connections.get(UUID.fromString(result.get("uuid").getAsString()));
             if (connection == null || !connection.nonce.equals(result.get("nonce").getAsString())) continue;
             if ("missing".equals(result.get("status").getAsString())) {
-                Player player = Bukkit.getPlayer(connection.uuid);
+                Player player = BukkitCompatibility.player(connection.uuid);
                 // A backend restart gets a fresh nonce, fencing all delayed old callbacks.
                 if (player != null && player.isOnline()) begin(player);
             } else apply(connection, result, false, false);
@@ -157,8 +160,8 @@ final class GameLogin implements Listener {
 
     JsonArray snapshot() {
         JsonArray records = new JsonArray();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Connection connection = connections.get(player.getUniqueId());
+        for (Player player : BukkitCompatibility.players()) {
+            Connection connection = connections.get(BukkitCompatibility.identity(player));
             if (connection != null) records.add(connection.request("heartbeat"));
             if (records.size() >= 500) break;
         }
@@ -188,7 +191,7 @@ final class GameLogin implements Listener {
                     payload.remove("password");
                 }
                 JsonObject answer = result;
-                if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, () -> {
+                if (plugin.isEnabled()) BukkitCompatibility.runTask(plugin, () -> {
                     if (connections.get(connection.uuid) != connection) return;
                     connection.inFlight = false;
                     if (answer.has("error")) {
@@ -214,7 +217,7 @@ final class GameLogin implements Listener {
                 connection.proof = true;
                 if (authMe == null) complete(connection);
                 else {
-                    Player player = Bukkit.getPlayer(connection.uuid);
+                    Player player = BukkitCompatibility.player(connection.uuid);
                     if (player == null || !player.isOnline()) return;
                     connection.awaitingAuthMe = true; connection.authMeDeadline = System.currentTimeMillis() + loginSeconds * 1000L;
                     try {
@@ -251,17 +254,17 @@ final class GameLogin implements Listener {
             + "。旧账号可在网页「设置登录密码」验证邮箱后设置密码。";
     }
     private void message(Connection connection, String text) {
-        Player player = Bukkit.getPlayer(connection.uuid);
+        Player player = BukkitCompatibility.player(connection.uuid);
         if (player != null && player.isOnline() && connections.get(connection.uuid) == connection) player.sendMessage(text);
     }
     private void kick(Connection connection, String text) {
-        Player player = Bukkit.getPlayer(connection.uuid);
+        Player player = BukkitCompatibility.player(connection.uuid);
         if (player != null && player.isOnline() && connections.get(connection.uuid) == connection) player.kickPlayer(text);
     }
     private void checkTimeouts() {
         protectCommandLogs();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Connection connection = connections.get(player.getUniqueId());
+        for (Player player : BukkitCompatibility.players()) {
+            Connection connection = connections.get(BukkitCompatibility.identity(player));
             if (policyKnown && required && authMe != null && connection != null) {
                 try {
                     if (connection.awaitingAuthMe) {
@@ -277,12 +280,14 @@ final class GameLogin implements Listener {
         String first = message.split("\\s", 2)[0].toLowerCase(Locale.ROOT);
         if (first.startsWith("/")) first = first.substring(1);
         if (first.startsWith("starbridge:")) first = first.substring(11);
-        return switch (first) { case "l" -> "login"; case "ql" -> "qqlogin"; default -> first; };
+        if (first.equals("l")) return "login";
+        if (first.equals("ql")) return "qqlogin";
+        return first;
     }
     private void login(Player player, String name, String arg) {
         if (!policyKnown) { player.sendMessage("正在同步认证设置，请稍后重试。"); return; }
         if (!required) { player.sendMessage("此服务器没有启用星桥游戏登录。"); return; }
-        Connection connection = connections.get(player.getUniqueId());
+        Connection connection = connections.get(BukkitCompatibility.identity(player));
         if (connection == null) { begin(player); return; }
         if (connection.authenticated) { player.sendMessage("你已经登录。"); return; }
         if (System.currentTimeMillis() - connection.lastCommand < 1000) return;
@@ -299,7 +304,7 @@ final class GameLogin implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String name = commandName(event.getMessage());
         boolean own = name.equals("login") || name.equals("qqlogin");
-        Connection connection = connections.get(event.getPlayer().getUniqueId());
+        Connection connection = connections.get(BukkitCompatibility.identity(event.getPlayer()));
         if (name.equals("logout") && policyKnown && required) {
             event.setCancelled(true);
             try { if (authMe != null) authMe.logout(event.getPlayer()); }
@@ -325,7 +330,7 @@ final class GameLogin implements Listener {
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) { begin(event.getPlayer()); }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
-        Connection connection = connections.remove(event.getPlayer().getUniqueId());
+        Connection connection = connections.remove(BukkitCompatibility.identity(event.getPlayer()));
         if (connection != null && policyKnown && required) {
             try { workers.execute(() -> { try { transport.post("/auth", connection.request("leave")); } catch (Exception ignored) { } }); }
             catch (RejectedExecutionException ignored) { }
@@ -338,7 +343,7 @@ final class GameLogin implements Listener {
     }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onTeleport(PlayerTeleportEvent event) {
-        Connection connection = connections.get(event.getPlayer().getUniqueId());
+        Connection connection = connections.get(BukkitCompatibility.identity(event.getPlayer()));
         boolean synchronizing = connection != null && connection.proof && connection.awaitingAuthMe
             && event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN;
         if (locked(event.getPlayer()) && !synchronizing) event.setCancelled(true);
@@ -354,40 +359,37 @@ final class GameLogin implements Listener {
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onEntity(PlayerInteractEntityEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onEntityAt(PlayerInteractAtEntityEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onDrop(PlayerDropItemEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onSwap(PlayerSwapHandItemsEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onConsume(PlayerItemConsumeEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onPickup(EntityPickupItemEvent event) { if (event.getEntity() instanceof Player player && locked(player)) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onProjectile(ProjectileLaunchEvent event) { if (event.getEntity().getShooter() instanceof Player player && locked(player)) event.setCancelled(true); }
+    public void onProjectile(ProjectileLaunchEvent event) { if (BukkitCompatibility.shooter(event.getEntity()) instanceof Player && locked((Player) BukkitCompatibility.shooter(event.getEntity()))) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onFish(PlayerFishEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onEditBook(PlayerEditBookEvent event) { if (locked(event.getPlayer())) event.setCancelled(true); }
+    public void onInventory(InventoryClickEvent event) { if (event.getWhoClicked() instanceof Player && locked((Player) event.getWhoClicked())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onInventory(InventoryClickEvent event) { if (event.getWhoClicked() instanceof Player player && locked(player)) event.setCancelled(true); }
+    public void onInventoryOpen(InventoryOpenEvent event) { if (event.getPlayer() instanceof Player && locked((Player) event.getPlayer())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onInventoryDrag(InventoryDragEvent event) { if (event.getWhoClicked() instanceof Player player && locked(player)) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onInventoryOpen(InventoryOpenEvent event) { if (event.getPlayer() instanceof Player player && locked(player)) event.setCancelled(true); }
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void onVehicle(VehicleEnterEvent event) { if (event.getEntered() instanceof Player player && locked(player)) event.setCancelled(true); }
+    public void onVehicle(VehicleEnterEvent event) { if (event.getEntered() instanceof Player && locked((Player) event.getEntered())) event.setCancelled(true); }
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onDamage(EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player player && locked(player)) event.setCancelled(true);
-        if (event instanceof EntityDamageByEntityEvent hit) {
-            if (hit.getDamager() instanceof Player player && locked(player)) hit.setCancelled(true);
-            if (hit.getDamager() instanceof Projectile shot && shot.getShooter() instanceof Player player && locked(player)) hit.setCancelled(true);
+        if (event.getEntity() instanceof Player && locked((Player) event.getEntity())) event.setCancelled(true);
+        if (event instanceof EntityDamageByEntityEvent) {
+            EntityDamageByEntityEvent hit = (EntityDamageByEntityEvent) event;
+            if (hit.getDamager() instanceof Player && locked((Player) hit.getDamager())) hit.setCancelled(true);
+            if (hit.getDamager() instanceof Projectile) {
+                Object shooter = BukkitCompatibility.shooter((Projectile) hit.getDamager());
+                if (shooter instanceof Player && locked((Player) shooter)) hit.setCancelled(true);
+            }
         }
     }
+    private void gateOptional(Event event, String getter) {
+        Object actor = BukkitCompatibility.eventValue(event, getter);
+        if (actor instanceof Player && locked((Player) actor)) ((Cancellable) event).setCancelled(true);
+    }
+
     void close() {
         workers.shutdownNow();
-        if (!policyKnown || required) for (Player player : Bukkit.getOnlinePlayers()) player.kickPlayer("游戏认证插件已停止，请稍后重新连接。");
+        if (!policyKnown || required) for (Player player : BukkitCompatibility.players()) player.kickPlayer("游戏认证插件已停止，请稍后重新连接。");
         connections.clear(); restoreCommandLogs();
     }
 }

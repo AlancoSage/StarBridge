@@ -105,6 +105,8 @@ public final class GameLoginCheck {
         BukkitScheduler scheduler = proxy(BukkitScheduler.class, (self, method, values) -> {
             if (method.getName().equals("runTask")) { callbacks.add((Runnable) values[1]); return task; }
             if (method.getName().equals("runTaskTimer")) { timers.add((Runnable) values[1]); return task; }
+            if (method.getName().equals("scheduleSyncDelayedTask")) { callbacks.add((Runnable) values[1]); return 1; }
+            if (method.getName().equals("scheduleSyncRepeatingTask")) { timers.add((Runnable) values[1]); return 1; }
             return defaultValue(method);
         });
         PluginManager manager = proxy(PluginManager.class, (self, method, values) -> {

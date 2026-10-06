@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
  *  Avoids bootstrapping Minecraft's potion/enchantment registries just to create an interface proxy.
  *  This source is compiled only into target/test-classes and is never packaged in the plugin JAR.
  */
-public interface Player extends Entity {
+public interface Player extends Entity, org.bukkit.OfflinePlayer {
     String getName();
     boolean isOnline();
     InetSocketAddress getAddress();

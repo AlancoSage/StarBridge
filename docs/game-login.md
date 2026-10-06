@@ -1,6 +1,6 @@
 # 星桥游戏登录
 
-游戏插件版本：**0.5.0**。适配 Spigot / Paper 1.20.4、Java 17。AuthMe 为可选依赖；服务器没有安装时使用星桥内置登录。
+游戏插件版本：**0.5.0 通用兼容构建**。面向跨版本 Spigot / Paper，插件最低 Java 8，服务端按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。AuthMe 为可选依赖；服务器没有安装时使用星桥内置登录。
 
 ## 开启
 

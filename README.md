@@ -33,10 +33,10 @@
 ## 运行环境
 
 - Python **3.11+**。本机已使用 Python 3.14 验证。
-- Minecraft **Java 版 Paper / Spigot 1.20.4** 为插件的编译目标；插件字节码要求 Java 17+。新版游戏服务端可能要求更高 Java 版本，按其要求启动。
+- Minecraft **Java 版 Paper / Spigot** 使用同一个通用兼容 JAR；插件最低要求 **Java 8**，实际启动 Java 版本仍按服务端要求选择。详见 [Minecraft 版本兼容与 Java 选择](docs/minecraft-compatibility.md)。
 - 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。星桥自身不负责登录 QQ。
 
-其他 Minecraft 版本尚未做实服验证。当前不支持 Forge、Fabric、Folia、基岩版原生服务端。游戏登录默认关闭，管理员可在面板启用内置登录或可选 AuthMe 兼容模式。
+已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。当前不支持 Forge、Fabric、Folia、基岩版原生服务端。游戏登录默认关闭，管理员可在面板启用内置登录或可选 AuthMe 兼容模式。
 
 ## 1. 启动主程序
 

@@ -1,0 +1,60 @@
+{
+  "checked_at": "2026-10-06",
+  "verification": "Static direct Bukkit class/method/field linkage; not full Minecraft server validation",
+  "historical_sources": [
+    {
+      "version": "1.4.7-R1.0",
+      "source": "https://github.com/Bukkit/Bukkit/tree/1.4.7-R1.0",
+      "build": "Official source rebuilt with javac --release 8 for isolated API testing"
+    },
+    {
+      "version": "1.7.9-R0.2",
+      "source": "https://github.com/Bukkit/Bukkit/tree/1.7.9-R0.2",
+      "build": "Official source rebuilt with javac --release 8 for isolated API testing"
+    }
+  ],
+  "official_api_artifacts": [
+    {
+      "version": "1.12.2",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/1.12.2-R0.1-SNAPSHOT/spigot-api-1.12.2-R0.1-20180712.012057-156.jar",
+      "sha256": "22ca0ff290aa2d3066348d623e9c8998e58a49f2fee91bc06e3de96b2544e909",
+      "bytes": 894484
+    },
+    {
+      "version": "1.16.5",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/1.16.5-R0.1-SNAPSHOT/spigot-api-1.16.5-R0.1-20210611.041013-99.jar",
+      "sha256": "8c24095c7ccdb604db7d27cc98f50f17928df6cbc115ebf93417b86af13913c6",
+      "bytes": 1309349
+    },
+    {
+      "version": "26.3",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/26.3-R0.1-SNAPSHOT/spigot-api-26.3-R0.1-20261004.024323-9.jar",
+      "sha256": "41f378819cdcac9cdb773d5573e6cac5f2ad4db93bdd14a4ba9f4575ac0cd4d5",
+      "bytes": 1730289
+    },
+    {
+      "version": "Paper 26.3 build 157-beta",
+      "url": "https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.3.build.157-beta/paper-api-26.3.build.157-beta.jar",
+      "sha256": "62436bed3ff5379a33e364f99a33ab748c9f9938dc32ad4a561c34e17b76437f",
+      "bytes": 2932294
+    },
+    {
+      "version": "Spigot 1.8.8",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/1.8.8-R0.1-SNAPSHOT/spigot-api-1.8.8-R0.1-20160221.082514-43.jar",
+      "sha256": "bc50bbc4d8226d75d0d75460828567b4580841d5987cae5c1d89b321f8ffc071",
+      "bytes": 867611
+    },
+    {
+      "version": "Spigot 1.20.4",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/1.20.4-R0.1-SNAPSHOT/spigot-api-1.20.4-R0.1-20240423.152506-123-shaded.jar",
+      "sha256": "60307fe037d748e4f371ee6755647841a999b7aa27d66079b2c53d6a7375867a",
+      "bytes": 6402415
+    },
+    {
+      "version": "Spigot 1.21.11",
+      "url": "https://hub.spigotmc.org/nexus/content/repositories/snapshots/org/spigotmc/spigot-api/1.21.11-R0.1-SNAPSHOT/spigot-api-1.21.11-R0.1-20251231.154832-9.jar",
+      "sha256": "5d0f35511f69d82e3da6e5a24bc55846490f3f7708b49d835e88ba55ff167d15",
+      "bytes": 1692840
+    }
+  ]
+}

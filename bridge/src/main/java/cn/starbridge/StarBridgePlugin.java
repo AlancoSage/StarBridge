@@ -2,9 +2,7 @@ package cn.starbridge;
 
 import com.google.gson.*;
 import org.bukkit.Bukkit;
-import org.bukkit.BanList;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.ban.ProfileBanList;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -19,13 +17,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Proxy;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private final Gson gson = new Gson();
@@ -38,11 +33,11 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private final Map<UUID, OfflinePlayer> knownPlayers = new HashMap<>();
     private final Map<UUID, Long> lastPlayed = new HashMap<>();
     private final Map<UUID, String> lastAddresses = new HashMap<>();
-    private List<OfflinePlayer> recentPlayers = List.of();
+    private List<OfflinePlayer> recentPlayers = Collections.emptyList();
     private long nextCatalogUpdate;
     private volatile Set<String> allowedCommands;
     private ScheduledExecutorService io;
-    private HttpClient http;
+    private ThreadPoolExecutor identities;
     private String base, token;
     private volatile JsonObject snapshot = new JsonObject();
     private long lastWarning;
@@ -66,17 +61,18 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             return;
         }
         base = endpoint + "/bridge/" + sid;
-        allowedCommands = Set.copyOf(getConfig().getStringList("allowed-commands"));
-        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+        allowedCommands = Collections.unmodifiableSet(new HashSet<>(getConfig().getStringList("allowed-commands")));
         io = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r, "StarBridge-HTTP"); t.setDaemon(true); return t; });
+        identities = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(64),
+            r -> { Thread t = new Thread(r, "StarBridge-Identity"); t.setDaemon(true); return t; });
         login = new GameLogin(this, this::post);
         Bukkit.getPluginManager().registerEvents(this, this);
         Objects.requireNonNull(getCommand("qbind")).setExecutor(this);
-        for (OfflinePlayer p : Bukkit.getOfflinePlayers()) knownPlayers.put(p.getUniqueId(), p);
-        for (OfflinePlayer p : Bukkit.getWhitelistedPlayers()) knownPlayers.put(p.getUniqueId(), p);
-        for (OfflinePlayer p : knownPlayers.values()) lastPlayed.put(p.getUniqueId(), p.getLastPlayed());
+        for (OfflinePlayer p : Bukkit.getOfflinePlayers()) knownPlayers.put(BukkitCompatibility.identity(p), p);
+        for (OfflinePlayer p : Bukkit.getWhitelistedPlayers()) knownPlayers.put(BukkitCompatibility.identity(p), p);
+        for (OfflinePlayer p : knownPlayers.values()) lastPlayed.put(BukkitCompatibility.identity(p), BukkitCompatibility.lastPlayed(p));
         updateSnapshot();
-        Bukkit.getScheduler().runTaskTimer(this, this::updateSnapshot, 20, 20);
+        BukkitCompatibility.repeat(this, this::updateSnapshot, 20, 20);
         io.scheduleWithFixedDelay(this::tick, 0, 1, TimeUnit.SECONDS);
         getLogger().info("星桥已启动，将连接 " + endpoint + "，使用 /qbind 获取绑定码。");
     }
@@ -84,44 +80,53 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     @Override public void onDisable() {
         if (login != null) login.close();
         if (io != null) io.shutdownNow();
+        if (identities != null) identities.shutdownNow();
         Bukkit.getScheduler().cancelTasks(this);
     }
 
     private void updateSnapshot() {
         JsonObject value = new JsonObject();
         JsonArray players = new JsonArray();
-        Bukkit.getOnlinePlayers().forEach(p -> players.add(p.getName()));
-        Bukkit.getOnlinePlayers().forEach(p -> knownPlayers.put(p.getUniqueId(), p));
-        Bukkit.getOnlinePlayers().forEach(p -> {
+        List<Player> online = BukkitCompatibility.players();
+        Map<UUID, Player> onlineByIdentity = new HashMap<>();
+        for (Player p : online) {
+            UUID identity = BukkitCompatibility.identity(p);
+            players.add(new JsonPrimitive(p.getName()));
+            knownPlayers.put(identity, p);
+            onlineByIdentity.put(identity, p);
             if (p.getAddress() != null && p.getAddress().getAddress() != null)
-                lastAddresses.put(p.getUniqueId(), p.getAddress().getAddress().getHostAddress());
-        });
+                lastAddresses.put(identity, p.getAddress().getAddress().getHostAddress());
+        }
         if (System.currentTimeMillis() >= nextCatalogUpdate) {
             List<OfflinePlayer> ordered = new ArrayList<>(knownPlayers.values());
             ordered.removeIf(p -> p.getName() == null || !p.getName().matches("[A-Za-z0-9_]{1,16}"));
             ordered.sort(Comparator.comparing((OfflinePlayer p) -> !p.isOnline())
-                .thenComparing(Comparator.comparingLong((OfflinePlayer p) -> lastPlayed.getOrDefault(p.getUniqueId(), 0L)).reversed()));
+                .thenComparing(Comparator.comparingLong((OfflinePlayer p) -> lastPlayed.getOrDefault(BukkitCompatibility.identity(p), 0L)).reversed()));
             recentPlayers = ordered;
             nextCatalogUpdate = System.currentTimeMillis() + 10000;
         }
         JsonArray records = new JsonArray();
         for (OfflinePlayer p : recentPlayers.subList(0, Math.min(500, recentPlayers.size()))) {
             JsonObject record = new JsonObject();
-            record.addProperty("uuid", p.getUniqueId().toString()); record.addProperty("name", p.getName());
+            UUID identity = BukkitCompatibility.identity(p);
+            record.addProperty("uuid", identity.toString()); record.addProperty("name", p.getName());
             record.addProperty("online", p.isOnline()); record.addProperty("banned", p.isBanned());
             record.addProperty("whitelisted", p.isWhitelisted()); record.addProperty("op", p.isOp());
-            record.addProperty("last_played", p.isOnline() ? System.currentTimeMillis() : lastPlayed.getOrDefault(p.getUniqueId(), 0L));
-            record.addProperty("ip", lastAddresses.getOrDefault(p.getUniqueId(), ""));
-            Player current = p.getPlayer();
+            record.addProperty("last_played", p.isOnline() ? System.currentTimeMillis() : lastPlayed.getOrDefault(identity, 0L));
+            record.addProperty("ip", lastAddresses.getOrDefault(identity, ""));
+            Player current = onlineByIdentity.get(identity);
             if (current != null && current.isOnline()) {
                 record.addProperty("world", current.getWorld().getName());
                 record.addProperty("game_mode", current.getGameMode().name());
-                record.addProperty("health", current.getHealth()); record.addProperty("ping", Math.max(0, current.getPing()));
+                Double health = BukkitCompatibility.health(current);
+                Integer ping = BukkitCompatibility.ping(current);
+                if (health != null) record.addProperty("health", health);
+                if (ping != null) record.addProperty("ping", ping);
             }
             records.add(record);
         }
         value.add("player_records", records);
-        value.add("capabilities", gson.toJsonTree(List.of("player_management", "game_authentication", "whitelist_application")));
+        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application")));
         value.add("auth_sessions", login.snapshot());
         value.addProperty("players_truncated", recentPlayers.size() > 500);
         value.addProperty("whitelist_enabled", Bukkit.hasWhitelist());
@@ -132,25 +137,21 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     }
 
     private JsonObject post(String route, JsonObject data) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(base + route))
-            .timeout(Duration.ofSeconds(route.equals("/auth") ? 16 : 6)).header("Authorization", "Bearer " + token)
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(data))).build();
-        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
+        BridgeHttp.Response response = BridgeHttp.request(base + route, token, gson.toJson(data), route.equals("/auth") ? 16000 : 6000);
+        if (response.status != 200) {
             if (route.equals("/auth")) {
                 try {
-                    JsonObject error = JsonParser.parseString(response.body()).getAsJsonObject();
+                    JsonObject error = JsonParser.parseString(response.body).getAsJsonObject();
                     if (error.has("error")) return error;
                 } catch (RuntimeException ignored) { }
             }
-            throw new IllegalStateException("HTTP " + response.statusCode());
+            throw new IllegalStateException("HTTP " + response.status);
         }
-        return JsonParser.parseString(response.body()).getAsJsonObject();
+        return JsonParser.parseString(response.body).getAsJsonObject();
     }
 
     private List<JsonObject> batch(LinkedBlockingDeque<JsonObject> queue) {
-        return queue.stream().limit(50).toList();
+        return queue.stream().limit(50).collect(Collectors.toList());
     }
 
     private void tick() {
@@ -163,18 +164,18 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             payload.add("events", gson.toJsonTree(eventBatch));
             payload.add("results", gson.toJsonTree(resultBatch));
             JsonObject response = post("/tick", payload);
-            if (isEnabled()) Bukkit.getScheduler().runTask(this, () -> login.accept(response));
+            if (isEnabled()) BukkitCompatibility.runTask(this, () -> login.accept(response));
             if (response.has("allowed_commands")) {
                 Set<String> configured = new HashSet<>();
                 for (JsonElement item : response.getAsJsonArray("allowed_commands")) configured.add(item.getAsString());
-                allowedCommands = Set.copyOf(configured);
+                allowedCommands = Collections.unmodifiableSet(configured);
             }
             eventBatch.forEach(events::removeFirstOccurrence);
             resultBatch.forEach(results::removeFirstOccurrence);
             for (JsonElement element : response.getAsJsonArray("jobs")) {
                 JsonObject job = element.getAsJsonObject();
                 String id = job.get("id").getAsString();
-                if (inFlight.add(id)) Bukkit.getScheduler().runTask(this, () -> execute(job));
+                if (inFlight.add(id)) BukkitCompatibility.runTask(this, () -> execute(job));
             }
         } catch (Exception ex) {
             if (System.currentTimeMillis() - lastWarning > 30000) {
@@ -219,8 +220,8 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                         new Class<?>[]{ConsoleCommandSender.class}, (proxy, method, args) -> {
                             if (method.getName().equals("sendMessage") && args != null) {
                                 Object last = args[args.length - 1];
-                                if (last instanceof String text) append(output, text);
-                                else if (last instanceof String[] lines) for (String line : lines) append(output, line);
+                                if (last instanceof String) append(output, (String) last);
+                                else if (last instanceof String[]) for (String line : (String[]) last) append(output, line);
                                 return null;
                             }
                             return method.invoke(console, args);
@@ -255,32 +256,27 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             || reason.chars().anyMatch(c -> c < 32 || c == 127)) throw new IllegalArgumentException("Invalid player action");
         OfflinePlayer target = knownPlayers.get(identity);
         if (target == null || !name.equals(target.getName())) throw new IllegalArgumentException("玩家身份已变化，请刷新后重试");
-        Player online = Bukkit.getPlayer(identity);
-        if (reason.isBlank()) reason = "服务器管理员通过星桥执行操作";
+        Player online = BukkitCompatibility.player(identity);
+        if (reason.trim().isEmpty()) reason = "服务器管理员通过星桥执行操作";
         switch (action) {
-            case "kick" -> {
+            case "kick":
                 if (online == null || !online.isOnline()) throw new IllegalStateException("玩家已离线，请刷新后重试");
                 online.kickPlayer(reason);
                 return "已踢出 " + name;
-            }
-            case "ban" -> {
-                if (target.ban(reason, (Date) null, "StarBridge") == null) throw new IllegalStateException("Ban failed");
+            case "ban":
+                BukkitCompatibility.ban(target, reason);
                 if (online != null && online.isOnline()) online.kickPlayer(reason);
                 return "已永久封禁 " + name;
-            }
-            case "unban" -> {
-                ProfileBanList bans = Bukkit.getBanList(BanList.Type.PROFILE);
-                bans.pardon(target.getPlayerProfile());
-                if (target.isBanned()) throw new IllegalStateException("Unban failed");
+            case "unban":
+                BukkitCompatibility.unban(target);
                 return "已解除 " + name + " 的封禁";
-            }
-            case "whitelist_add", "whitelist_remove" -> {
+            case "whitelist_add":
+            case "whitelist_remove":
                 boolean value = action.equals("whitelist_add");
                 target.setWhitelisted(value);
                 if (target.isWhitelisted() != value) throw new IllegalStateException("Whitelist update failed");
                 return name + (value ? " 已加入白名单" : " 已移出白名单");
-            }
-            default -> throw new IllegalArgumentException("Unsupported player action");
+            default: throw new IllegalArgumentException("Unsupported player action");
         }
     }
 
@@ -292,26 +288,33 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         }
         UUID supplied = null;
         try {
-            if (job.has("uuid") && !job.get("uuid").getAsString().isBlank()) supplied = UUID.fromString(job.get("uuid").getAsString());
+            if (job.has("uuid") && !job.get("uuid").getAsString().trim().isEmpty()) supplied = UUID.fromString(job.get("uuid").getAsString());
         } catch (IllegalArgumentException ex) { finishWhitelist(id, false, "玩家 UUID 格式错误"); return; }
         if (!Bukkit.getOnlineMode()) {
             UUID identity = supplied != null ? supplied : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
             completeWhitelist(job, identity, name);
             return;
         }
-        // The API resolves official identities asynchronously; no network lookup on the game thread.
-        UUID expected = supplied;
+        // Official lookup stays on a bounded worker; no network access on the game thread.
+        if (!BukkitCompatibility.nativeIdentities() && supplied != null && !supplied.equals(BukkitCompatibility.legacyIdentity(name))) {
+            finishWhitelist(id, false, "旧版服务器的玩家名与标识不匹配"); return;
+        }
+        final UUID expected = BukkitCompatibility.nativeIdentities() ? supplied : null;
         try {
-            Bukkit.createPlayerProfile(name).update().orTimeout(12, TimeUnit.SECONDS).whenComplete((profile, failure) -> {
+            identities.execute(() -> {
+                BukkitCompatibility.Profile profile = null;
+                Exception failure = null;
+                try { profile = BukkitCompatibility.lookupProfile(name, expected); }
+                catch (Exception exception) { failure = exception; }
                 if (!isEnabled()) { inFlight.remove(id); return; }
-                Bukkit.getScheduler().runTask(this, () -> {
-                    if (failure != null || profile == null || profile.getUniqueId() == null || profile.getName() == null
-                        || !name.equalsIgnoreCase(profile.getName()) || (expected != null && !expected.equals(profile.getUniqueId()))) {
-                        finishWhitelist(id, false, "正版玩家身份查询失败、超时或不匹配，请核对玩家名后重试");
-                    } else completeWhitelist(job, profile.getUniqueId(), profile.getName());
+                final BukkitCompatibility.Profile answer = profile;
+                final Exception error = failure;
+                BukkitCompatibility.runTask(this, () -> {
+                    if (error != null || answer == null) finishWhitelist(id, false, "正版玩家身份查询失败、超时或不匹配，请核对玩家名后重试");
+                    else completeWhitelist(job, answer.identity, answer.name);
                 });
             });
-        } catch (RuntimeException ex) { finishWhitelist(id, false, "玩家身份解析失败，请核对名字并重试"); }
+        } catch (RejectedExecutionException ex) { finishWhitelist(id, false, "正版身份查询繁忙，请稍后重试"); }
     }
 
     private void completeWhitelist(JsonObject job, UUID identity, String name) {
@@ -320,12 +323,13 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             if (job.get("expires").getAsDouble() * 1000 < System.currentTimeMillis()) {
                 finishWhitelist(id, false, "任务已过期，未加入白名单"); return;
             }
-            OfflinePlayer target = Bukkit.getOfflinePlayer(identity);
+            OfflinePlayer target = BukkitCompatibility.offline(identity, name);
             if (target.isBanned()) { finishWhitelist(id, false, "玩家已被服务器封禁，未加入白名单"); return; }
             target.setWhitelisted(true);
             if (!target.isWhitelisted()) throw new IllegalStateException("Whitelist write failed");
-            knownPlayers.put(identity, target); nextCatalogUpdate = 0;
-            finishWhitelist(id, true, name + " 已加入白名单（" + identity + "）");
+            UUID serverIdentity = BukkitCompatibility.identity(target);
+            knownPlayers.put(serverIdentity, target); nextCatalogUpdate = 0;
+            finishWhitelist(id, true, name + " 已加入白名单（" + serverIdentity + "）");
             try { updateSnapshot(); } catch (RuntimeException ex) { getLogger().warning("白名单更新成功，等待下一次状态上报。"); }
         } catch (RuntimeException ex) { finishWhitelist(id, false, "白名单更新失败，请检查游戏端日志"); }
     }
@@ -356,7 +360,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         JsonObject data = new JsonObject();
         data.addProperty("id", UUID.randomUUID().toString());
         data.addProperty("kind", "join"); data.addProperty("player", player.getName());
-        data.addProperty("uuid", player.getUniqueId().toString()); data.addProperty("text", "");
+        data.addProperty("uuid", BukkitCompatibility.identity(player).toString()); data.addProperty("text", "");
         if (player.getAddress() != null && player.getAddress().getAddress() != null)
             data.addProperty("ip", player.getAddress().getAddress().getHostAddress());
         data.addProperty("queued_at", System.currentTimeMillis());
@@ -366,25 +370,26 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
     public void onChat(AsyncPlayerChatEvent event) { event("chat", event.getPlayer().getName(), event.getMessage()); }
     @EventHandler public void onJoin(PlayerJoinEvent event) {
-        lastPlayed.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        lastPlayed.put(BukkitCompatibility.identity(event.getPlayer()), System.currentTimeMillis());
         nextCatalogUpdate = 0;
         joined(event.getPlayer());
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
-        bindingCooldown.remove(event.getPlayer().getUniqueId());
-        knownPlayers.put(event.getPlayer().getUniqueId(), Bukkit.getOfflinePlayer(event.getPlayer().getUniqueId()));
-        lastPlayed.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        bindingCooldown.remove(BukkitCompatibility.identity(event.getPlayer()));
+        knownPlayers.put(BukkitCompatibility.identity(event.getPlayer()), BukkitCompatibility.offline(BukkitCompatibility.identity(event.getPlayer()), event.getPlayer().getName()));
+        lastPlayed.put(BukkitCompatibility.identity(event.getPlayer()), System.currentTimeMillis());
         nextCatalogUpdate = 0;
         event("quit", event.getPlayer().getName(), "");
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) { sender.sendMessage("请在游戏内执行 /qbind。"); return true; }
+        if (!(sender instanceof Player)) { sender.sendMessage("请在游戏内执行 /qbind。"); return true; }
+        Player player = (Player) sender;
         if (!command.getName().equalsIgnoreCase("qbind")) {
             player.sendMessage("此服务器没有启用星桥游戏登录。"); return true;
         }
         if (login.locked(player)) { player.sendMessage("请先完成游戏登录，再获取绑定码。"); return true; }
-        UUID playerId = player.getUniqueId();
+        UUID playerId = BukkitCompatibility.identity(player);
         String connectionNonce = login.nonce(player);
         long now = System.currentTimeMillis();
         if (now - bindingCooldown.getOrDefault(playerId, 0L) < 20000) { player.sendMessage("请等待 20 秒再获取验证码。"); return true; }
@@ -399,8 +404,8 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                 message = "请在服务器 QQ 群发送：绑定 " + code + "（5 分钟有效，请勿转发给他人）";
             } catch (Exception ex) { message = "获取验证码失败，请联系管理员检查星桥连接。"; }
             String result = message;
-            if (isEnabled()) Bukkit.getScheduler().runTask(this, () -> {
-                Player current = Bukkit.getPlayer(playerId);
+            if (isEnabled()) BukkitCompatibility.runTask(this, () -> {
+                Player current = BukkitCompatibility.player(playerId);
                 if (current != null && current.isOnline() && connectionNonce.equals(login.nonce(current)) && !login.locked(current)) current.sendMessage(result);
             });
         });

@@ -37,7 +37,7 @@ final class AuthMeLink {
         if (authenticated(player)) return true;
         if (Boolean.TRUE.equals(registered.invoke(api, player.getName()))) {
             // A public website name claim is not proof of ownership of an older AuthMe account.
-            if (!player.getUniqueId().toString().equals(managed.getProperty(player.getName().toLowerCase(Locale.ROOT)))) return false;
+            if (!BukkitCompatibility.identity(player).toString().equals(managed.getProperty(player.getName().toLowerCase(Locale.ROOT)))) return false;
             login.invoke(api, player);
         }
         else {
@@ -48,7 +48,7 @@ final class AuthMeLink {
         return true;
     }
     void remember(Player player) throws IOException {
-        String name = player.getName().toLowerCase(Locale.ROOT), identity = player.getUniqueId().toString();
+        String name = player.getName().toLowerCase(Locale.ROOT), identity = BukkitCompatibility.identity(player).toString();
         if (identity.equals(managed.getProperty(name))) return;
         if (managed.size() >= 10000 && !managed.containsKey(name)) throw new IOException("AuthMe link capacity reached");
         Properties next = new Properties(); next.putAll(managed); next.setProperty(name, identity);
