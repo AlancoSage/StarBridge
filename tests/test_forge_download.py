@@ -10,7 +10,7 @@ from test_starbridge import config
 class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.cfg = config()
         self.client = TestClient(TestServer(create_app(self.cfg)))
         await self.client.start_server()
@@ -35,6 +35,8 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status, 401)
             response = await self.client.get('/api/plugin?platform=../../config.toml', headers=self.headers)
             self.assertEqual(response.status, 400)
-            (self.root / 'bridge/target/StarBridge-Forge-1.20.1-0.1.0.jar').unlink()
-            response = await self.client.get('/api/plugin?platform=forge', headers=self.headers)
-            self.assertEqual(response.status, 404)
+            # FileResponse closes its file in a background executor; Windows may
+            # still hold the downloaded file here. Use a separate absent root.
+            with patch('starbridge.app.Path', return_value=self.root / 'missing/starbridge/app.py'):
+                response = await self.client.get('/api/plugin?platform=forge', headers=self.headers)
+                self.assertEqual(response.status, 404)
