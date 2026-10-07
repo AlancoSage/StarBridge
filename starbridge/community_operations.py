@@ -33,14 +33,17 @@ def owned_identities(state, user):
 
 
 class Tickets:
-    DEFAULTS = {'enabled': True, 'max_open': 5}
+    DEFAULTS = {'enabled': False, 'max_open': 5}
 
     def __init__(self, state):
         self.state = state; self.db = state['store'].db
 
     def config(self):
         row = self.db.execute("SELECT value,revision FROM operations_settings WHERE key='tickets'").fetchone()
-        return {'settings': json.loads(row['value']) if row else deepcopy(self.DEFAULTS), 'revision': row['revision'] if row else 0}
+        settings = json.loads(row['value']) if row else deepcopy(self.DEFAULTS)
+        if not row and self.db.execute('SELECT 1 FROM tickets LIMIT 1').fetchone():
+            settings['enabled'] = True  # Preserve existing installations with conversations.
+        return {'settings': settings, 'revision': row['revision'] if row else 0}
 
     def save(self, data):
         current = self.config(); settings = data.get('settings')
@@ -128,6 +131,23 @@ class Sanctions:
     def __init__(self, state):
         self.state = state; self.db = state['store'].db
 
+    def config(self):
+        row = self.db.execute("SELECT value,revision FROM operations_settings WHERE key='sanctions'").fetchone()
+        return {'settings': json.loads(row['value']) if row else {'enabled': bool(self.db.execute('SELECT 1 FROM sanctions LIMIT 1').fetchone())},
+                'revision': row['revision'] if row else 0}
+
+    def save(self, data):
+        current = self.config(); settings = data.get('settings')
+        if data.keys() != {'settings', 'revision'} or not isinstance(settings, dict) or settings.keys() != {'enabled'} or type(settings['enabled']) is not bool:
+            raise RegistrationError('跨服处罚设置只接受布尔值开关')
+        if type(data['revision']) is not int or data['revision'] != current['revision']:
+            raise RegistrationError('跨服处罚设置已变化，请刷新', 409)
+        with self.db:
+            self.db.execute("INSERT INTO operations_settings VALUES('sanctions',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,revision=excluded.revision",
+                            (json.dumps(settings), current['revision'] + 1))
+        self.reconcile()
+        return self.config()
+
     def listing(self, page=1):
         self.reconcile()
         page = page_number(page)
@@ -143,6 +163,7 @@ class Sanctions:
         return out
 
     def create(self, data, author):
+        if not self.config()['settings']['enabled']: raise RegistrationError('跨服处罚未开启，请在功能开关中开启', 403)
         self.reconcile()
         if data.keys() - {'uuid', 'reason', 'action', 'servers', 'minutes'}: raise RegistrationError('处罚请求包含未知字段')
         try: identity = str(uuid.UUID(data.get('uuid')))
@@ -186,6 +207,7 @@ class Sanctions:
 
     def reconcile(self, server=None):
         if self.state.get('maintenance'): return
+        enabled = self.config()['settings']['enabled']
         now = time.time()
         query = "SELECT id FROM sanctions WHERE (status='active' OR id IN (SELECT sanction FROM sanction_targets WHERE phase='unban' AND status NOT IN ('success','superseded')))"
         if server is not None: query += ' AND id IN (SELECT sanction FROM sanction_targets WHERE server=?)'
@@ -209,6 +231,15 @@ class Sanctions:
                 sid = target['server']
                 if server is not None and sid != server: continue
                 if target['status'] in ('success', 'superseded'): continue
+                if not enabled and target['phase'] != 'unban':
+                    job = self.state['store'].player_action(target['job']) if target['job'] else None
+                    if job and job['status'] == 'success':
+                        with self.db: self.db.execute("UPDATE sanction_targets SET status='success',detail=? WHERE sanction=? AND server=?", (job['detail'], row['id'], sid))
+                    else:
+                        with self.db:
+                            if target['job']: self.db.execute('DELETE FROM jobs WHERE id=?', (target['job'],))
+                            self.db.execute("UPDATE sanction_targets SET status='waiting',job='',next_try=0,detail='功能已关闭，暂停下发' WHERE sanction=? AND server=?", (row['id'], sid))
+                    continue
                 if target['job']:
                     job = self.state['store'].player_action(target['job'])
                     if job and job['status'] == 'success':
@@ -272,6 +303,9 @@ class Sanctions:
 
     def observe(self, sid, records):
         # Reapply active bans after an external unban, while never repeating successful kicks.
+        if not self.config()['settings']['enabled']:
+            self.reconcile(sid)
+            return
         identities = {p['uuid'] for p in records if not p.get('banned')}
         for row in self.db.execute("SELECT t.sanction,s.uuid FROM sanction_targets t JOIN sanctions s ON s.id=t.sanction WHERE t.server=? AND t.phase='ban' AND t.status='success' AND s.status='active'", (sid,)).fetchall():
             if row['uuid'] in identities:

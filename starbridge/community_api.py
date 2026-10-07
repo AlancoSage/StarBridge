@@ -3,6 +3,11 @@ from aiohttp import web
 from .admin_accounts import ADMIN_IDENTITY
 from .community_operations import Tickets, Sanctions
 from .registration import RegistrationError
+from .operations import OperationError
+
+
+def feature_settings(state):
+    return {'whitelist': state['operations'].config(), 'tickets': state['tickets'].config(), 'sanctions': state['sanctions'].config()}
 
 
 def setup_routes(app, state_key, read_body):
@@ -19,7 +24,18 @@ def setup_routes(app, state_key, read_body):
     async def endpoint(request):
         try:
             path = request.path; tid = request.match_info.get('tid'); public = path.startswith('/api/v1/')
-            if public:
+            if path == '/api/community-features':
+                if request.method == 'PUT':
+                    data = await read_body(request)
+                    if data.keys() != {'feature', 'enabled', 'revision'} or data['feature'] not in ('whitelist', 'tickets', 'sanctions') or type(data['enabled']) is not bool:
+                        raise RegistrationError('请选择有效功能并提供布尔值开关与设置版本')
+                    service = state['operations'] if data['feature'] == 'whitelist' else state[data['feature']]
+                    settings = {**service.config()['settings'], 'enabled': data['enabled']}
+                    if data['feature'] == 'whitelist': service.save_config(settings, data['revision'])
+                    else: service.save({'settings': settings, 'revision': data['revision']})
+                    state['store'].audit('settings', request[ADMIN_IDENTITY]['username'] + ' ' + ('开启' if data['enabled'] else '关闭') + ' ' + data['feature'])
+                result = feature_settings(state)
+            elif public:
                 who = user(request)
                 if request.method == 'GET': result = tickets.detail(tid, who['id']) if tid else tickets.listing(who['id'], page=request.query.get('page', 1))
                 elif tid: result = tickets.reply(tid, await read_body(request), who['player'], who['id'])
@@ -42,11 +58,12 @@ def setup_routes(app, state_key, read_body):
                 sanctions.reconcile(); result = sanctions.detail(row['id'])
             else: result = sanctions.create(await read_body(request), request[ADMIN_IDENTITY]['username'])
             return web.json_response(result, status=201 if request.method == 'POST' and not tid and path in ('/api/v1/me/tickets', '/api/sanctions') else 200, headers={'Cache-Control': 'no-store'})
-        except RegistrationError as exc: return web.json_response({'error': str(exc)}, status=exc.status, headers={'Cache-Control': 'no-store'})
+        except (RegistrationError, OperationError) as exc: return web.json_response({'error': str(exc)}, status=exc.status, headers={'Cache-Control': 'no-store'})
 
     async def script(request): return web.FileResponse(Path(__file__).parent / 'service-panel.js', headers={'Cache-Control': 'no-cache'})
     app.add_routes([
         web.get('/service-panel.js', script),
+        web.get('/api/community-features', endpoint), web.put('/api/community-features', endpoint),
         web.get('/api/tickets', endpoint), web.get('/api/tickets/settings', endpoint), web.put('/api/tickets/settings', endpoint),
         web.get('/api/tickets/{tid:[a-f0-9]{32}}', endpoint), web.post('/api/tickets/{tid:[a-f0-9]{32}}/reply', endpoint),
         web.get('/api/v1/me/tickets', endpoint), web.post('/api/v1/me/tickets', endpoint),

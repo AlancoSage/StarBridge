@@ -4,6 +4,7 @@ let token = '', revision = '', timer = null, busy = false, dirty = false, saving
 let saved = null, canRestart = false, serial = 0;
 let latestStatus = null, logsPaused = false, frozenLogs = [];
 let panelIdentity = null;
+let communityFeatures = {whitelist:false,tickets:false,sanctions:false};
 let managedPlayer = null, playerRequestId = null, playerSubmitting = false;
 let latestPlayerActionId = null;
 const serverCommands = new WeakMap();
@@ -56,6 +57,7 @@ const pages = {
   deployment: ['系统', '部署模板', '预览导入配置，或应用常用部署模板。'],
   tickets: ['成员', '工单与申诉', '回复玩家问题，处理封禁申诉与内部备注。'],
   sanctions: ['成员', '跨服处罚', '按 UUID 下发封禁或踢出，跟进每台服务器的结果。'],
+  'community-features': ['系统', '功能开关', '按需开启白名单申请、工单与申诉和跨服处罚。'],
 };
 const features = {
   qq_to_mc: ['QQ群 → 游戏', '将普通群消息同步到游戏聊天。'],
@@ -104,10 +106,19 @@ async function api(url, options = {}) {
 const areaPages = {
   overview: ['overview'], connections: ['connection', 'servers', 'website', 'diagnostics'],
   automation: ['commands', 'features'], community: ['players', 'bindings', 'accounts', 'authentication', 'whitelist', 'tickets', 'sanctions'],
-  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'backups', 'managers', 'updates', 'deployment'], extensions: ['extensions', 'schedules'],
+  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'community-features', 'backups', 'managers', 'updates', 'deployment'], extensions: ['extensions', 'schedules'],
 };
 const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
-function panelAllowed(name){return !panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]);}
+function panelAllowed(name){return (!(name in communityFeatures)||communityFeatures[name])&&(!panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]));}
+window.setCommunityFeatures = data => {
+  const next=Object.fromEntries(Object.entries(data).map(([key,value])=>[key,typeof value==='boolean'?value:value.settings.enabled]));
+  if(JSON.stringify(next)===JSON.stringify(communityFeatures))return;
+  communityFeatures=next;panelAccess();
+  if(!panelAllowed(document.body.dataset.view))selectTab(panelIdentity?.owner?'community-features':'overview');
+  const area=Object.keys(areaPages).find(key=>areaPages[key].includes(document.body.dataset.view));
+  if(area)$('section-nav').querySelectorAll('[data-tab]').forEach(el=>el.hidden=!areaPages[area].includes(el.dataset.tab)||!panelAllowed(el.dataset.tab));
+  renderPageResults();
+};
 function panelAccess(){
   for(const el of document.querySelectorAll('[data-area]'))el.hidden=!!panelIdentity&&!areaPages[el.dataset.area].some(panelAllowed);
   for(const el of document.querySelectorAll('[data-go]'))el.hidden=!!panelIdentity&&!panelAllowed(el.dataset.go);
@@ -120,7 +131,7 @@ function panelAccess(){
 function selectTab(name) {
   if (name === 'replies') name = 'extensions';
   if (!pages[name]) name = 'overview';
-  if (!panelAllowed(name)) name='overview';
+  if (!panelAllowed(name)) name=panelIdentity?.owner&&name in communityFeatures?'community-features':'overview';
   const changed = document.body.dataset.view !== name;
   document.body.dataset.view = name;
   const area = Object.keys(areaPages).find(key => areaPages[key].includes(name));
@@ -147,13 +158,14 @@ function selectTab(name) {
   if (token && name === 'whitelist') window.loadWhitelist?.();
   if (token && ['managers','monitoring','statistics'].includes(name)) window.loadEnhancements?.(name);
   if (token && name === 'backups') window.loadBackupPolicy?.();
-  if (token && ['diagnostics','updates','deployment','tickets','sanctions'].includes(name)) window.loadServicePage?.(name);
-  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['diagnostics','updates','deployment','tickets','sanctions'].includes(name);
+  if (token && ['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name)) window.loadServicePage?.(name);
+  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
 }
 document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => selectTab(el.dataset.tab); });
 document.querySelectorAll('[data-area]').forEach(el => { el.onclick = () => selectTab(areaPages[el.dataset.area].find(panelAllowed)||'overview'); });
 document.querySelectorAll('[data-go]').forEach(el => { el.onclick = () => selectTab(el.dataset.go); });
 const pageKeywords = {
+  'community-features':'开关 启用 关闭 白名单 工单 申诉 跨服 处罚 可选',
   diagnostics:'诊断 连接 检测 SMTP Java QQ 官网',updates:'升级 更新 回退 版本 ZIP',deployment:'模板 配置 导入 导出 单服 多服',tickets:'工单 申诉 回复 问题',sanctions:'封禁 跨服 处罚 UUID 解封 踢出',
   overview: '首页 状态 概览 工作台', connection: 'QQ OneBot 账号 管理员 令牌 连接',
   servers: 'Minecraft MC 插件 游戏 群聊 服务器', bindings: '玩家 验证码 绑定',
@@ -624,6 +636,7 @@ async function refresh() {
   try {
     const d = await api('/api/status');
     latestStatus = d;
+    window.setCommunityFeatures(d.community_features);
     setText('panel-alert-count',d.alerts_open?d.alerts_open+' 项待处理故障':'');
     notice('notice', d.restart_error || '', d.restart_error ? 'error' : '', {persistent:true});
     setText('bot', d.onebot ? '已连接' : '等待连接'); $('bot').className = 'number ' + (d.onebot ? 'green' : 'dim');
@@ -669,6 +682,7 @@ $('form').addEventListener('submit', async e => {
       const result=await api('/api/admin-auth/login',{method:'POST',body:JSON.stringify({username:$('panel-username').value.trim(),password:$('panel-password').value})});token=result.access_token;
     }
     panelIdentity=await api('/api/session');
+    communityFeatures=Object.fromEntries(Object.entries(await api('/api/community-features')).map(([key,value])=>[key,value.settings.enabled]));
     if(panelIdentity.owner){const data=await api('/api/config');renderConfig(data);}
     $('token').value = ''; $('login').hidden = true; $('content').hidden = false; $('save-bar').hidden = false; $('logout').hidden = false;
     $('page-actions').hidden = false; document.body.classList.remove('logged-out'); selectTab(location.hash.slice(1) || 'overview');

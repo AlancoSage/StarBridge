@@ -651,6 +651,15 @@ select:disabled { cursor: default; color: #9299aa; background: #f3f5f8; }
 .service-space { display: grid; gap: var(--service-gap); }
 .service-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); gap: var(--service-gap); }
 .service-card { min-width: 0; }
+.feature-switch-row { align-items: center; padding: 22px 0; }
+.feature-switch-row > div:first-child { flex: 1; }
+.feature-switch-row .service-actions { align-items: center; }
+.feature-switch { width: 46px; height: 26px; min-width: 46px; padding: 3px; border-radius: 20px; border: 1px solid var(--border); background: #737783; }
+.feature-switch::before { content: ''; display: block; width: 18px; height: 18px; border-radius: 50%; background: #fff; transform: translateX(0); transition: transform 140ms ease; }
+.feature-switch[aria-checked="true"] { background: #4f66f5; border-color: #4f66f5; }
+.feature-switch[aria-checked="true"]::before { transform: translateX(20px); }
+.feature-switch:focus-visible { outline: 2px solid #7386ff; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .feature-switch::before { transition: none; } }
 .service-form { display: grid; gap: 14px; max-width: 760px; margin-block: 16px; }
 .service-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-block: 12px; }
 .service-row { display: flex; justify-content: space-between; gap: 16px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }

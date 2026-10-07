@@ -161,13 +161,16 @@ def check_database(path):
                 task_definition(json.loads(row[0]))
         if "operations_settings" in present:
             for key, value, revision in db.execute("SELECT * FROM operations_settings"):
-                if key not in ("whitelist", "tickets", "updates") or type(revision) is not int or revision < 0:
+                if key not in ("whitelist", "tickets", "sanctions", "updates") or type(revision) is not int or revision < 0:
                     raise BackupError("自动化设置格式错误")
                 setting = json.loads(value)
                 if key == 'whitelist': whitelist_settings(setting)
                 elif key == 'tickets':
                     if not isinstance(setting, dict) or setting.keys() != {'enabled', 'max_open'} or type(setting['enabled']) is not bool or type(setting['max_open']) is not int or not 1 <= setting['max_open'] <= 20:
                         raise BackupError('工单设置格式错误')
+                elif key == 'sanctions':
+                    if not isinstance(setting, dict) or setting.keys() != {'enabled'} or type(setting['enabled']) is not bool:
+                        raise BackupError('跨服处罚设置格式错误')
                 else:
                     from .updates import https_url
                     if not isinstance(setting, dict) or setting.keys() != {'feed_url'} or not isinstance(setting['feed_url'], str): raise BackupError('更新设置格式错误')

@@ -99,6 +99,7 @@ def required(request):
     if path=='/api/statistics' and method!='GET':return 'stats.manage'
     if path in ('/api/session','/api/admin-auth/logout'):return 'status.read'
     if path=='/api/status':return 'status.read'
+    if path=='/api/community-features' and method=='GET':return 'status.read'
     for prefix,scope in (('/api/diagnostics','diagnostics.run'),('/api/tickets','tickets.manage'),('/api/sanctions','sanctions.manage')):
         if path.startswith(prefix):return scope
     for prefix,scope in (('/api/player-','players.manage'),('/api/extensions','plugins.manage'),

@@ -29,6 +29,10 @@ class CommunityDeploymentTests(unittest.IsolatedAsyncioTestCase):
         await self.client.start_server(); self.state=self.client.app[STATE]; self.db=self.state['store'].db
         self.owner={'Authorization':'Bearer '+self.cfg['app']['admin_token']}
         self.state['updates'].root=self.base;self.state['updates'].directory=self.base/'.runtime/updates'
+        # These tests exercise enabled services; deployment defaults are tested separately.
+        with self.db:
+            self.db.execute("INSERT INTO operations_settings VALUES('tickets',?,0)", (json.dumps({'enabled':True,'max_open':5}),))
+            self.db.execute("INSERT INTO operations_settings VALUES('sanctions',?,0)", (json.dumps({'enabled':True}),))
 
     async def asyncTearDown(self):
         await self.client.close();self.tmp.cleanup()
@@ -47,6 +51,58 @@ class CommunityDeploymentTests(unittest.IsolatedAsyncioTestCase):
             'capabilities':['player_management','managed_sanctions'],'java_version':'1.8.0','server_software':'Spigot',
             'version':'1.8.8','events':[],'results':results or []})
         self.assertEqual(response.status,200,await response.text());return await response.json()
+
+    async def test_optional_features_default_off_and_save_independently(self):
+        with self.db:self.db.execute("DELETE FROM operations_settings WHERE key IN ('tickets','sanctions')")
+        settings=await(await self.client.get('/api/community-features',headers=self.owner)).json()
+        self.assertEqual({k:v['settings']['enabled'] for k,v in settings.items()}, {'whitelist':False,'tickets':False,'sanctions':False})
+        aid,headers=self.account()
+        self.assertEqual((await self.client.post('/api/v1/me/tickets',headers=headers,json={'title':'问题','body':'详情'})).status,403)
+        self.assertEqual((await self.client.post('/api/sanctions',headers=self.owner,json={})).status,403)
+        for key in ('whitelist','tickets','sanctions'):
+            response=await self.client.put('/api/community-features',headers=self.owner,json={'feature':key,'enabled':True,'revision':0})
+            self.assertEqual(response.status,200,await response.text())
+            self.assertEqual((await response.json())[key]['revision'],1)
+        stale=await self.client.put('/api/community-features',headers=self.owner,json={'feature':'tickets','enabled':False,'revision':0})
+        self.assertEqual(stale.status,409)
+        invalid=await self.client.put('/api/community-features',headers=self.owner,json={'feature':'tickets','enabled':'false','revision':1})
+        self.assertEqual(invalid.status,400)
+        status=await(await self.client.get('/api/status',headers=self.owner)).json()
+        self.assertTrue(all(status['community_features'].values()))
+        self.assertEqual(self.state['tickets'].config()['settings']['max_open'],5)
+        check_database(Path(self.state['config']['app']['database']))
+
+    async def test_disabled_sanctions_pause_jobs_but_allow_expiry_cleanup(self):
+        await self.tick();service=self.state['sanctions']
+        rule=service.create({'uuid':STEVE,'servers':['survival'],'reason':'测试','minutes':1},'服主')
+        job=rule['targets'][0]['job']
+        service.save({'settings':{'enabled':False},'revision':0})
+        self.assertIsNone(self.state['store'].job('survival',job))
+        self.assertEqual((await self.tick())['jobs'],[])
+        with self.assertRaises(RegistrationError):service.create({'uuid':STEVE,'servers':['survival'],'reason':'新处罚'},'服主')
+        # A previously leased command may have executed; expiry still issues guarded cleanup.
+        await self.tick(players=[record()|{'banned':True}])
+        with self.db:self.db.execute('UPDATE sanctions SET expires=? WHERE id=?',(time.time()-1,rule['id']))
+        service.reconcile();expired=service.detail(rule['id'])
+        self.assertEqual(expired['status'],'expired')
+        unban=self.state['store'].job('survival',expired['targets'][0]['job'])
+        self.assertEqual(unban['action'],'unban');self.assertIn('[SB:'+rule['id']+']',unban['expected_ban_reason'])
+        service.save({'settings':{'enabled':True},'revision':1})
+        self.assertEqual(service.detail(rule['id'])['status'],'expired')
+
+    async def test_feature_switch_requires_owner_and_keeps_history(self):
+        user=await self.state['admin_accounts'].save({'username':'Reviewer','password':'Review-password-2026','permissions':['status.read','tickets.manage']})
+        login=await self.state['admin_accounts'].login({'username':'Reviewer','password':'Review-password-2026'},'127.0.0.1')
+        reviewer={'Authorization':'Bearer '+login['access_token']}
+        self.assertEqual((await self.client.get('/api/community-features',headers=reviewer)).status,200)
+        self.assertEqual((await self.client.put('/api/community-features',headers=reviewer,json={'feature':'tickets','enabled':False,'revision':0})).status,403)
+        aid,headers=self.account();ticket=self.state['tickets'].create({'id':aid,'player':'Steve','qq':'123456789'},{'title':'问题','body':'详情'})
+        response=await self.client.put('/api/community-features',headers=self.owner,json={'feature':'tickets','enabled':False,'revision':0})
+        self.assertEqual(response.status,200)
+        self.assertEqual((await self.client.get('/api/v1/me/tickets/'+ticket['id'],headers=headers)).status,200)
+        self.assertEqual(self.state['tickets'].listing()['total'],1)
+        with self.db:self.db.execute("DELETE FROM operations_settings WHERE key='tickets'")
+        self.assertTrue(self.state['tickets'].config()['settings']['enabled'])
 
     async def test_tickets_are_private_and_internal_notes_are_hidden(self):
         aid,headers=self.account();other,other_headers=self.account('Alex','987654321')

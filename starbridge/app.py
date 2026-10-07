@@ -517,6 +517,8 @@ async def admin_status(request):
         for server in data["servers"]:
             server.pop("player_records", None)
     data["alerts_open"] = state["runtime"].monitoring()["open_count"]
+    from .community_api import feature_settings
+    data['community_features'] = {key: value['settings']['enabled'] for key, value in feature_settings(state).items()}
     return web.json_response(data, headers={"Cache-Control": "no-store"})
 
 
