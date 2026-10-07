@@ -58,7 +58,7 @@ class UpdatePackageTests(unittest.TestCase):
 
 class OfflineUpdateTests(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name);self.config=self.root/'config.toml'
+        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name).resolve();self.config=self.root/'config.toml'
         self.config.write_text('[app]\ndatabase="data/test.db"\n',encoding='utf-8')
         self.db=self.root/'data/test.db';self.db.parent.mkdir()
         with closing(sqlite3.connect(self.db)) as db, db:db.execute('CREATE TABLE sample(value TEXT)');db.execute("INSERT INTO sample VALUES('before')")

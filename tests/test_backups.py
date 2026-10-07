@@ -26,7 +26,7 @@ from test_settings import full_config
 
 class BackupTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.tmp = tempfile.TemporaryDirectory(); self.base = Path(self.tmp.name)
+        self.tmp = tempfile.TemporaryDirectory(); self.base = Path(self.tmp.name).resolve()
         self.path = self.base / "config.toml"; self.cfg = full_config()
         self.path.write_text(serialize(self.cfg), encoding="utf-8")
         self.client = TestClient(TestServer(create_app(load(self.path), config_path=self.path, restart_event=asyncio.Event())))
