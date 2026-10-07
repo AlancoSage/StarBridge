@@ -9,7 +9,7 @@ from serve import api_base
 ROOT = Path(__file__).resolve().parent
 FILES = ('index.html', 'site.css', 'site.js', 'config.json', 'mark.svg',
          'README.md', 'nginx.example.conf', 'serve.py', 'build.py', 'start.ps1', '.gitignore',
-         'sdk/starbridge.js', 'docs/website-deployment.md', 'docs/account-api.md')
+         'sdk/starbridge.js', 'docs/website-deployment.md', 'docs/account-api.md', 'docs/community-operations.md')
 
 
 def main():

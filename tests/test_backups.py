@@ -286,12 +286,13 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
     async def test_restored_service_startup_failure_rolls_back_and_serves_original_data(self):
         import aiohttp
         import starbridge.__main__ as main
+        import starbridge.app as application
         with socket.socket() as socket_handle:
             socket_handle.bind(('127.0.0.1',0));port=socket_handle.getsockname()[1]
         file=ConfigFile(self.path);cfg,revision=file.read();cfg['app']['port']=port;file.save(cfg,revision)
         self.state['config']['app']['port']=port
         _,payload=await self.backup();self.mutate();preview=await self.preview(payload);await self.schedule(preview);await self.client.close()
-        original=main.create_app;calls=0
+        original=application.create_app;calls=0
         def fail_first_start(*args,**kwargs):
             nonlocal calls
             calls+=1
@@ -299,7 +300,7 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
             return original(*args,**kwargs)
         task=None
         try:
-            with patch.object(main,'create_app',side_effect=fail_first_start):
+            with patch.object(application,'create_app',side_effect=fail_first_start):
                 task=asyncio.create_task(main.serve(self.path))
                 async with aiohttp.ClientSession() as session:
                     deadline=time.monotonic()+10

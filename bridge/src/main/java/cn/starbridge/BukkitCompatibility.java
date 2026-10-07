@@ -181,4 +181,16 @@ final class BukkitCompatibility {
         else if (profiles == null) call(method(OfflinePlayer.class, "setBanned", boolean.class), player, false);
         if (player.isBanned()) throw new IllegalStateException("Unban not confirmed");
     }
+
+    static String banReason(OfflinePlayer player) {
+        Object entry = null;
+        Object profiles = bans("PROFILE");
+        Method profile = method(OfflinePlayer.class, "getPlayerProfile");
+        if (profiles != null && profile != null) entry = banCall(profiles, "getBanEntry", call(profile, player));
+        Object names = bans("NAME");
+        if (entry == null && names != null) entry = banCall(names, "getBanEntry", player.getName());
+        if (entry == null) return null;
+        try { return (String) call(method(Class.forName("org.bukkit.BanEntry"), "getReason"), entry); }
+        catch (ClassNotFoundException ignored) { return null; }
+    }
 }

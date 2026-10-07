@@ -79,6 +79,31 @@ class Store:
                 id TEXT PRIMARY KEY, plugin TEXT NOT NULL, version TEXT NOT NULL, definition TEXT NOT NULL,
                 settings TEXT NOT NULL, created REAL NOT NULL, note TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS tickets (
+                id TEXT PRIMARY KEY, account_id TEXT NOT NULL, player TEXT NOT NULL,
+                title TEXT NOT NULL, kind TEXT NOT NULL, server TEXT NOT NULL,
+                penalty_id TEXT NOT NULL, status TEXT NOT NULL, revision INTEGER NOT NULL,
+                created REAL NOT NULL, updated REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS ticket_messages (
+                id TEXT PRIMARY KEY, ticket TEXT NOT NULL, author TEXT NOT NULL,
+                role TEXT NOT NULL, body TEXT NOT NULL, internal INTEGER NOT NULL,
+                created REAL NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ticket_account ON tickets(account_id,updated);
+            CREATE INDEX IF NOT EXISTS ticket_message_ticket ON ticket_messages(ticket,created);
+            CREATE TABLE IF NOT EXISTS sanctions (
+                id TEXT PRIMARY KEY, uuid TEXT NOT NULL, player TEXT NOT NULL,
+                reason TEXT NOT NULL, action TEXT NOT NULL, servers TEXT NOT NULL,
+                status TEXT NOT NULL, expires REAL NOT NULL, created REAL NOT NULL,
+                updated REAL NOT NULL, revision INTEGER NOT NULL, author TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS sanction_targets (
+                sanction TEXT NOT NULL, server TEXT NOT NULL, phase TEXT NOT NULL,
+                status TEXT NOT NULL, job TEXT NOT NULL, detail TEXT NOT NULL,
+                attempts INTEGER NOT NULL, next_try REAL NOT NULL,
+                PRIMARY KEY(sanction,server)
+            );
         """)
 
     def close(self):

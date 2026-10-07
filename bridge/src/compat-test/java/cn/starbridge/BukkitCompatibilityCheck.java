@@ -28,6 +28,7 @@ public final class BukkitCompatibilityCheck {
     }
     public static void main(String[] args) throws Exception {
         AtomicBoolean banned = new AtomicBoolean();
+        final String[] banReason = {null};
         UUID nativeId = UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5");
         Player actor = proxy(Player.class, (self, method, values) -> {
             String name = method.getName();
@@ -63,7 +64,8 @@ public final class BukkitCompatibilityCheck {
             if (name.equals("getName") || name.equals("getVersion") || name.equals("getBukkitVersion")) return "isolated compatibility test";
             if (name.equals("getBanList")) {
                 return proxy(method.getReturnType(), (list, action, arguments) -> {
-                    if (action.getName().equals("addBan")) { banned.set(true); return proxy(action.getReturnType(), (entry, getter, ignored) -> fallback(getter)); }
+                    if (action.getName().equals("addBan")) { banned.set(true); banReason[0] = (String) arguments[1]; return proxy(action.getReturnType(), (entry, getter, ignored) -> getter.getName().equals("getReason") ? banReason[0] : fallback(getter)); }
+                    if (action.getName().equals("getBanEntry") && banned.get()) return proxy(action.getReturnType(), (entry, getter, ignored) -> getter.getName().equals("getReason") ? banReason[0] : fallback(getter));
                     if (action.getName().equals("pardon")) banned.set(false);
                     return fallback(action);
                 });
@@ -85,7 +87,11 @@ public final class BukkitCompatibilityCheck {
         assert BukkitCompatibility.health(actor) == 20D;
         assert BukkitCompatibility.ping(actor) == null : "Old APIs must omit unsupported ping";
         BukkitCompatibility.ban(actor, "test"); assert banned.get();
+        assert "test".equals(BukkitCompatibility.banReason(actor)) : "Native ban reason must identify the owning rule";
+        banReason[0] = "independent replacement";
+        assert "independent replacement".equals(BukkitCompatibility.banReason(actor)) : "A newer native ban must remain distinguishable";
         BukkitCompatibility.unban(actor); assert !banned.get();
+        assert BukkitCompatibility.banReason(actor) == null;
         assert BukkitCompatibility.verifiedProfile("notch", nativeId, "069a79f444e94726a5befca90e38aaf5", "Notch").identity.equals(nativeId);
         int mismatches = 0;
         try { BukkitCompatibility.verifiedProfile("Other", nativeId, "069a79f444e94726a5befca90e38aaf5", "Notch"); } catch (IllegalArgumentException expected) { mismatches++; }

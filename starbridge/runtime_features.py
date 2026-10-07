@@ -36,6 +36,7 @@ class RuntimeFeatures:
     def __init__(self,state):
         self.state=state;self.db=state['store'].db;self.started=time.time()
         self.mail_failed=bool(self.db.execute("SELECT 1 FROM health_alerts WHERE source='smtp' AND status='open' LIMIT 1").fetchone());self.next_sample=0;self.next_cleanup=0;self.next_notify=0
+        self.next_sanctions = 0
 
     def config(self,key):
         row=self.db.execute('SELECT value,revision FROM runtime_settings WHERE key=?',(key,)).fetchone()
@@ -77,6 +78,9 @@ class RuntimeFeatures:
 
     async def check(self,now=None):
         now=time.time() if now is None else now;policy=self.config('monitoring')['settings']
+        if now >= self.next_sanctions and not self.state.get('maintenance'):
+            self.next_sanctions = now + 30
+            if self.state.get('sanctions'): self.state['sanctions'].reconcile()
         if policy['enabled'] and now-self.started>=policy['startup_grace_seconds']:
             self.alert('onebot','QQ 机器人连接中断',not self.state['onebot'].connected,now)
             configured=self.state['bot'].servers

@@ -1,5 +1,6 @@
 """User-scoped website actions; ownership never comes from submitted QQ or player names."""
 import re
+import json
 import sqlite3
 import time
 from aiohttp import web
@@ -26,10 +27,19 @@ def setup_routes(app,state_key,read_body):
         links=db.execute('SELECT server,uuid FROM account_game_links WHERE account_id=? UNION SELECT server,uuid FROM bindings WHERE qq=?',(user['id'],user['qq'] or '')).fetchall()
         penalties=[]
         for link in links[:100]:
-            penalties.extend({key:row[key] for key in ('server','player','action','reason','status','created')}
+            penalties.extend({key:row[key] for key in ('id','server','player','action','reason','status','created')}
                 for row in db.execute("SELECT * FROM player_actions WHERE server=? AND uuid=? AND action IN ('kick','ban','unban') AND status='success' ORDER BY created DESC LIMIT 30",(link['server'],link['uuid'])))
         penalties.sort(key=lambda row:row['created'],reverse=True)
+        owned={(r['server'],r['uuid']) for r in links}
+        shared=[]
+        for identity in {r['uuid'] for r in links[:100]}:
+            for r in db.execute('SELECT * FROM sanctions WHERE uuid=? ORDER BY created DESC LIMIT 30',(identity,)):
+                targets=[sid for sid in json.loads(r['servers']) if (sid,identity) in owned]
+                if targets: shared.append({k:r[k] for k in ('id','player','action','reason','status','created','expires')}|{'servers':targets})
+        for penalty in penalties: penalty['reason']=re.sub(r' \[SB:[a-f0-9]{32}\]$','',penalty['reason'])
+        shared.sort(key=lambda r:r['created'],reverse=True)
         return {'servers':servers,'bindings':bindings,'applications':applications,'penalties':penalties[:50],
+                'shared_penalties':shared[:50],
                 'whitelist_enabled':state['operations'].config()['settings']['enabled']}
 
     async def endpoint(request):

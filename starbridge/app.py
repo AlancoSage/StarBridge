@@ -27,6 +27,9 @@ from .website_api import setup_routes as website_routes
 from .admin_accounts import setup_routes as admin_routes, ADMIN_IDENTITY
 from .runtime_features import RuntimeFeatures
 from .enhancement_api import setup_routes as enhancement_routes
+from .community_api import setup_routes as community_routes
+from .deployment_api import setup_routes as deployment_routes
+from .update_api import setup_routes as update_routes
 
 
 STATE = web.AppKey("state", dict)
@@ -131,6 +134,8 @@ async def tick(request):
         "player_records": records, "capabilities": capabilities,
         "players_truncated": data.get("players_truncated", False),
         "whitelist_enabled": data.get("whitelist_enabled"),
+        "java_version": clean_text(data.get("java_version", "未上报"), 80),
+        "server_software": clean_text(data.get("server_software", "未上报"), 80),
     }
     fresh_events = [event for event in events if not state["store"].seen(f"mc:{sid}:{event['id']}")]
     state["catalog"].observe(server, records, [event for event in fresh_events if event["kind"] == "join" and "uuid" in event])
@@ -152,6 +157,7 @@ async def tick(request):
                     label = "完成" if result["ok"] else "失败"
                     state["store"].audit("player", f"{sid} {job['player']} {job['action']} {label}：{detail}")
             state["store"].ack(sid, [result["id"]])
+    state["sanctions"].observe(sid, records)
     return web.json_response({"jobs": state["store"].poll(sid),
                               "authentication": state["authentication"].policy(sid), "authentication_results": auth_results,
                               "allowed_commands": list(server.get("commands", {}).values())})
@@ -223,8 +229,12 @@ async def save_config(request):
     state = request.app[STATE]
     authorized(request, state["config"]["app"]["admin_token"])
     payload = await body(request)
+    return await commit_config(state, payload, lambda: authorized(request, state["config"]["app"]["admin_token"]))
+
+
+async def commit_config(state, payload, recheck=lambda: None):
     async with state["settings_lock"]:
-        authorized(request, state["config"]["app"]["admin_token"])
+        recheck()
         if state["config_file"] is None:
             raise web.HTTPServiceUnavailable(text="当前实例没有配置文件")
         try:
@@ -524,6 +534,7 @@ async def lifecycle(app):
             await task
     await state["registration"].close()
     await state["backups"].close()
+    await state["updates"].close()
     state["store"].close()
     if state.get("plugin_temp"):
         state["plugin_temp"].cleanup()
@@ -557,6 +568,9 @@ def create_app(cfg, config_path=None, restart_event=None):
     registration.mail_observer = app[STATE]["runtime"].mail_result
     admin_routes(app, STATE, body)
     enhancement_routes(app, STATE, body)
+    community_routes(app, STATE, body)
+    deployment_routes(app, STATE, body, commit_config, authorized)
+    update_routes(app, STATE, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
         web.get("/extension-panel.js", extension_script),

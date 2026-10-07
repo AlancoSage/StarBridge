@@ -11,7 +11,7 @@ def setup_routes(app, state_key, authorize, read_body):
     @web.middleware
     async def maintenance(request, handler):
         if state.get("maintenance") and (request.method not in ("GET", "HEAD") or request.path == "/onebot/ws"):
-            return web.json_response({"error": "正在恢复备份，请等待服务重新连接"}, status=503, headers={"Cache-Control": "no-store"})
+            return web.json_response({"error": "正在恢复备份或切换版本，请等待服务重新连接"}, status=503, headers={"Cache-Control": "no-store"})
         return await handler(request)
     app.middlewares.insert(0, maintenance)
 

@@ -126,7 +126,9 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             records.add(record);
         }
         value.add("player_records", records);
-        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application")));
+        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application", "managed_sanctions")));
+        value.addProperty("java_version", System.getProperty("java.version", "unknown"));
+        value.addProperty("server_software", Bukkit.getName());
         value.add("auth_sessions", login.snapshot());
         value.addProperty("players_truncated", recentPlayers.size() > 500);
         value.addProperty("whitelist_enabled", Bukkit.hasWhitelist());
@@ -252,7 +254,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         String name = job.get("player").getAsString();
         String action = job.get("action").getAsString();
         String reason = job.has("reason") ? job.get("reason").getAsString() : "";
-        if (!name.matches("[A-Za-z0-9_]{1,16}") || reason.length() > 120
+        if (!name.matches("[A-Za-z0-9_]{1,16}") || reason.length() > 340
             || reason.chars().anyMatch(c -> c < 32 || c == 127)) throw new IllegalArgumentException("Invalid player action");
         OfflinePlayer target = knownPlayers.get(identity);
         if (target == null || !name.equals(target.getName())) throw new IllegalArgumentException("玩家身份已变化，请刷新后重试");
@@ -265,9 +267,12 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                 return "已踢出 " + name;
             case "ban":
                 BukkitCompatibility.ban(target, reason);
-                if (online != null && online.isOnline()) online.kickPlayer(reason);
+                if (online != null && online.isOnline()) online.kickPlayer(job.has("kick_reason") ? job.get("kick_reason").getAsString() : reason);
                 return "已永久封禁 " + name;
             case "unban":
+                if (job.has("expected_ban_reason") && target.isBanned()
+                    && !job.get("expected_ban_reason").getAsString().equals(BukkitCompatibility.banReason(target)))
+                    throw new IllegalStateException("当前封禁属于其他处罚，或核心无法校验封禁来源；未自动解除");
                 BukkitCompatibility.unban(target);
                 return "已解除 " + name + " 的封禁";
             case "whitelist_add":

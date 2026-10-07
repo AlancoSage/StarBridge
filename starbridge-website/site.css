@@ -219,3 +219,7 @@ dialog::backdrop { background: #17203466; }
 .service-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 #own-services { display: grid; gap: 20px; margin-top: 28px; }
 .service-form select { width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; }
+.ticket-detail { margin-top: 22px; }
+.ticket-message { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ticket-message p { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 8px; }
+.service-form textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }

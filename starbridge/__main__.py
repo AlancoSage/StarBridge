@@ -4,14 +4,15 @@ import logging
 from pathlib import Path
 import sqlite3
 
-from aiohttp import web
-
-from .app import STATE, create_app
 from .config import initialize, load
-from .backups import apply_pending_restore, rollback_restore, finish_restore
 
 
 async def serve(path):
+    import os
+    from aiohttp import web
+    from .app import STATE, create_app
+    from .backups import apply_pending_restore, rollback_restore, finish_restore
+    from scripts.update_runtime import job_path, safe, write_json
     restoring = await asyncio.to_thread(apply_pending_restore, path)
     cfg = load(path)
     fallback = None
@@ -47,11 +48,16 @@ async def serve(path):
             logging.exception("新配置启动失败，恢复原运行设置")
             continue
         logging.info("管理面板已启动：http://%s:%s", cfg["app"]["host"], cfg["app"]["port"])
+        if os.environ.get('STARBRIDGE_SUPERVISED') == '1':
+            root = Path(__file__).resolve().parent.parent
+            write_json(safe(root, '.runtime/updates/ready.json'), {'pid': os.getpid(), 'nonce': os.environ.get('STARBRIDGE_READY_NONCE', '')})
         try:
             await restart.wait()
             fallback = app[STATE]["config"]
         finally:
             await runner.cleanup()
+        if os.environ.get('STARBRIDGE_SUPERVISED') == '1' and job_path(Path(__file__).resolve().parent.parent).exists():
+            return 75
         try:
             restoring = await asyncio.to_thread(apply_pending_restore, path)
             cfg = load(path)
@@ -63,7 +69,7 @@ async def serve(path):
 
 def main():
     parser = argparse.ArgumentParser(description="星桥 · QQ / Minecraft 联动机器人")
-    parser.add_argument("command", nargs="?", choices=["init", "run"], default="run")
+    parser.add_argument("command", nargs="?", choices=["init", "run", "_serve"], default="run")
     parser.add_argument("--config", default="config.toml")
     args = parser.parse_args()
     path = Path(args.config)
@@ -76,9 +82,12 @@ def main():
     except (ValueError, KeyError, OSError) as exc:
         parser.exit(1, f"配置错误：{exc}\n首次使用请运行 python -m starbridge init\n")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    print("星桥已启动；设置可在管理面板调整。首次登录令牌在本地 config.toml 中。")
+    if args.command == 'run':
+        from scripts.update_runtime import supervise
+        print("星桥已启动；设置可在管理面板调整。首次登录令牌在本地 config.toml 中。")
+        raise SystemExit(supervise(path))
     try:
-        asyncio.run(serve(path))
+        raise SystemExit(asyncio.run(serve(path)) or 0)
     except KeyboardInterrupt:
         pass
 

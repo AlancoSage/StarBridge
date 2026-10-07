@@ -147,7 +147,7 @@ def check_database(path):
         actual, expected = schema(db), trusted_schema()
         optional = {"operations_settings", "scheduled_tasks", "schedule_runs", "whitelist_applications",
                     "admin_users", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
-                    "server_daily_players", "server_activity", "plugin_versions"}
+                    "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages", "sanctions", "sanction_targets"}
         present = {entry[1] for entry in actual}
         compatible = [entry for entry in expected if entry[2] not in optional or entry[2] in present]
         if actual != compatible:
@@ -161,9 +161,17 @@ def check_database(path):
                 task_definition(json.loads(row[0]))
         if "operations_settings" in present:
             for key, value, revision in db.execute("SELECT * FROM operations_settings"):
-                if key != "whitelist" or type(revision) is not int or revision < 0:
+                if key not in ("whitelist", "tickets", "updates") or type(revision) is not int or revision < 0:
                     raise BackupError("自动化设置格式错误")
-                whitelist_settings(json.loads(value))
+                setting = json.loads(value)
+                if key == 'whitelist': whitelist_settings(setting)
+                elif key == 'tickets':
+                    if not isinstance(setting, dict) or setting.keys() != {'enabled', 'max_open'} or type(setting['enabled']) is not bool or type(setting['max_open']) is not int or not 1 <= setting['max_open'] <= 20:
+                        raise BackupError('工单设置格式错误')
+                else:
+                    from .updates import https_url
+                    if not isinstance(setting, dict) or setting.keys() != {'feed_url'} or not isinstance(setting['feed_url'], str): raise BackupError('更新设置格式错误')
+                    if setting['feed_url']: https_url(setting['feed_url'])
         if "runtime_settings" in present:
             from .runtime_features import validate_setting
             for key,value,revision in db.execute('SELECT * FROM runtime_settings'):
@@ -348,7 +356,7 @@ class Backups:
         entries = sorted(self.listing()["backups"], key=lambda item: item["created_at"], reverse=True)
         candidates = []
         for index, entry in enumerate(entries):
-            if entry["reason"] in ("before_restore", "damaged") or (policy["protect_manual"] and entry["reason"] == "manual"):
+            if entry["reason"] in ("before_restore", "before_update", "before_rollback", "damaged") or (policy["protect_manual"] and entry["reason"] == "manual"):
                 continue
             age = now - datetime.fromisoformat(entry["created_at"]).timestamp()
             if index >= policy["keep_count"] or age > policy["keep_days"] * 86400:

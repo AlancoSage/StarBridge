@@ -51,6 +51,11 @@ const pages = {
   managers: ['系统', '管理员与权限', '为团队建立独立账号，按职责授权。'],
   monitoring: ['活动', '故障提醒', '查看连接与邮件异常，按需启用群提醒。'],
   statistics: ['活动', '服务器统计', '查看在线趋势、每日活跃与进退服记录。'],
+  diagnostics: ['接入空间', '连接诊断', '检查 QQ、游戏桥接、邮件与官网的连接情况。'],
+  updates: ['系统', '更新与回退', '检查部署包，备份后切换版本或恢复升级前状态。'],
+  deployment: ['系统', '部署模板', '预览导入配置，或应用常用部署模板。'],
+  tickets: ['成员', '工单与申诉', '回复玩家问题，处理封禁申诉与内部备注。'],
+  sanctions: ['成员', '跨服处罚', '按 UUID 下发封禁或踢出，跟进每台服务器的结果。'],
 };
 const features = {
   qq_to_mc: ['QQ群 → 游戏', '将普通群消息同步到游戏聊天。'],
@@ -97,11 +102,11 @@ async function api(url, options = {}) {
   return data;
 }
 const areaPages = {
-  overview: ['overview'], connections: ['connection', 'servers', 'website'],
-  automation: ['commands', 'features'], community: ['players', 'bindings', 'accounts', 'authentication', 'whitelist'],
-  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'backups', 'managers'], extensions: ['extensions', 'schedules'],
+  overview: ['overview'], connections: ['connection', 'servers', 'website', 'diagnostics'],
+  automation: ['commands', 'features'], community: ['players', 'bindings', 'accounts', 'authentication', 'whitelist', 'tickets', 'sanctions'],
+  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'backups', 'managers', 'updates', 'deployment'], extensions: ['extensions', 'schedules'],
 };
-const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage'};
+const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
 function panelAllowed(name){return !panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]);}
 function panelAccess(){
   for(const el of document.querySelectorAll('[data-area]'))el.hidden=!!panelIdentity&&!areaPages[el.dataset.area].some(panelAllowed);
@@ -142,12 +147,14 @@ function selectTab(name) {
   if (token && name === 'whitelist') window.loadWhitelist?.();
   if (token && ['managers','monitoring','statistics'].includes(name)) window.loadEnhancements?.(name);
   if (token && name === 'backups') window.loadBackupPolicy?.();
-  if (panelIdentity&&!panelIdentity.owner)$('page-actions').hidden=true;
+  if (token && ['diagnostics','updates','deployment','tickets','sanctions'].includes(name)) window.loadServicePage?.(name);
+  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['diagnostics','updates','deployment','tickets','sanctions'].includes(name);
 }
 document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => selectTab(el.dataset.tab); });
 document.querySelectorAll('[data-area]').forEach(el => { el.onclick = () => selectTab(areaPages[el.dataset.area].find(panelAllowed)||'overview'); });
 document.querySelectorAll('[data-go]').forEach(el => { el.onclick = () => selectTab(el.dataset.go); });
 const pageKeywords = {
+  diagnostics:'诊断 连接 检测 SMTP Java QQ 官网',updates:'升级 更新 回退 版本 ZIP',deployment:'模板 配置 导入 导出 单服 多服',tickets:'工单 申诉 回复 问题',sanctions:'封禁 跨服 处罚 UUID 解封 踢出',
   overview: '首页 状态 概览 工作台', connection: 'QQ OneBot 账号 管理员 令牌 连接',
   servers: 'Minecraft MC 插件 游戏 群聊 服务器', bindings: '玩家 验证码 绑定',
   players: '玩家 在线 离线 UUID 封禁 踢出 白名单 管理',
@@ -671,7 +678,7 @@ $('form').addEventListener('submit', async e => {
   finally { submit.disabled = false; }
 });
 $('content').addEventListener('input', e => {
-  if (e.target.matches('input,textarea') && e.target.type !== 'search' && !e.target.readOnly && e.target.dataset.field !== 'endpoint' && !e.target.closest('#view-players, #view-extensions, #view-accounts, #view-authentication, #view-backups, #view-schedules, #view-whitelist, #view-website, #view-managers, #view-monitoring, #view-statistics')) markDirty();
+  if (e.target.matches('input,textarea') && e.target.type !== 'search' && !e.target.readOnly && e.target.dataset.field !== 'endpoint' && !e.target.closest('#view-players, #view-extensions, #view-accounts, #view-authentication, #view-backups, #view-schedules, #view-whitelist, #view-website, #view-managers, #view-monitoring, #view-statistics, .service-space')) markDirty();
 });
 document.querySelectorAll('[data-reveal]').forEach(btn => { btn.onclick = () => {
   const input = $(btn.dataset.reveal); input.type = input.type === 'password' ? 'text' : 'password'; btn.textContent = input.type === 'password' ? '显示' : '隐藏';

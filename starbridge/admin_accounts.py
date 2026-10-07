@@ -12,7 +12,8 @@ from .registration import RegistrationError
 PERMISSIONS = {'status.read':'运行概览', 'players.manage':'玩家与绑定管理',
                'whitelist.review':'白名单审核', 'plugins.manage':'插件管理',
                'schedules.manage':'定时任务管理', 'monitoring.manage':'故障提醒设置',
-               'stats.read':'查看服务器统计', 'stats.manage':'统计采集设置', 'backups.manage':'创建、清理备份'}
+               'stats.read':'查看服务器统计', 'stats.manage':'统计采集设置', 'backups.manage':'创建、清理备份',
+               'diagnostics.run':'连接自检', 'tickets.manage':'工单与申诉', 'sanctions.manage':'跨服处罚'}
 PRESETS = {'admin':list(PERMISSIONS), 'reviewer':['status.read','whitelist.review'],
            'observer':['status.read','stats.read']}
 ADMIN_IDENTITY = getattr(web,'RequestKey',web.AppKey)('admin_identity',dict)
@@ -98,6 +99,8 @@ def required(request):
     if path=='/api/statistics' and method!='GET':return 'stats.manage'
     if path in ('/api/session','/api/admin-auth/logout'):return 'status.read'
     if path=='/api/status':return 'status.read'
+    for prefix,scope in (('/api/diagnostics','diagnostics.run'),('/api/tickets','tickets.manage'),('/api/sanctions','sanctions.manage')):
+        if path.startswith(prefix):return scope
     for prefix,scope in (('/api/player-','players.manage'),('/api/extensions','plugins.manage'),
                          ('/api/extension-documents','plugins.manage'),('/api/schedules','schedules.manage'),
                          ('/api/monitoring','monitoring.manage'),('/api/statistics','stats.read'),('/api/backup-policy','backups.manage')):

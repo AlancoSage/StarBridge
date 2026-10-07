@@ -54,7 +54,7 @@
   }
   async function action(form, callback) {
     if (form.dataset.busy) return; form.dataset.busy = '1';
-    const inputs = [...form.querySelectorAll('input,button')], original = inputs.map(node => node.disabled);
+    const inputs = [...form.querySelectorAll('input,button,textarea,select')], original = inputs.map(node => node.disabled);
     inputs.forEach(node => { node.disabled = true; });
     try { await callback(); } catch (error) { message(error.name === 'TimeoutError' ? '请求超时，请稍后重试。' : error.message, 'error'); }
     finally { inputs.forEach((node, i) => { node.disabled = original[i]; }); delete form.dataset.busy; }
@@ -127,7 +127,7 @@
       $('own-players').replaceChildren(...data.game_profiles.map(player => playerCard(player)));
       if (!data.game_profiles.length) $('own-players').append(el('p','还没有关联的游戏档案。进入游戏验证登录，或绑定注册邮箱对应的 QQ 后再来看看。','empty'));
         if (data.truncated) $('own-players').append(el('p','仅展示前 100 个关联身份，请联系管理员查询完整记录。','empty'));
-        const services=await request('/me/services',null,true);if(epoch!==profileEpoch)return;renderServices(services);
+        const services=await request('/me/services',null,true);if(epoch!==profileEpoch)return;renderServices(services);await renderTickets(services,epoch);
     } catch (error) { message(error.message,'error'); }
   }
   function renderServices(data){
@@ -145,6 +145,18 @@
     for(const app of data.applications){const row=el('div',undefined,'service-row');row.append(el('span',(names[app.server]||app.server)+' · '+app.player),el('span',status[app.status]||app.status,'muted'));whitelist.append(row);}if(!data.applications.length)whitelist.append(el('p','暂无申请记录。','muted'));
     const penalties=section('我的处罚记录'),labels={kick:'踢出游戏',ban:'封禁',unban:'解除封禁'};
     for(const item of data.penalties){const row=el('div',undefined,'service-row');row.append(el('span',(names[item.server]||item.server)+' · '+labels[item.action]),el('span',date(item.created)+' · '+(item.reason||'未填写原因'),'muted'));penalties.append(row);}if(!data.penalties.length)penalties.append(el('p','暂无处罚记录。','muted'));
+    for(const item of data.shared_penalties||[]){const row=el('div',undefined,'service-row');row.append(el('span','跨服'+labels[item.action]+' · '+item.servers.map(s=>names[s]||s).join('、')),el('span',item.reason+' · '+({active:'生效中',revoked:'已撤销',expired:'已到期',completed:'已结束'}[item.status]||item.status),'muted'));penalties.append(row);}
+  }
+  async function renderTickets(services,epoch,page=1){
+    const data=await request('/me/tickets?page='+page,null,true);if(epoch!==profileEpoch)return;
+    let box=$('own-tickets');if(!box){box=el('section',undefined,'soft-card');box.id='own-tickets';$('own-services').append(box);}box.replaceChildren(el('h2','工单与处罚申诉'),el('p','提交的问题只向你和有权限的管理员展示。','muted'));
+    const labels={open:'待处理',processing:'处理中',resolved:'已解决',closed:'已关闭'};
+    function input(form,title,kind='input',options=null){const l=el('label',title),i=el(kind);i.setAttribute('aria-label',title);if(options)for(const [value,name]of options)i.append(new Option(name,value));l.append(i);form.append(l);return i;}
+    if(data.settings.enabled){const f=el('form',undefined,'service-form'),kind=input(f,'类型','select',[['question','玩家问题'],['appeal','处罚申诉']]),title=input(f,'标题'),body=input(f,'问题详情','textarea'),server=input(f,'服务器（可选）','select',[['','整个社区'],...services.servers.map(s=>[s.id,s.name])]),penalty=input(f,'关联处罚（申诉时可选）','select',[['','不关联'],...[...(services.shared_penalties||[]),...services.penalties].map(p=>[p.id,p.player+' · '+p.reason.slice(0,70)])]);title.required=true;title.maxLength=100;body.required=true;body.maxLength=4000;penalty.disabled=true;kind.onchange=()=>{penalty.disabled=kind.value!=='appeal';if(penalty.disabled)penalty.value='';};const b=el('button','提交工单');f.append(b);f.onsubmit=e=>{e.preventDefault();action(f,async()=>{await request('/me/tickets',{title:title.value,body:body.value,kind:kind.value,server:server.value,penalty_id:kind.value==='appeal'?penalty.value:''},true);await renderTickets(services,epoch);message('工单已提交。','success');});};box.append(f);}else box.append(el('p','暂未开放新工单，可以查看已有记录。','muted'));
+    const detail=el('div',undefined,'ticket-detail');
+    for(const t of data.tickets){const row=el('div',undefined,'service-row'),b=el('button','查看与回复','quiet small');row.append(el('span',t.title+' · '+labels[t.status]),b);b.onclick=async()=>{b.disabled=true;try{await show(t.id);}catch(e){message(e.message,'error');}finally{b.disabled=false;}};box.append(row);}
+    if(!data.tickets.length)box.append(el('p','暂无工单。','muted'));const pager=el('div',undefined,'actions'),prev=el('button','上一页','quiet small'),next=el('button','下一页','quiet small');prev.disabled=page<=1;next.disabled=page*data.page_size>=data.total;prev.onclick=()=>action(pager,()=>renderTickets(services,epoch,page-1));next.onclick=()=>action(pager,()=>renderTickets(services,epoch,page+1));pager.append(prev,el('span',`共 ${data.total} 项 · 第 ${page} 页`,'muted'),next);box.append(pager,detail);
+    async function show(id){const t=await request('/me/tickets/'+id,null,true);if(epoch!==profileEpoch)return;detail.replaceChildren(el('h3',t.title),el('p',labels[t.status],'muted'));for(const m of t.messages){const r=el('div',undefined,'ticket-message');r.append(el('strong',m.author+' · '+date(m.created)),el('p',m.body));detail.append(r);}if(!['resolved','closed'].includes(t.status)){const f=el('form',undefined,'service-form'),body=input(f,'回复','textarea'),b=el('button','发送回复');body.required=true;body.maxLength=4000;f.append(b);f.onsubmit=e=>{e.preventDefault();action(f,async()=>{await request('/me/tickets/'+id+'/reply',{body:body.value,revision:t.revision},true);await show(id);message('回复已发送。','success');});};detail.append(f);}}
   }
   function navigate() {
     if (location.hash === '#players') history.replaceState(null,'','#servers');
