@@ -30,8 +30,10 @@ jobs:
         run: |
           $version = python -c "from starbridge import __version__; print(__version__)"
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match Bot version' }
-          $existing = gh release view "v$version" --json isDraft --repo $env:GITHUB_REPOSITORY 2>$null
-          if ($LASTEXITCODE -eq 0 -and -not ($existing | ConvertFrom-Json).isDraft) { 'needed=false' >> $env:GITHUB_OUTPUT }
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read release list' }
+          $existing = ($releases | ConvertFrom-Json) | Where-Object { $_.tag_name -eq "v$version" -and -not $_.draft }
+          if ($existing) { 'needed=false' >> $env:GITHUB_OUTPUT }
           else { 'needed=true' >> $env:GITHUB_OUTPUT }
       - name: Install locked dependencies and test
         if: steps.version.outputs.needed == 'true'
