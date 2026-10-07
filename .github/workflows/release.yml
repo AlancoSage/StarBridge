@@ -44,6 +44,10 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: ./bridge/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Build Forge 1.20.1 bridge and test
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: ./bridge-forge/build.ps1 -JavaHome $env:JAVA_HOME
       - name: Build and publish complete private release
         if: steps.version.outputs.needed == 'true'
         env:

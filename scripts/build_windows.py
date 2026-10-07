@@ -8,7 +8,7 @@ import json
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from starbridge import __version__, __bridge_version__
+from starbridge import __version__, __bridge_version__, __forge_version__
 from scripts.update_runtime import managed
 
 
@@ -22,7 +22,8 @@ def build(output):
                      if p.is_file() and '__pycache__' not in p.parts
                      and p.suffix in extensions[directory] and not p.name.startswith('.'))
     # Ready-to-use optional downloads; do not bundle build tools, caches or website settings.
-    for name in (f'bridge/target/StarBridge-{__bridge_version__}.jar', 'dist/StarBridge-website.zip'):
+    for name in (f'bridge/target/StarBridge-{__bridge_version__}.jar',
+                 f'bridge/target/StarBridge-Forge-1.20.1-{__forge_version__}.jar', 'dist/StarBridge-website.zip'):
         if (ROOT / name).is_file():
             names.append(name)
     manifest = {'format': 'starbridge-update-v1', 'protocol': 1, 'version': __version__,

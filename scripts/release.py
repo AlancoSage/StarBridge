@@ -65,6 +65,17 @@ def build(root=ROOT):
                 archive.write(root/name,'StarBridge/'+name)
     # Publish standalone website and bridge alongside the complete Bot archive.
     assets = [bot,website,bridge]
+    # Forge became available in 0.6.2; historical releases keep their original assets.
+    if (root/'bridge-forge/gradle.properties').is_file():
+        match = re.search(r'^mod_version=(\d+\.\d+\.\d+)\s*$', (root/'bridge-forge/gradle.properties').read_text(encoding='utf-8'), re.M)
+        if not match: raise ValueError('Forge 版本缺失')
+        forge_version = match.group(1)
+        forge = root/f'bridge/target/StarBridge-Forge-1.20.1-{forge_version}.jar'
+        if not forge.is_file(): raise ValueError('请先构建 Forge 模组：bridge-forge/build.ps1')
+        with zipfile.ZipFile(forge) as archive:
+            metadata = archive.read('META-INF/mods.toml').decode('utf-8')
+            if f'version="{forge_version}"' not in metadata: raise ValueError('Forge JAR 版本与源码不一致')
+        assets.append(forge)
     checksums = dist/'SHA256SUMS.txt'
     checksums.write_text(''.join(f'{digest(p)}  {p.name}\n' for p in assets),encoding='utf-8')
     return version,[*assets,checksums]

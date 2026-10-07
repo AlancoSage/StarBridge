@@ -347,10 +347,16 @@ async def player_action(request):
 
 async def plugin_download(request):
     authorized(request, request.app[STATE]["config"]["app"]["admin_token"])
-    path = Path(__file__).resolve().parent.parent / "bridge" / "target" / "StarBridge-0.5.0.jar"
+    from . import __bridge_version__, __forge_version__
+    kind = request.query.get("platform", "bukkit")
+    if kind not in ("bukkit", "forge"):
+        raise web.HTTPBadRequest(text="不支持的游戏端类型")
+    filename = (f"StarBridge-Forge-1.20.1-{__forge_version__}.jar" if kind == "forge"
+                else f"StarBridge-{__bridge_version__}.jar")
+    path = Path(__file__).resolve().parent.parent / "bridge" / "target" / filename
     if not path.is_file():
         raise web.HTTPNotFound(text="插件尚未构建")
-    return web.FileResponse(path, headers={"Content-Disposition": 'attachment; filename="StarBridge-0.5.0.jar"', "Cache-Control": "no-store"})
+    return web.FileResponse(path, headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
 
 
 async def extension_api(request):

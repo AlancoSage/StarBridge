@@ -59,3 +59,17 @@ $('authentication-guide').onclick=async()=>{
   try{const response=await fetch('/api/authentication/guide',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('文档下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-game-login.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   catch(error){notice('authentication-notice',error.message,'error');}
 };
+$('authentication-forge-download').onclick=async()=>{
+  try{
+    const response=await fetch('/api/plugin?platform=forge',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
+    if(!response.ok)throw Error('Forge 模组下载失败，请检查游戏端是否已构建。');
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-Forge-1.20.1-0.1.0.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(error){notice('authentication-notice',error.message,'error');}
+};
+$('authentication-forge-guide').onclick=async()=>{
+  try{
+    const response=await fetch('/api/authentication/guide?platform=forge',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
+    if(!response.ok)throw Error('Forge 文档下载失败。');
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-Forge-1.20.1.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(error){notice('authentication-notice',error.message,'error');}
+};

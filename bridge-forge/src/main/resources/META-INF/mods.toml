@@ -1,0 +1,22 @@
+modLoader="javafml"
+loaderVersion="[47,48)"
+license="All Rights Reserved"
+[[mods]]
+modId="starbridge"
+version="${version}"
+displayName="星桥 · Forge 游戏桥接"
+authors="AlancoSage"
+displayTest="IGNORE_SERVER_VERSION"
+description='''星桥服务端桥接：QQ 联动、玩家管理、白名单、密码登录及 QQ 确认。'''
+[[dependencies.starbridge]]
+modId="forge"
+mandatory=true
+versionRange="[47,48)"
+ordering="NONE"
+side="SERVER"
+[[dependencies.starbridge]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="SERVER"

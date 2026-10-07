@@ -2,6 +2,8 @@
 
 游戏插件版本：**0.5.0 通用兼容构建**。面向跨版本 Spigot / Paper，插件最低 Java 8，服务端按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。AuthMe 为可选依赖；服务器没有安装时使用星桥内置登录。
 
+**Forge 1.20.1** 使用独立的 `StarBridge-Forge-1.20.1-0.1.0.jar`，放在 `mods/`，连接文件是 `config/starbridge-common.toml`。需要 Java 17，只支持内置或自动引擎；密码、QQ 确认与 `/l`、`/ql` 使用方式相同。详细步骤见 [Forge 安装与登录](forge-1.20.1.md)。
+
 ## 开启
 
 1. 从面板「成员 → 游戏登录」下载新版 JAR，替换游戏服务器旧的 StarBridge JAR，保留原连接配置并重启服务器。

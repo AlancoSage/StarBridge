@@ -46,8 +46,10 @@ def setup_routes(app, state_key, authorize, read_body, bridge):
 
     async def guide(request):
         authorize(request, state["config"]["app"]["admin_token"])
-        return web.FileResponse(Path(__file__).resolve().parent.parent / "docs" / "game-login.md",
-            headers={"Cache-Control": "no-store", "Content-Disposition": 'attachment; filename="StarBridge-game-login.md"'})
+        forge = request.query.get("platform") == "forge"
+        name = "forge-1.20.1.md" if forge else "game-login.md"
+        return web.FileResponse(Path(__file__).resolve().parent.parent / "docs" / name,
+            headers={"Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="StarBridge-{name}"'})
 
     async def password_request(request):
         if request.content_type != "application/json":
