@@ -8,7 +8,7 @@
 
 ## 已实现
 
-- Forge 1.20.1 游戏端：Forge 47.x / Java 17 服务端模组，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [Forge 安装说明](docs/forge-1.20.1.md)。
+- Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1 和 NeoForge 1.21.1，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。
 
 - 连接诊断：检查 QQ、游戏桥接、Java、邮件、官网与磁盘，按需检测 SMTP 认证和公开 API，详见 [诊断与模板](docs/diagnostics-and-templates.md)。
 - Bot 更新与回退：通过 GitHub 私有 Release、上传部署 ZIP 或自定义 HTTPS 更新源获取版本，隔离验证、升级前备份、失败恢复和代码与数据回退；版本号变更时自动打包发布，详见 [更新说明](docs/updates.md)。
@@ -43,7 +43,7 @@
 - Minecraft **Java 版 Paper / Spigot** 使用同一个通用兼容 JAR；插件最低要求 **Java 8**，实际启动 Java 版本仍按服务端要求选择。详见 [Minecraft 版本兼容与 Java 选择](docs/minecraft-compatibility.md)。
 - 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。星桥自身不负责登录 QQ。
 
-已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。另提供 [Forge 1.20.1 模组](docs/forge-1.20.1.md)，使用 Java 17。当前不支持其他 Forge 游戏版本、Fabric、Folia、基岩版原生服务端。游戏登录默认关闭；Forge 使用内置或自动引擎，Paper / Spigot 可选 AuthMe 兼容模式。
+已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md)，旧版使用 Java 8，Forge 1.18.2–1.20.1 使用 Java 17，NeoForge 1.21.1 使用 Java 21。当前不支持 Fabric、Folia、基岩版原生服务端。游戏登录默认关闭；模组服使用内置或自动引擎，Paper / Spigot 可选 AuthMe 兼容模式。
 
 ## 1. 启动主程序
 

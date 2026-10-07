@@ -65,8 +65,35 @@ def build(root=ROOT):
                 archive.write(root/name,'StarBridge/'+name)
     # Publish standalone website and bridge alongside the complete Bot archive.
     assets = [bot,website,bridge]
+    # Multi-version native mods start in 0.6.3. Read literal data from the release
+    # source rather than importing this checkout for historical builds.
+    catalog_file = root/'starbridge/game_bridges.py'
+    if catalog_file.is_file():
+        catalog = next(ast.literal_eval(node.value) for node in ast.parse(catalog_file.read_text(encoding='utf-8')).body
+                       if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'GAME_BRIDGES' for t in node.targets))
+        mod_version = next(ast.literal_eval(node.value) for node in ast.parse((root/'starbridge/__init__.py').read_text(encoding='utf-8-sig')).body
+                           if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == '__forge_version__' for t in node.targets))
+        for item in catalog:
+            loader = 'NeoForge' if item['platform'] == 'neoforge' else 'Forge'
+            mod = root/f'bridge/target/StarBridge-{loader}-{item["version"]}-{mod_version}.jar'
+            if not mod.is_file(): raise ValueError(f'缺少游戏端构建：{mod.name}')
+            with zipfile.ZipFile(mod) as archive:
+                metadata_name = 'mcmod.info' if item['version'] in ('1.7.10', '1.12.2') else 'META-INF/'+('neoforge.mods.toml' if loader == 'NeoForge' else 'mods.toml')
+                metadata = archive.read(metadata_name).decode('utf-8')
+                if metadata_name == 'mcmod.info':
+                    if not any(row.get('modid') == 'starbridge' and row.get('version') == mod_version and row.get('mcversion') == item['version'] for row in json.loads(metadata)):
+                        raise ValueError(f'游戏端元数据不一致：{mod.name}')
+                else:
+                    import tomllib
+                    mods = tomllib.loads(metadata).get('mods', [])
+                    if not any(row.get('modId') == 'starbridge' and row.get('version') == mod_version for row in mods) or item['version'] not in metadata:
+                        raise ValueError(f'游戏端元数据不一致：{mod.name}')
+                for name in archive.namelist():
+                    if name.endswith('.class') and int.from_bytes(archive.read(name)[6:8], 'big') > item['java']+44:
+                        raise ValueError(f'游戏端 Java 要求不一致：{mod.name}')
+            assets.append(mod)
     # Forge became available in 0.6.2; historical releases keep their original assets.
-    if (root/'bridge-forge/gradle.properties').is_file():
+    elif (root/'bridge-forge/gradle.properties').is_file():
         match = re.search(r'^mod_version=(\d+\.\d+\.\d+)\s*$', (root/'bridge-forge/gradle.properties').read_text(encoding='utf-8'), re.M)
         if not match: raise ValueError('Forge 版本缺失')
         forge_version = match.group(1)

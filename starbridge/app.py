@@ -193,6 +193,10 @@ async def dashboard_script(request):
     return web.FileResponse(Path(__file__).parent / "dashboard.js", headers={"Cache-Control": "no-cache"})
 
 
+async def mod_bridge_script(request):
+    return web.FileResponse(Path(__file__).parent / "mod-bridge-panel.js", headers={"Cache-Control": "no-cache"})
+
+
 async def dashboard_style(request):
     return web.FileResponse(Path(__file__).parent / "panel.css", headers={"Cache-Control": "no-cache"})
 
@@ -347,16 +351,34 @@ async def player_action(request):
 
 async def plugin_download(request):
     authorized(request, request.app[STATE]["config"]["app"]["admin_token"])
-    from . import __bridge_version__, __forge_version__
+    from . import __bridge_version__
     kind = request.query.get("platform", "bukkit")
-    if kind not in ("bukkit", "forge"):
+    if kind not in ("bukkit", "forge", "neoforge"):
         raise web.HTTPBadRequest(text="不支持的游戏端类型")
-    filename = (f"StarBridge-Forge-1.20.1-{__forge_version__}.jar" if kind == "forge"
-                else f"StarBridge-{__bridge_version__}.jar")
+    if kind == "bukkit":
+        if request.query.get("version"):
+            raise web.HTTPBadRequest(text="Paper / Spigot 插件无需按游戏版本下载")
+        filename = f"StarBridge-{__bridge_version__}.jar"
+    else:
+        from .game_bridges import bridge_filename
+        try:
+            filename = bridge_filename(kind, request.query.get("version", "1.21.1" if kind == "neoforge" else "1.20.1"))
+        except ValueError as error:
+            raise web.HTTPBadRequest(text=str(error))
     path = Path(__file__).resolve().parent.parent / "bridge" / "target" / filename
     if not path.is_file():
         raise web.HTTPNotFound(text="插件尚未构建")
     return web.FileResponse(path, headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
+
+
+async def game_bridge_catalog(request):
+    authorized(request, request.app[STATE]["config"]["app"]["admin_token"])
+    from .game_bridges import bridge_catalog
+    rows = bridge_catalog()
+    directory = Path(__file__).resolve().parent.parent / "bridge" / "target"
+    for row in rows:
+        row["available"] = (directory / row["filename"]).is_file()
+    return web.json_response({"bridges": rows}, headers={"Cache-Control": "no-store"})
 
 
 async def extension_api(request):
@@ -585,6 +607,8 @@ def create_app(cfg, config_path=None, restart_event=None):
         web.get("/api/config", admin_config), web.put("/api/config", save_config),
         web.post("/api/restart", restart_service),
         web.post("/api/player-actions", player_action), web.get("/api/plugin", plugin_download),
+        web.get("/api/plugin/catalog", game_bridge_catalog),
+        web.get("/mod-bridge-panel.js", mod_bridge_script),
         web.get("/api/extensions", extension_api),
         web.post("/api/extensions/{action:install|scan|upgrade}", extension_api),
         web.get("/api/extensions/{plugin_id:[a-z][a-z0-9_]{0,39}}/{action:versions}", extension_api),

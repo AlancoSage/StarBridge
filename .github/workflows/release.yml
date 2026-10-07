@@ -13,6 +13,8 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -48,6 +50,25 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: ./bridge-forge/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Build Java 8 Forge 1.7.10 / 1.12.2 / 1.16.5 bridges
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: python bridge-mods/build.py --java-home "$env:JAVA_HOME"
+      - name: Build Forge 1.18.2 / 1.19.2 bridges and test
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: |
+          ./bridge-forge-1.18.2/build.ps1 -JavaHome $env:JAVA_HOME
+          ./bridge-forge-1.19.2/build.ps1 -JavaHome $env:JAVA_HOME
+      - uses: actions/setup-java@v4
+        if: steps.version.outputs.needed == 'true'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build NeoForge 1.21.1 bridge and test
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: ./bridge-neoforge/build.ps1 -JavaHome $env:JAVA_HOME
       - name: Build and publish complete private release
         if: steps.version.outputs.needed == 'true'
         env:

@@ -1,0 +1,16 @@
+plugins { id 'java'; id 'net.neoforged.moddev' version '2.0.148' }
+version = mod_version
+group = 'cn.starbridge.forge'
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+neoForge {
+    version = '21.1.256'
+    runs { server { server(); programArgument '--nogui' } }
+    mods { starbridge { sourceSet sourceSets.main } }
+}
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
+dependencies { testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2' }
+tasks.named('processResources') { inputs.property 'version', project.version; filesMatching('META-INF/neoforge.mods.toml') { expand 'version': project.version } }
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('test') { useJUnitPlatform() }
+tasks.register('copyBridge', Copy) { dependsOn 'build'; from tasks.jar.archiveFile; into '../bridge/target' }

@@ -286,8 +286,7 @@ function addServer(server) {
   endpoint.style.marginTop = '12px';
   details.append(button('下载插件 config.yml', () => downloadPlugin(card)));
   details.append(button('下载新版插件 JAR', downloadPluginJar));
-  details.append(button('下载 Forge 配置', () => downloadPlugin(card, 'forge')));
-  details.append(button('下载 Forge 1.20.1 模组', () => $('authentication-forge-download').onclick()));
+  addModBridgeControls(details, card, server.id);
   card.append(details);
   $('server-editors').append(card);
 }
@@ -304,15 +303,20 @@ function downloadPlugin(card, platform = 'bukkit') {
       'endpoint: ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id: ' + JSON.stringify(server.id) + '\ntoken: ' + JSON.stringify(server.token) + '\n' +
       '# 新版插件连接后会从主程序自动同步命令白名单。\nallowed-commands: ' + JSON.stringify(Object.values(server.commands)) + '\n';
-    const forge = platform === 'forge';
+    const forge = platform !== 'bukkit';
+    const modVersion = platform.split('/')[1] || '1.20.1';
+    const legacy = forge && ['1.7.10', '1.12.2', '1.16.5'].includes(modVersion);
     const toml = '# 从星桥面板导出，包含连接令牌，请妥善保管。\n' +
       'endpoint = ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id = ' + JSON.stringify(server.id) + '\ntoken = ' + JSON.stringify(server.token) + '\n' +
       'allowed-commands = ' + JSON.stringify(Object.values(server.commands)) + '\n';
-    const url = URL.createObjectURL(new Blob([forge ? toml : yaml], {type: (forge ? 'application/toml' : 'text/yaml') + ';charset=utf-8'}));
-    const a = document.createElement('a'); a.href = url; a.download = forge ? 'starbridge-common.toml' : 'StarBridge-' + server.id + '-config.yml'; a.click();
+    const propertiesEscape = value => value.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/^ /, '\\ ');
+    const properties = '# 从星桥面板导出，包含连接令牌，请妥善保管。\nendpoint=' + propertiesEscape(endpoint.href.replace(/\/+$/, '')) + '\nserver-id=' + propertiesEscape(server.id) + '\ntoken=' + propertiesEscape(server.token) + '\nallowed-commands=list\n';
+    const configName = legacy ? 'starbridge-bridge.properties' : 'starbridge-common.toml';
+    const url = URL.createObjectURL(new Blob([legacy ? properties : forge ? toml : yaml], {type: 'text/plain;charset=utf-8'}));
+    const a = document.createElement('a'); a.href = url; a.download = forge ? configName : 'StarBridge-' + server.id + '-config.yml'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notice('save-notice', forge ? '已下载。将 starbridge-common.toml 放入 Forge 服务端 config 目录，然后重启游戏服。' : '已下载。将文件重命名为 config.yml，放入游戏服 plugins/StarBridge 后重启游戏服。', 'success');
+    notice('save-notice', forge ? '已下载。将 '+configName+' 放入游戏服 config 目录，然后重启游戏服。' : '已下载。将文件重命名为 config.yml，放入游戏服 plugins/StarBridge 后重启游戏服。', 'success');
   } catch (e) { notice('save-notice', e.message, 'error'); }
 }
 

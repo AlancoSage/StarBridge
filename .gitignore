@@ -11,6 +11,16 @@ bridge/target/
 bridge-forge/.gradle/
 bridge-forge/build/
 bridge-forge/run/
+bridge-forge-*/.gradle/
+bridge-forge-*/build/
+bridge-forge-*/run/
+bridge-neoforge/.gradle/
+bridge-neoforge/build/
+bridge-neoforge/run/
+bridge-mods/.gradle/
+bridge-mods/build/
+bridge-mods/*/build/
+bridge-mods/*/run/
 dist/
 
 # 本地环境、日志与私密凭据

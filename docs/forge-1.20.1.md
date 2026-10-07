@@ -25,7 +25,7 @@ token = "替换为面板中该服务器的桥接令牌"
 allowed-commands = ["list"]
 ```
 
-也可直接在面板该服务器卡片中下载 **Forge 配置**，保存为 `config/starbridge-common.toml`。
+也可直接在面板该服务器卡片选择 **Forge 1.20.1**，点击 **下载模组连接配置**，保存为 `config/starbridge-common.toml`。其他 Forge / NeoForge 版本见 [多版本游戏端](mod-game-ends.md)。
 
 | 字段 | 填写方式 |
 | --- | --- |

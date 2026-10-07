@@ -3,6 +3,7 @@ let authenticationConfig=null, authenticationDirty=false, authenticationLoading=
 window.authenticationHasDraft=()=>authenticationDirty;
 function authenticationPopulate(data){
   authenticationConfig=data;
+  modBridgeSelect($('authentication-mod-version'), $('authentication-mod-version').value || 'forge/1.20.1').catch(error=>notice('authentication-notice',error.message,'error'));
   for(const [key,value] of Object.entries(data.settings)){
     const input=$('authentication-'+key);if(!input)continue;
     if(typeof value==='boolean')input.checked=value;else input.value=value;
@@ -61,15 +62,13 @@ $('authentication-guide').onclick=async()=>{
 };
 $('authentication-forge-download').onclick=async()=>{
   try{
-    const response=await fetch('/api/plugin?platform=forge',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
-    if(!response.ok)throw Error('Forge 模组下载失败，请检查游戏端是否已构建。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-Forge-1.20.1-0.1.0.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    await downloadModBridge($('authentication-mod-version').value || 'forge/1.20.1');
   }catch(error){notice('authentication-notice',error.message,'error');}
 };
 $('authentication-forge-guide').onclick=async()=>{
   try{
     const response=await fetch('/api/authentication/guide?platform=forge',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
     if(!response.ok)throw Error('Forge 文档下载失败。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-Forge-1.20.1.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-mod-game-ends.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };
