@@ -20,6 +20,7 @@ import aiohttp
 from scripts import update_runtime as runtime
 from . import __version__
 from .registration import RegistrationError
+from .github_updates import DEFAULT_SETTINGS, GitHubReleases, update_settings
 
 MAX_PACKAGE = 64 * 1024 * 1024
 PROBE = '''import asyncio,sys,tempfile
@@ -79,16 +80,22 @@ class Updates:
     def __init__(self, state, root=None):
         self.state = state; self.root = Path(root or Path(__file__).resolve().parent.parent).resolve()
         self.directory = runtime.safe(self.root, '.runtime/updates'); self.busy = False; self.task = None
-        self.prepared = None; self.progress = {'status': 'idle', 'message': '上传部署包或配置自己的 HTTPS 更新源'}
+        self.prepared = None; self.progress = {'status': 'idle', 'message': '连接 GitHub 检查正式版本，或上传部署包'}
 
     def config(self):
         row = self.state['store'].db.execute("SELECT value,revision FROM operations_settings WHERE key='updates'").fetchone()
-        return {'settings': json.loads(row['value']) if row else {'feed_url': ''}, 'revision': row['revision'] if row else 0}
+        return {'settings': update_settings(json.loads(row['value']) if row else DEFAULT_SETTINGS), 'revision': row['revision'] if row else 0}
 
     def save(self, data):
+        if self.busy or runtime.job_path(self.root).exists(): raise RegistrationError('正在准备或切换版本，请稍后修改更新源', 409)
         current = self.config(); settings = data.get('settings')
-        if data.keys() != {'settings', 'revision'} or not isinstance(settings, dict) or settings.keys() != {'feed_url'} or not isinstance(settings['feed_url'], str): raise RegistrationError('更新设置格式错误')
-        if settings['feed_url']: https_url(settings['feed_url'])
+        if data.keys() - {'settings', 'revision', 'clear_github_token'} or not isinstance(settings, dict) or settings.keys() - DEFAULT_SETTINGS.keys() or type(data.get('clear_github_token', False)) is not bool: raise RegistrationError('更新设置格式错误')
+        value = {**current['settings'], **settings}
+        if 'source' not in settings and 'feed_url' in settings: value['source'] = 'https'
+        if data.get('clear_github_token') or value['github_repository'] != current['settings']['github_repository']:
+            value['github_token'] = settings.get('github_token', '') if not data.get('clear_github_token') else ''
+        elif not settings.get('github_token'): value['github_token'] = current['settings']['github_token']
+        settings = update_settings(value)
         if type(data['revision']) is not int or data['revision'] != current['revision']: raise RegistrationError('更新设置已变化，请刷新', 409)
         with self.state['store'].db:
             self.state['store'].db.execute("INSERT INTO operations_settings VALUES('updates',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,revision=excluded.revision", (json.dumps(settings), current['revision'] + 1))
@@ -97,7 +104,8 @@ class Updates:
     def listing(self):
         history_path = runtime.safe(self.root, '.runtime/updates/history.json')
         history = runtime.read_json(history_path) if history_path.exists() else []
-        return self.config() | {'version': __version__, 'protocol': runtime.PROTOCOL, 'busy': self.busy, 'progress': self.progress,
+        config = self.config(); config['github_token_configured'] = bool(config['settings']['github_token']); config['settings']['github_token'] = ''
+        return config | {'version': __version__, 'protocol': runtime.PROTOCOL, 'busy': self.busy, 'progress': self.progress,
                 'can_apply': bool(self.state.get('restart_event')) and os.environ.get('STARBRIDGE_SUPERVISED') == '1',
                 'prepared': {k: self.prepared[k] for k in ('id', 'version', 'sha256', 'size')} if self.prepared else None, 'history': list(reversed(history)), 'max_upload_bytes': MAX_PACKAGE}
 
@@ -106,8 +114,11 @@ class Updates:
         if not self.state['config_file']: raise RegistrationError('更新需要持久化部署', 503)
         self.directory.mkdir(parents=True, exist_ok=True)
 
-    async def check_feed(self):
-        source = self.config()['settings']['feed_url']
+    async def check_feed(self, tag=''):
+        settings = self.config()['settings']
+        if settings['source'] == 'github': return await GitHubReleases(settings).check(__version__, tag)
+        if tag: raise RegistrationError('选择 GitHub 更新源后才能按版本下载')
+        source = settings['feed_url']
         if not source: return {'available': False, 'message': '未配置更新源，可以上传部署包'}
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=15, connect=5)) as client:
             async with client.get(https_url(source), allow_redirects=False) as response:
@@ -121,6 +132,11 @@ class Updates:
         if 'size' in value and (type(value['size']) is not int or not 1 <= value['size'] <= MAX_PACKAGE): raise RegistrationError('更新源部署包大小错误')
         if 'notes' in value and (not isinstance(value['notes'], str) or len(value['notes']) > 3000): raise RegistrationError('更新说明过长')
         return value | {'available': value['version'] != __version__}
+
+    async def releases(self):
+        settings = self.config()['settings']
+        if settings['source'] != 'github': return {'releases': [], 'source': settings['source']}
+        return {'releases': await GitHubReleases(settings).releases(), 'source': 'github'}
 
     async def upload(self, stream):
         self.require_idle(); self.busy = True
@@ -139,23 +155,26 @@ class Updates:
             self.busy = False; raise
         return self.listing()
 
-    async def download(self):
+    async def download(self, tag=''):
         self.require_idle(); self.busy = True
         stage = runtime.folder(self.root, uuid.uuid4().hex)
         try:
             stage.mkdir(parents=True)
             await asyncio.to_thread(self.cleanup, [stage.name])
-            info = await self.check_feed(); source = info.get('url')
-            if not source: raise RegistrationError('请先配置更新源，或上传部署包')
+            settings = self.config()['settings']
+            info = await self.check_feed(tag); source = info.get('url')
+            if not source and not info.get('asset_id'): raise RegistrationError('没有可下载的部署包，请检查更新源或上传部署包')
             size = 0
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120, connect=10, sock_read=15)) as client:
-                async with client.get(https_url(source), allow_redirects=False) as response:
-                    if response.status != 200: raise RegistrationError('部署包下载失败；私有仓库可在本机下载后上传')
+                request = GitHubReleases(settings).asset(client, info['asset_id']) if settings['source'] == 'github' else client.get(https_url(source), allow_redirects=False)
+                async with request as response:
+                    if response.status != 200: raise RegistrationError('部署包下载失败，请检查更新源与权限')
                     with (stage / 'upload.zip').open('wb') as output:
                         async for chunk in response.content.iter_chunked(64 * 1024):
                             size += len(chunk)
                             if size > MAX_PACKAGE: raise RegistrationError('更新包超过 64 MiB')
                             output.write(chunk)
+            if 'size' in info and size != info['size']: raise RegistrationError('下载包大小与版本清单不一致，未准备升级')
             if await asyncio.to_thread(runtime.sha, stage / 'upload.zip') != info['sha256']: raise RegistrationError('下载包 SHA256 不符，未准备升级')
             self.start_prepare(stage, size)
         except BaseException:

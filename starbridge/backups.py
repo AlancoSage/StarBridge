@@ -172,9 +172,8 @@ def check_database(path):
                     if not isinstance(setting, dict) or setting.keys() != {'enabled'} or type(setting['enabled']) is not bool:
                         raise BackupError('跨服处罚设置格式错误')
                 else:
-                    from .updates import https_url
-                    if not isinstance(setting, dict) or setting.keys() != {'feed_url'} or not isinstance(setting['feed_url'], str): raise BackupError('更新设置格式错误')
-                    if setting['feed_url']: https_url(setting['feed_url'])
+                    from .github_updates import update_settings
+                    update_settings(setting)
         if "runtime_settings" in present:
             from .runtime_features import validate_setting
             for key,value,revision in db.execute('SELECT * FROM runtime_settings'):

@@ -204,6 +204,18 @@ class CommunityDeploymentTests(unittest.IsolatedAsyncioTestCase):
         self.state['updates'].save({'settings':{'feed_url':'https://example.com/update.json'},'revision':0})
         self.assertEqual(check_database(Path(self.state['config']['app']['database']))['players'],0)
 
+    async def test_github_update_token_is_write_only_preserved_and_clearable(self):
+        token='github_pat_'+'x'*30
+        response=await self.client.put('/api/updates',headers=self.owner,json={'settings':{'source':'github','github_repository':'AlancoSage/StarBridge','github_token':token},'revision':0})
+        self.assertEqual(response.status,200,await response.text());data=await response.json()
+        self.assertTrue(data['github_token_configured']);self.assertEqual(data['settings']['github_token'],'');self.assertNotIn(token,json.dumps(data))
+        response=await self.client.put('/api/updates',headers=self.owner,json={'settings':{'source':'github','github_token':''},'revision':1})
+        self.assertEqual(response.status,200,await response.text());self.assertEqual(self.state['updates'].config()['settings']['github_token'],token)
+        check_database(Path(self.state['config']['app']['database']))
+        response=await self.client.put('/api/updates',headers=self.owner,json={'settings':{'source':'github'},'clear_github_token':True,'revision':2})
+        self.assertEqual(response.status,200);self.assertFalse((await response.json())['github_token_configured'])
+        self.assertEqual((await self.client.put('/api/updates',headers=self.owner,json={'settings':{'github_token':token},'revision':0})).status,409)
+
     async def test_smtp_probe_only_authenticates_and_permissions_are_scoped(self):
         settings=self.state['registration'].settings;settings.update(smtp_host='mail.example.com',smtp_from='a@example.com',smtp_security='starttls',smtp_username='user',smtp_password='secret')
         smtp=MagicMock()

@@ -9,13 +9,16 @@ def setup_routes(app, state_key, read_body):
     async def endpoint(request):
         try:
             path = request.path
-            if request.method == 'GET': result = updates.listing()
+            if path.endswith('/releases'): result = await updates.releases()
+            elif request.method == 'GET': result = updates.listing()
             elif request.method == 'PUT': result = updates.save(await read_body(request))
-            elif path.endswith('/check'): result = await updates.check_feed()
+            elif path.endswith(('/check', '/download')):
+                data = await read_body(request) if request.can_read_body else {}
+                if data.keys() - {'tag'} or not isinstance(data.get('tag', ''), str): raise RegistrationError('版本请求只接受 tag')
+                result = await updates.check_feed(data.get('tag', '')) if path.endswith('/check') else await updates.download(data.get('tag', ''))
             elif path.endswith('/upload'):
                 if request.content_type != 'application/zip': raise RegistrationError('请上传 ZIP 部署包', 415)
                 result = await updates.upload(request.content)
-            elif path.endswith('/download'): result = await updates.download()
             elif path.endswith('/cleanup'):
                 updates.require_idle(); updates.busy = True
                 try: result = await asyncio.to_thread(updates.cleanup)
@@ -25,5 +28,5 @@ def setup_routes(app, state_key, read_body):
         except (RegistrationError, BackupError) as exc: return web.json_response({'error': str(exc)}, status=exc.status, headers={'Cache-Control': 'no-store'})
         except (ValueError, OSError, TimeoutError, ClientError): return web.json_response({'error': '更新操作失败，请检查部署包、网络与磁盘空间'}, status=400)
     import asyncio
-    app.add_routes([web.get('/api/updates', endpoint), web.put('/api/updates', endpoint),
+    app.add_routes([web.get('/api/updates', endpoint), web.get('/api/updates/releases', endpoint), web.put('/api/updates', endpoint),
                     *[web.post('/api/updates/' + action, endpoint) for action in ('check', 'upload', 'download', 'apply', 'rollback', 'cleanup')]])

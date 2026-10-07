@@ -9,7 +9,7 @@
 ## 已实现
 
 - 连接诊断：检查 QQ、游戏桥接、Java、邮件、官网与磁盘，按需检测 SMTP 认证和公开 API，详见 [诊断与模板](docs/diagnostics-and-templates.md)。
-- Bot 更新与回退：上传部署 ZIP 或接入自定义 HTTPS 更新源，隔离验证、升级前备份、失败恢复和代码与数据回退，详见 [更新说明](docs/updates.md)。
+- Bot 更新与回退：通过 GitHub 私有 Release、上传部署 ZIP 或自定义 HTTPS 更新源获取版本，隔离验证、升级前备份、失败恢复和代码与数据回退；版本号变更时自动打包发布，详见 [更新说明](docs/updates.md)。
 - 玩家工单与处罚申诉：官网本人提交与查看，管理回复、内部备注和状态处理；跨服封禁/踢出按 UUID 匹配并逐服确认，保护独立处罚，详见 [社区管理](docs/community-operations.md)。
 - 配置导入与部署模板：单服、多服、QQ 登录、聊天联动四种模板，导入 TOML/JSON 前先预览，保留本机令牌。
 

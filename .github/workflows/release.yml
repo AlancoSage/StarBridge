@@ -1,0 +1,49 @@
+name: Publish private version
+on:
+  push:
+    branches: [main]
+    paths: [starbridge/__init__.py]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: starbridge-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check version and existing release
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = python -c "from starbridge import __version__; print(__version__)"
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match Bot version' }
+          $existing = gh release view "v$version" --json isDraft --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0 -and -not ($existing | ConvertFrom-Json).isDraft) { 'needed=false' >> $env:GITHUB_OUTPUT }
+          else { 'needed=true' >> $env:GITHUB_OUTPUT }
+      - name: Install locked dependencies and test
+        if: steps.version.outputs.needed == 'true'
+        run: |
+          python -m pip install -r requirements.lock.txt
+          python -m unittest discover -s tests -q
+      - name: Build Java 8 bridge
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: ./bridge/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Build and publish complete private release
+        if: steps.version.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/release.py --publish --repo "${{ github.repository }}" --commit "${{ github.sha }}"
