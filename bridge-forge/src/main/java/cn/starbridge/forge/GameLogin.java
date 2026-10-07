@@ -4,6 +4,7 @@ import com.google.gson.*;
 import io.netty.channel.*;
 import io.netty.util.ReferenceCountUtil;
 import net.minecraft.network.Connection;
+import net.minecraft.commands.arguments.ArgumentSignatures;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
@@ -93,6 +94,8 @@ final class GameLogin {
                         @Override public void channelRead(ChannelHandlerContext context, Object packet) throws Exception {
                             // Handle our auth commands before the command bus; raw passwords never reach command loggers.
                             if (packet instanceof ServerboundChatCommandPacket command && Protocol.loginCommand(command.command())) {
+                                // Even rejected auth requests must update vanilla chat acknowledgements.
+                                super.channelRead(context, scrub(command));
                                 long now = System.currentTimeMillis();
                                 if (now - login.lastIngress < 1000) { ReferenceCountUtil.release(packet); return; }
                                 login.lastIngress = now;
@@ -102,6 +105,10 @@ final class GameLogin {
                                 String password = split < 0 ? "" : value.substring(split + 1);
                                 session.callback(() -> { if (currentPlayer(player)) command(player, action, password); });
                                 ReferenceCountUtil.release(packet); return;
+                            }
+                            if (packet instanceof ServerboundChatCommandPacket) {
+                                // Vanilla first consumes signed arguments/acks. CommandEvent then denies execution while locked.
+                                super.channelRead(context, packet); return;
                             }
                             if (locked(player.getUUID()) && !hygiene(packet)) {
                                 if (packet instanceof ServerboundMovePlayerPacket && System.currentTimeMillis() - login.lastCorrection > 1000) {
@@ -124,7 +131,11 @@ final class GameLogin {
         // No actions, inventory packets or custom mod payloads are processed before login.
         return packet instanceof ServerboundKeepAlivePacket || packet instanceof ServerboundPongPacket
                 || packet instanceof ServerboundClientInformationPacket || packet instanceof ServerboundAcceptTeleportationPacket
-                || packet instanceof ServerboundResourcePackPacket || packet instanceof ServerboundChatAckPacket;
+                || packet instanceof ServerboundResourcePackPacket || packet instanceof ServerboundChatAckPacket
+                || packet instanceof ServerboundChatSessionUpdatePacket || packet instanceof ServerboundChatPacket;
+    }
+    static ServerboundChatCommandPacket scrub(ServerboundChatCommandPacket packet) {
+        return new ServerboundChatCommandPacket("starbridge:session", packet.timeStamp(), packet.salt(), ArgumentSignatures.EMPTY, packet.lastSeenMessages());
     }
     private boolean currentPlayer(ServerPlayer player) { return session.server.getPlayerList().getPlayer(player.getUUID()) == player; }
     private Login begin(ServerPlayer player) {

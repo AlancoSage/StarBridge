@@ -2,6 +2,10 @@ package cn.starbridge.forge;
 
 import com.google.gson.JsonObject;
 import net.minecraft.network.protocol.game.*;
+import net.minecraft.commands.arguments.ArgumentSignatures;
+import net.minecraft.network.chat.LastSeenMessages;
+import java.time.Instant;
+import java.util.BitSet;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,5 +38,16 @@ class ProtocolTest {
         assertThrows(IllegalArgumentException.class, () -> Protocol.player("Steve;op"));
         JsonObject value = new JsonObject(); value.addProperty("reason", "test\nban @a");
         assertThrows(IllegalArgumentException.class, () -> Protocol.reason(value));
+    }
+    @Test void authenticationScrubbingPreservesVanillaChatAcknowledgements() {
+        Instant timestamp = Instant.now(); BitSet seen = new BitSet(); seen.set(3);
+        LastSeenMessages.Update update = new LastSeenMessages.Update(2, seen);
+        var original = new ServerboundChatCommandPacket("l private password", timestamp, 99L, ArgumentSignatures.EMPTY, update);
+        var safe = GameLogin.scrub(original);
+        assertEquals("starbridge:session", safe.command());
+        assertSame(update, safe.lastSeenMessages()); assertEquals(timestamp, safe.timeStamp()); assertEquals(99L, safe.salt());
+        assertFalse(safe.toString().contains("private password"));
+        assertTrue(GameLogin.hygiene(new ServerboundChatSessionUpdatePacket((net.minecraft.network.chat.RemoteChatSession.Data) null)));
+        assertTrue(GameLogin.hygiene(new ServerboundChatPacket("blocked text", timestamp, 0L, null, update)));
     }
 }

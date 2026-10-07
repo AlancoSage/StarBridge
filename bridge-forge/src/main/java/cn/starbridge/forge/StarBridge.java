@@ -16,6 +16,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerNegotiationEvent;
 import net.minecraftforge.event.server.*;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -74,14 +75,23 @@ public final class StarBridge {
             session.remember(player); session.event("quit", player, ""); session.login.leave(player); session.saveCatalog();
         }
     }
-    @SubscribeEvent public void chat(ServerChatEvent event) {
+    @SubscribeEvent(priority = EventPriority.HIGHEST) public void chatGate(ServerChatEvent event) {
         Session session = active;
-        if (session != null) {
-            if (session.login.locked(event.getPlayer().getUUID())) event.setCanceled(true);
-            else session.event("chat", event.getPlayer(), event.getRawText());
-        }
+        if (session != null && session.login.locked(event.getPlayer().getUUID())) event.setCanceled(true);
+    }
+    @SubscribeEvent(priority = EventPriority.LOWEST) public void chat(ServerChatEvent event) {
+        Session session = active;
+        if (session != null && !session.login.locked(event.getPlayer().getUUID())) session.event("chat", event.getPlayer(), event.getRawText());
+    }
+    @SubscribeEvent(priority = EventPriority.HIGHEST) public void commandGate(CommandEvent event) {
+        Session session = active;
+        if (session != null && event.getParseResults().getContext().getSource().getEntity() instanceof ServerPlayer player
+                && session.login.locked(player.getUUID())
+                && !event.getParseResults().getReader().getString().equals("starbridge:session")) event.setCanceled(true);
     }
     @SubscribeEvent public void commands(RegisterCommandsEvent event) {
+        // Internal no-op consumes chat acknowledgements without exposing password arguments to the command bus.
+        event.getDispatcher().register(Commands.literal("starbridge:session").executes(context -> 1));
         for (String root : List.of("login", "l", "starbridge:login", "starbridge:l")) {
             event.getDispatcher().register(Commands.literal(root).requires(source -> source.getEntity() instanceof ServerPlayer)
                     .executes(context -> login(context.getSource(), "password", ""))
