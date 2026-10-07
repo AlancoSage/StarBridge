@@ -29,10 +29,12 @@ async function downloadModBridge(value) {
   link.href=url;link.download=row.filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function addModBridgeControls(details, card, serverId) {
-  const wrap=node('div','','field'), label=node('label','Forge / NeoForge 游戏版本'), select=node('select');
-  select.dataset.modBridge='version';select.setAttribute('aria-label','Forge / NeoForge 游戏版本');label.append(select);wrap.append(label);details.append(wrap);
+  const wrap=node('div','','field'), label=node('label','模组加载器与游戏版本'), select=node('select');
+  select.dataset.modBridge='version';select.setAttribute('aria-label','模组加载器与游戏版本');label.append(select);wrap.append(label);details.append(wrap);
   const snapshot=latestStatus?.servers?.find(server=>server.id===serverId);
-  const preferred=(snapshot?.server_software?.startsWith('NeoForge')?'neoforge':'forge')+'/'+(snapshot?.version||'1.20.1');
+  const software=snapshot?.server_software||'';
+  const loader=/^fabric\b/i.test(software)?'fabric':/^neoforge\b/i.test(software)?'neoforge':'forge';
+  const preferred=loader+'/'+(snapshot?.version||(loader==='neoforge'?'1.21.1':'1.20.1'));
   modBridgeSelect(select, preferred).catch(error=>notice('save-notice',error.message,'error'));
   details.append(button('下载模组连接配置',()=>downloadPlugin(card,select.value)));
   details.append(button('下载所选模组 JAR',async()=>{try{await downloadModBridge(select.value);}catch(error){notice('save-notice',error.message,'error');}}));

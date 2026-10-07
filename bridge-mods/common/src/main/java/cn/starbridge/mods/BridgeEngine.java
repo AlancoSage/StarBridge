@@ -105,7 +105,7 @@ public final class BridgeEngine implements AutoCloseable {
         seconds=Math.max(30,Math.min(600,policy.get("login_seconds").getAsInt()));revision=policy.get("revision").getAsString();known=true;
         String engine=Protocol.text(policy,"login_engine","auto");
         if(required&&(!policy.get("available").getAsBoolean()||!(engine.equals("auto")||engine.equals("builtin")))) {
-            known=false;for(Login login:logins.values())login.player.kick("Forge 游戏端请使用星桥内置或自动登录引擎。");return;
+            known=false;for(Login login:logins.values())login.player.kick("模组游戏端请使用星桥内置或自动登录引擎。");return;
         }
         if(!required) { for(Login login:logins.values())login.authenticated=true;return; }
         if(oldKnown&&(!oldRequired||!oldRevision.equals(revision)))for(GameHost.Player player:host.players())begin(player);

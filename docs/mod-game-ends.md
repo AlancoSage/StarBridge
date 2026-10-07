@@ -2,6 +2,8 @@
 
 **适用：星桥 Bot 0.6.3+ · 游戏端模组 0.1.0。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入星桥。Paper / Spigot 继续使用原来的 Bukkit 插件；多个不同版本服务器可以连接同一台 Bot。
 
+Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1** 使用另一套独立 JAR 与配置，安装步骤见 [Fabric 游戏端](fabric-game-ends.md)。下文专门说明 Forge 与 NeoForge。
+
 ## 选择版本
 
 每个 Minecraft 版本使用独立构建，不能跨版本替换，也不能混用 Forge 与 NeoForge。
@@ -68,7 +70,7 @@ allowed-commands = ["list"]
 | QQ 登录 | `/qqlogin` 或 `/ql`，向已绑定 QQ 发送私聊确认，确认后放行 |
 | 退出登录 | `/logout`，立即恢复登录限制 |
 
-游戏登录默认关闭，按服务器启用。纯 Forge / NeoForge 不使用 Bukkit 的 AuthMe API；选择 AuthMe 兼容引擎时不会绕过认证。混合核心、Fabric、Folia 和基岩版原生核心不在此构建范围内。
+游戏登录默认关闭，按服务器启用。纯 Forge / NeoForge 不使用 Bukkit 的 AuthMe API；选择 AuthMe 兼容引擎时不会绕过认证。Fabric 使用 [独立游戏端](fabric-game-ends.md)；混合核心、Folia 和基岩版原生核心不在此构建范围内。
 
 登录前拦截移动、聊天、普通命令、背包及模组交互，登录指令不会作为聊天发送。每次连接有独立 nonce，重连后不能沿用上次 QQ 确认。网络请求在有界后台队列中执行，世界修改回到游戏线程；无需显卡或客户端界面组件。
 

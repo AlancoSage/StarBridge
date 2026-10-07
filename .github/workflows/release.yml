@@ -60,6 +60,10 @@ jobs:
         run: |
           ./bridge-forge-1.18.2/build.ps1 -JavaHome $env:JAVA_HOME
           ./bridge-forge-1.19.2/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Build Fabric 1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 bridges
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: python bridge-fabric/build.py --java-home "$env:JAVA_HOME"
       - uses: actions/setup-java@v4
         if: steps.version.outputs.needed == 'true'
         with:

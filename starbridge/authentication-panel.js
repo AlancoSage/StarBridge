@@ -67,8 +67,9 @@ $('authentication-forge-download').onclick=async()=>{
 };
 $('authentication-forge-guide').onclick=async()=>{
   try{
-    const response=await fetch('/api/authentication/guide?platform=forge',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
-    if(!response.ok)throw Error('Forge 文档下载失败。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-mod-game-ends.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const platform=$('authentication-mod-version').value.split('/')[0]||'forge';
+    const response=await fetch('/api/authentication/guide?'+new URLSearchParams({platform}),{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
+    if(!response.ok)throw Error('模组安装文档下载失败。');
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=platform==='fabric'?'StarBridge-fabric-game-ends.md':'StarBridge-mod-game-ends.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };

@@ -21,6 +21,8 @@ bridge-mods/.gradle/
 bridge-mods/build/
 bridge-mods/*/build/
 bridge-mods/*/run/
+bridge-fabric/build/
+bridge-fabric/run/
 dist/
 
 # 本地环境、日志与私密凭据

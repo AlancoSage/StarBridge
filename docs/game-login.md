@@ -4,6 +4,8 @@
 
 **Forge / NeoForge** 按 Minecraft 版本下载独立 JAR，放在 `mods/`，连接配置放在 `config/`。只支持内置或自动引擎；密码、QQ 确认与 `/l`、`/ql` 使用方式相同。支持版本、Java 要求和安装步骤见 [Forge 与 NeoForge 游戏端](mod-game-ends.md)。
 
+**Fabric** 同样按 Minecraft 版本选择独立服务端 JAR，统一使用 `config/starbridge-bridge.properties`，无需 Fabric API 或星桥客户端模组。密码、QQ 确认与未登录限制采用相同流程；只支持内置或自动引擎，安装与 Java 要求见 [Fabric 游戏端](fabric-game-ends.md)。
+
 ## 开启
 
 1. 从面板「成员 → 游戏登录」下载新版 JAR，替换游戏服务器旧的 StarBridge JAR，保留原连接配置并重启服务器。

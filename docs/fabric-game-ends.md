@@ -1,0 +1,119 @@
+# Fabric 游戏端
+
+**适用：星桥 Bot 0.6.4+ · Fabric 游戏端模组 0.1.0。** Fabric 服务端使用独立星桥模组，连接同一台 Bot 即可接入 QQ 聊天、玩家管理、白名单与游戏登录。Paper / Spigot、Forge 和 NeoForge 的 JAR 继续按各自文档安装。
+
+## 选择 Minecraft 与 Java
+
+每个版本使用对应的 JAR，不能跨 Minecraft 版本替换。下表固定使用 **Fabric Loader 0.16.14**；加载器本身最低 Java 8，游戏服务端仍按 Minecraft 要求选择 Java。
+
+| Minecraft | Fabric Loader | 运行 Java | 星桥文件 |
+| --- | --- | --- | --- |
+| 1.16.5 | 0.16.14 | 8 | `StarBridge-Fabric-1.16.5-0.1.0.jar` |
+| 1.18.2 | 0.16.14 | 17 | `StarBridge-Fabric-1.18.2-0.1.0.jar` |
+| 1.19.2 | 0.16.14 | 17 | `StarBridge-Fabric-1.19.2-0.1.0.jar` |
+| 1.20.1 | 0.16.14 | 17 | `StarBridge-Fabric-1.20.1-0.1.0.jar` |
+| 1.21.1 | 0.16.14 | 21 | `StarBridge-Fabric-1.21.1-0.1.0.jar` |
+
+从 [Fabric 官方服务端下载页](https://fabricmc.net/use/server/) 安装相应 Minecraft 版本的服务端。星桥自身**不依赖 Fabric API**，无需为星桥给玩家安装客户端模组；整合包其他模组要求的 Fabric API、客户端组件和 Java 版本仍按整合包说明安装。Loader 的依赖与版本信息来自 [Fabric 官方元数据 API](https://github.com/FabricMC/fabric-meta)。
+
+## 安装与接入
+
+1. 先启动 Bot，在管理面板 **接入空间 → 服务器** 新建服务器，设置服务器 ID、QQ群、专属连接令牌与允许的远程命令。
+2. 展开服务器卡片的 **安装插件 · 下载连接配置**，填写游戏服务器能访问的 Bot 地址。
+3. 在模组游戏端版本列表选择 **Fabric + 对应 Minecraft 版本**，下载所选模组 JAR 与连接配置。
+4. 停止游戏服务器，备份世界。将 JAR 放在服务器的 `mods/`，配置放在 `config/starbridge-bridge.properties`，每台服务器仅保留一份星桥模组。
+5. 使用表中对应的 Java 启动 Fabric 服务端。在 Bot 面板确认桥接在线、游戏版本与加载器正确，再检查聊天联动、玩家档案与 `/qbind`。
+6. 需要密码或 QQ 登录时，在 **成员 → 游戏登录** 勾选这台服务器，选择 **自动** 或 **星桥内置** 引擎，保存后验证 `/l`、`/ql` 和未登录限制。
+
+模组放在 `mods/`，不要放进 `plugins/`。Fabric、Forge 与 NeoForge 的星桥 JAR 不能混装；已部署其他核心的服务器不要仅通过替换星桥 JAR 改换加载器。
+
+### 连接配置
+
+五个 Fabric 版本均使用 UTF-8 配置：`config/starbridge-bridge.properties`。
+
+```properties
+endpoint=http://127.0.0.1:8088
+server-id=survival
+token=替换为这台服务器的连接令牌
+allowed-commands=list
+```
+
+`token` 来自服务器卡片，不能使用面板管理员令牌或官网 API 密钥。Bot 与游戏服位于不同机器时，填写游戏服能访问的 Bot 地址，通过 HTTPS 或可信加密隧道传输账号密码。
+
+手动设置多个允许的完整命令时，以 `|` 分隔；连接成功后以 Bot 面板同步的命令白名单为准。配置缺失或无效时，星桥拒绝启动服务端，避免误以为登录保护已经生效。修改连接配置后需要重启游戏服。
+
+## 功能与登录指令
+
+| 功能 | 行为 |
+| --- | --- |
+| QQ 联动 | 游戏聊天、加入 / 退出通知、QQ 到游戏广播与预设控制台命令 |
+| 服务器状态 | 在线人数、游戏 / 加载器 / Java 版本、白名单状态与玩家列表 |
+| 玩家管理 | UUID、历史档案、IP 与原生白名单 / 封禁 / OP 状态；保留手动归属地 |
+| 管理操作 | 踢出、封禁、解封、白名单增删与申请执行回执；解封核对处罚来源 |
+| QQ 绑定 | `/qbind` 获取短期绑定码，在群内完成绑定 |
+| 密码登录 | `/login <密码>` 或 `/l <密码>`，使用网页 / 群外注册的账号密码 |
+| QQ 登录 | `/qqlogin` 或 `/ql`，向已绑定 QQ 私聊发送登录确认 |
+| 退出登录 | `/logout`，立即恢复登录限制 |
+
+游戏登录默认关闭，按服务器选择开启。Fabric 没有 Bukkit 的 AuthMe API，仅使用自动或星桥内置引擎；选择 AuthMe 时拒绝放行，不绕过认证。其他独立登录模组尚未提供适配，不要与星桥内置认证同时启用。
+
+登录前限制移动、聊天、普通命令、背包、物品与模组交互，并保护玩家免受伤害。登录指令不会作为普通聊天发送；含空格密码保留空格。每次连接有独立 nonce，重连后不能沿用旧 QQ 确认或旧请求结果。玩法操作回到游戏主线程，HTTP 请求使用有界后台队列，无需显卡或客户端界面组件。
+
+## 升级与排查
+
+- **升级**：停止游戏服，替换相同 Minecraft 版本的星桥 JAR，保留配置并删除旧副本。Bot 升级不会替换独立游戏服中的 JAR。
+- **无法加载**：核对 Minecraft 版本、Fabric Loader、文件名与启动脚本实际调用的 `java -version`。不要使用 Forge / NeoForge 版 JAR。
+- **桥接离线**：检查 Bot 是否已启动、地址与端口、服务器 ID、专属令牌和日志。连接不到策略时，启用认证的玩家不会被自动放行。
+- **无法登录**：核对面板中已勾选服务器、内置 / 自动引擎与账号注册状态；QQ 登录还需绑定且机器人能够发送私聊。
+- **命令被拒绝**：面板配置的是允许的完整命令，不能只填命令前缀来允许任意参数。
+- **整合包冲突**：先用相同 Minecraft 与 Loader 的最小测试服复查，再逐步加入原模组；保留完整版本号与异常堆栈。
+
+## 开发与构建
+
+游戏端复用 Java 8 公共桥接引擎，以 Fabric Loader 的 `ModInitializer` 启动，通过精确的官方 Yarn 映射与 Loader `MappingResolver` 访问该版本的原生方法，Mixin 安装生命周期与认证拦截。每个 Minecraft 版本独立打包，不依赖 Loom，也不把 Minecraft、Fabric Loader 或 Fabric API 装入成品 JAR。
+
+构建使用 **Python 3.11+ 与 JDK 17**，编译参数 `--release 8`；这只表示星桥字节码最低 Java 8，不改变 Minecraft 自身的 Java 要求。固定编译依赖与 Yarn 映射从 Fabric 官方 Maven 获取并核对校验值，成品输出到 `bridge/target/`。
+
+| Minecraft | 固定 Yarn v2 映射 |
+| --- | --- |
+| 1.16.5 | `net.fabricmc:yarn:1.16.5+build.10:v2` |
+| 1.18.2 | `net.fabricmc:yarn:1.18.2+build.4:v2` |
+| 1.19.2 | `net.fabricmc:yarn:1.19.2+build.28:v2` |
+| 1.20.1 | `net.fabricmc:yarn:1.20.1+build.10:v2` |
+| 1.21.1 | `net.fabricmc:yarn:1.21.1+build.3:v2` |
+
+Fabric Loader 固定为 `net.fabricmc:fabric-loader:0.16.14`，Mixin 使用该加载器官方依赖 `net.fabricmc:sponge-mixin:0.15.5+mixin.0.8.7`，ASM 为 `9.8`。这些是编译和加载器依赖，不需要管理员手动复制到 `mods/`。
+
+Windows，在项目根目录构建全部五个版本：
+
+```powershell
+python bridge-fabric/build.py --java-home 'C:\Program Files\Java\jdk-17'
+```
+
+也可使用 PowerShell 包装脚本并指定虚拟环境中的 Python：
+
+```powershell
+.\bridge-fabric\build.ps1 -JavaHome 'C:\Program Files\Java\jdk-17' -Python .\.venv\Scripts\python.exe
+```
+
+Linux：
+
+```bash
+python3 bridge-fabric/build.py --java-home /path/to/jdk17
+```
+
+加上 `--version 1.20.1` 可只构建对应版本；不指定时构建全部五版。依赖默认缓存到 `bridge-fabric/build/dependencies`，可用 `--cache /path/to/cache` 指定其他目录。使用 `bridge/target/` 的最终 JAR 部署，构建过程中不需要启动游戏服务器。
+
+## 验证范围
+
+已在 **Fabric Loader 0.16.14** 上分别启动 Minecraft **1.16.5 / Java 8**、**1.18.2 / Java 17**、**1.19.2 / Java 17**、**1.20.1 / Java 17** 与 **1.21.1 / Java 21** 专用测试服，五组均使用未安装星桥的原版协议客户端完成以下流程：
+
+- 心跳、玩家档案与在线信息，未登录时的移动、聊天、`/help` 与 `/msg` 限制。
+- 错误密码、含空格密码的 `/l` 登录；测试密码未出现在服务端日志；获取绑定码。
+- 游戏聊天、Bot 到游戏广播、绑定 QQ 的 `/ql` 确认、退出登录及后端会话重建后的重新认证。
+- 白名单增删与申请审核执行回执，踢出、封禁、带来源标记的解封和保留独立处罚。
+- 原生控制台命令白名单，以及关闭认证后正常游戏指令的执行。
+
+1.21.1 还检查了离线会话中的原生 signed command 包和 ACK 状态；这不代表已验证正版账号的密码学签名链。测试使用隔离 Bot、离线模式与模拟 QQ 私聊，未验证真实正版会话、真实 QQ 服务、全部整合包或其他 Loader 构建号。正式部署请在自己的模组组合中复查，不据此声明兼容所有历史或未来版本。
+
+相关文档：[游戏登录](game-login.md)、[Forge / NeoForge 游戏端](mod-game-ends.md)、[Minecraft 版本兼容与 Java 选择](minecraft-compatibility.md)。

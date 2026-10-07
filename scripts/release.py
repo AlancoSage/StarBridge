@@ -12,6 +12,13 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
+GAME_LOADERS = {'forge': 'Forge', 'neoforge': 'NeoForge', 'fabric': 'Fabric'}
+FABRIC_CORE = ('cn/starbridge/fabric/StarBridgeFabric.class', 'cn/starbridge/fabric/FabricRuntime.class',
+               'cn/starbridge/fabric/FabricPacketGate.class', 'cn/starbridge/fabric/FabricHost.class',
+               'cn/starbridge/fabric/FabricNative.class', 'cn/starbridge/mods/BridgeEngine.class')
+FABRIC_RESOURCES = ('starbridge-fabric.mixins.json', 'starbridge-fabric-mappings.json')
+FABRIC_MIXINS = ('ServerMixin', 'ConnectionMixin', 'CommandsMixin', 'CommandsExecuteMixin',
+                 'DamageMixin', 'PickupMixin', 'PlayerJoinMixin')
 
 
 def gh(*args, check=True):
@@ -32,6 +39,124 @@ def code_version(content):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def source_literal(path, name):
+    """Read the release checkout itself, including older checkouts without Fabric."""
+    for node in ast.parse(path.read_text(encoding='utf-8-sig')).body:
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == name for target in node.targets):
+            return ast.literal_eval(node.value)
+    raise ValueError(f'发布源码缺少 {name}')
+
+
+def native_filename(item, mod_version):
+    loader = GAME_LOADERS.get(item.get('platform'))
+    version = item.get('version')
+    if not loader or not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+(?:\.\d+)?', version):
+        raise ValueError('不支持的游戏端发布类型或版本')
+    if not isinstance(mod_version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', mod_version):
+        raise ValueError('游戏端发布版本错误')
+    if type(item.get('java')) is not int or item['java'] not in (8, 17, 21):
+        raise ValueError('游戏端 Java 要求错误')
+    return f'StarBridge-{loader}-{version}-{mod_version}.jar'
+
+
+def validate_native_mod(path, item, mod_version):
+    expected_name = native_filename(item, mod_version)
+    if path.name != expected_name:
+        raise ValueError(f'游戏端文件名不一致：{path.name}')
+    if not path.is_file():
+        raise ValueError(f'缺少游戏端构建：{path.name}')
+    legacy = item['platform'] == 'forge' and item['version'] in ('1.7.10', '1.12.2', '1.16.5')
+    core = ('cn/starbridge/mods/BridgeEngine.class', 'cn/starbridge/mods/LegacyMod.class') if legacy else (
+        'cn/starbridge/forge/StarBridge.class', 'cn/starbridge/forge/GameLogin.class')
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            if len(names) != len(set(names)):
+                raise ValueError(f'游戏端包含重复文件：{path.name}')
+            if item['platform'] == 'fabric':
+                metadata = json.loads(archive.read('fabric.mod.json'))
+                if (not isinstance(metadata, dict) or metadata.get('id') != 'starbridge'
+                    or metadata.get('version') != mod_version or metadata.get('environment') != 'server'
+                    or not isinstance(metadata.get('depends'), dict)
+                    or metadata['depends'].get('minecraft') != item['version']
+                    or not isinstance(metadata.get('entrypoints'), dict)
+                    or metadata['entrypoints'].get('main') != ['cn.starbridge.fabric.StarBridgeFabric']
+                    or metadata.get('mixins') != ['starbridge-fabric.mixins.json']):
+                    raise ValueError(f'游戏端元数据不一致：{path.name}')
+                core = FABRIC_CORE
+                if not all(name in names for name in FABRIC_RESOURCES):
+                    raise ValueError(f'游戏端缺少必要资源：{path.name}')
+                config = json.loads(archive.read('starbridge-fabric.mixins.json'))
+                required_mixins = set(FABRIC_MIXINS)
+                if item['version'] in ('1.19.2', '1.20.1', '1.21.1'):
+                    required_mixins.add('PlayerManagerChatMixin')
+                if (not isinstance(config, dict) or config.get('required') is not True
+                    or config.get('package') != 'cn.starbridge.fabric.mixin'
+                    or not isinstance(config.get('mixins'), list)
+                    or not all(isinstance(name, str) for name in config['mixins'])
+                    or not required_mixins.issubset(config['mixins'])
+                    or not isinstance(config.get('injectors'), dict)
+                    or config['injectors'].get('defaultRequire') != 1
+                    or not all('cn/starbridge/fabric/mixin/' + name + '.class' in names for name in config['mixins'])):
+                    raise ValueError(f'游戏端登录保护注入不完整：{path.name}')
+                bindings = json.loads(archive.read('starbridge-fabric-mappings.json'))
+                if not isinstance(bindings, dict) or bindings.get('mcVersion') != item['version']:
+                    raise ValueError(f'游戏端映射版本不一致：{path.name}')
+            else:
+                metadata_name = 'mcmod.info' if item['version'] in ('1.7.10', '1.12.2') else 'META-INF/' + (
+                    'neoforge.mods.toml' if item['platform'] == 'neoforge' else 'mods.toml')
+                metadata = archive.read(metadata_name).decode('utf-8')
+                if metadata_name == 'mcmod.info':
+                    rows = json.loads(metadata)
+                    if not isinstance(rows, list) or not any(isinstance(row, dict) and row.get('modid') == 'starbridge'
+                        and row.get('version') == mod_version and row.get('mcversion') == item['version'] for row in rows):
+                        raise ValueError(f'游戏端元数据不一致：{path.name}')
+                else:
+                    import tomllib
+                    mods = tomllib.loads(metadata).get('mods', [])
+                    if not any(row.get('modId') == 'starbridge' and row.get('version') == mod_version for row in mods) or item['version'] not in metadata:
+                        raise ValueError(f'游戏端元数据不一致：{path.name}')
+            if not all(name in names for name in core):
+                raise ValueError(f'游戏端缺少核心类：{path.name}')
+            for name in names:
+                if name.endswith('.class'):
+                    content = archive.read(name)
+                    if len(content) < 8 or content[:4] != b'\xca\xfe\xba\xbe':
+                        raise ValueError(f'游戏端类文件无效：{path.name}')
+                    if not 45 <= int.from_bytes(content[6:8], 'big') <= item['java'] + 44:
+                        raise ValueError(f'游戏端 Java 要求不一致：{path.name}')
+    except (KeyError, zipfile.BadZipFile, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f'游戏端元数据或 JAR 无效：{path.name}') from error
+
+
+def native_assets(root):
+    """Return exactly the native assets declared by this release's source catalog."""
+    catalog_file = root/'starbridge/game_bridges.py'
+    if catalog_file.is_file():
+        catalog = source_literal(catalog_file, 'GAME_BRIDGES')
+        mod_version = source_literal(root/'starbridge/__init__.py', '__forge_version__')
+        assets = []
+        for item in catalog:
+            mod = root/'bridge/target'/native_filename(item, mod_version)
+            if mod in assets:
+                raise ValueError('游戏端发布目录包含重复版本')
+            validate_native_mod(mod, item, mod_version)
+            assets.append(mod)
+        return assets
+    # Forge became available in 0.6.2; keep historical standalone assets intact.
+    forge_source = root/'bridge-forge/gradle.properties'
+    if forge_source.is_file():
+        match = re.search(r'^mod_version=(\d+\.\d+\.\d+)\s*$', forge_source.read_text(encoding='utf-8'), re.M)
+        if not match:
+            raise ValueError('Forge 版本缺失')
+        mod_version = match.group(1)
+        item = {'platform': 'forge', 'version': '1.20.1', 'java': 17}
+        mod = root/'bridge/target'/native_filename(item, mod_version)
+        validate_native_mod(mod, item, mod_version)
+        return [mod]
+    return []
 
 
 def build(root=ROOT):
@@ -65,44 +190,8 @@ def build(root=ROOT):
                 archive.write(root/name,'StarBridge/'+name)
     # Publish standalone website and bridge alongside the complete Bot archive.
     assets = [bot,website,bridge]
-    # Multi-version native mods start in 0.6.3. Read literal data from the release
-    # source rather than importing this checkout for historical builds.
-    catalog_file = root/'starbridge/game_bridges.py'
-    if catalog_file.is_file():
-        catalog = next(ast.literal_eval(node.value) for node in ast.parse(catalog_file.read_text(encoding='utf-8')).body
-                       if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'GAME_BRIDGES' for t in node.targets))
-        mod_version = next(ast.literal_eval(node.value) for node in ast.parse((root/'starbridge/__init__.py').read_text(encoding='utf-8-sig')).body
-                           if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == '__forge_version__' for t in node.targets))
-        for item in catalog:
-            loader = 'NeoForge' if item['platform'] == 'neoforge' else 'Forge'
-            mod = root/f'bridge/target/StarBridge-{loader}-{item["version"]}-{mod_version}.jar'
-            if not mod.is_file(): raise ValueError(f'缺少游戏端构建：{mod.name}')
-            with zipfile.ZipFile(mod) as archive:
-                metadata_name = 'mcmod.info' if item['version'] in ('1.7.10', '1.12.2') else 'META-INF/'+('neoforge.mods.toml' if loader == 'NeoForge' else 'mods.toml')
-                metadata = archive.read(metadata_name).decode('utf-8')
-                if metadata_name == 'mcmod.info':
-                    if not any(row.get('modid') == 'starbridge' and row.get('version') == mod_version and row.get('mcversion') == item['version'] for row in json.loads(metadata)):
-                        raise ValueError(f'游戏端元数据不一致：{mod.name}')
-                else:
-                    import tomllib
-                    mods = tomllib.loads(metadata).get('mods', [])
-                    if not any(row.get('modId') == 'starbridge' and row.get('version') == mod_version for row in mods) or item['version'] not in metadata:
-                        raise ValueError(f'游戏端元数据不一致：{mod.name}')
-                for name in archive.namelist():
-                    if name.endswith('.class') and int.from_bytes(archive.read(name)[6:8], 'big') > item['java']+44:
-                        raise ValueError(f'游戏端 Java 要求不一致：{mod.name}')
-            assets.append(mod)
-    # Forge became available in 0.6.2; historical releases keep their original assets.
-    elif (root/'bridge-forge/gradle.properties').is_file():
-        match = re.search(r'^mod_version=(\d+\.\d+\.\d+)\s*$', (root/'bridge-forge/gradle.properties').read_text(encoding='utf-8'), re.M)
-        if not match: raise ValueError('Forge 版本缺失')
-        forge_version = match.group(1)
-        forge = root/f'bridge/target/StarBridge-Forge-1.20.1-{forge_version}.jar'
-        if not forge.is_file(): raise ValueError('请先构建 Forge 模组：bridge-forge/build.ps1')
-        with zipfile.ZipFile(forge) as archive:
-            metadata = archive.read('META-INF/mods.toml').decode('utf-8')
-            if f'version="{forge_version}"' not in metadata: raise ValueError('Forge JAR 版本与源码不一致')
-        assets.append(forge)
+    # Read only this release's source catalog; historical checkouts stay complete.
+    assets.extend(native_assets(root))
     checksums = dist/'SHA256SUMS.txt'
     checksums.write_text(''.join(f'{digest(p)}  {p.name}\n' for p in assets),encoding='utf-8')
     return version,[*assets,checksums]

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from aiohttp.test_utils import TestClient, TestServer
 from starbridge.app import create_app
-from starbridge.game_bridges import bridge_catalog
+from starbridge.game_bridges import bridge_catalog, bridge_filename
 from test_starbridge import config
 
 
@@ -27,14 +27,16 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_platform_selection_authentication_and_unknown_platform(self):
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
-            for platform, expected in (('bukkit', b'bukkit-fixture'), ('forge', b'StarBridge-Forge-1.20.1-0.1.0.jar')):
+            for platform, expected in (('bukkit', b'bukkit-fixture'), ('forge', b'StarBridge-Forge-1.20.1-0.1.0.jar'),
+                                      ('fabric', b'StarBridge-Fabric-1.20.1-0.1.0.jar')):
                 response = await self.client.get('/api/plugin?platform=' + platform, headers=self.headers)
                 self.assertEqual(response.status, 200)
                 self.assertEqual(await response.read(), expected)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
                 self.assertIn('attachment;', response.headers['Content-Disposition'])
-            response = await self.client.get('/api/plugin?platform=forge')
-            self.assertEqual(response.status, 401)
+            for platform in ('forge', 'fabric'):
+                response = await self.client.get('/api/plugin?platform='+platform)
+                self.assertEqual(response.status, 401)
             response = await self.client.get('/api/plugin?platform=../../config.toml', headers=self.headers)
             self.assertEqual(response.status, 400)
             # FileResponse closes its file in a background executor; Windows may
@@ -48,27 +50,41 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
             response = await self.client.get('/api/plugin/catalog', headers=self.headers)
             catalog = (await response.json())['bridges']
-            self.assertEqual(len(catalog), 7)
+            self.assertEqual(len(catalog), 12)
+            self.assertEqual(len({item['filename'] for item in catalog}), 12)
+            fabric = [item for item in catalog if item['platform'] == 'fabric']
+            self.assertEqual([item['version'] for item in fabric], ['1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1'])
+            self.assertEqual([item['java'] for item in fabric], [8, 17, 17, 17, 21])
+            self.assertTrue(all(item['config'] == 'properties' and item['label'].startswith('Fabric ') for item in fabric))
             self.assertTrue(all(item['available'] for item in catalog))
             for item in catalog:
                 response = await self.client.get('/api/plugin', params={key: item[key] for key in ('platform', 'version')}, headers=self.headers)
                 self.assertEqual(response.status, 200)
                 self.assertEqual(await response.read(), item['filename'].encode())
-            for platform, version in [('forge', '../../config.toml'), ('forge', '1.21.1'), ('neoforge', '1.20.1'), ('bukkit', '1.12.2'), ('forge', '')]:
+            for platform, version in [('forge', '../../config.toml'), ('forge', '1.21.1'), ('neoforge', '1.20.1'), ('bukkit', '1.12.2'), ('forge', ''),
+                                      ('fabric', '../../config.toml'), ('fabric', '..\\config.toml'), ('fabric', '1.12.2'), ('fabric', ''),
+                                      ('fabric', '1.20.1/../../config.toml')]:
                 response = await self.client.get('/api/plugin', params={'platform': platform, 'version': version}, headers=self.headers)
                 self.assertEqual(response.status, 400)
             with patch('starbridge.app.Path', return_value=self.root / 'missing/starbridge/app.py'):
                 catalog = await (await self.client.get('/api/plugin/catalog', headers=self.headers)).json()
                 self.assertTrue(all(not item['available'] for item in catalog['bridges']))
-                response = await self.client.get('/api/plugin?platform=neoforge', headers=self.headers)
-                self.assertEqual(response.status, 404)
+                for platform in ('neoforge', 'fabric'):
+                    response = await self.client.get('/api/plugin?platform='+platform, headers=self.headers)
+                    self.assertEqual(response.status, 404)
+
+    async def test_catalog_rejects_unknown_versions_before_constructing_paths(self):
+        for platform, version in (('fabric', '../secret'), ('fabric/..', '1.20.1'), ('fabric', '1.20.1.jar'), ('fabric', '1.20.1\\secret')):
+            with self.assertRaises(ValueError):
+                bridge_filename(platform, version)
 
     async def test_native_guide_platforms_and_panel_module(self):
-        for platform in ('forge', 'neoforge'):
+        for platform in ('forge', 'neoforge', 'fabric'):
             response = await self.client.get('/api/authentication/guide?platform='+platform, headers=self.headers)
             self.assertEqual(response.status, 200)
-            self.assertIn(b'1.7.10', await response.read())
-        response = await self.client.get('/api/authentication/guide?platform=fabric', headers=self.headers)
+            self.assertIn(b'1.16.5' if platform == 'fabric' else b'1.7.10', await response.read())
+            self.assertIn('StarBridge-fabric-game-ends.md' if platform == 'fabric' else 'StarBridge-mod-game-ends.md', response.headers['Content-Disposition'])
+        response = await self.client.get('/api/authentication/guide?platform=quilt', headers=self.headers)
         self.assertEqual(response.status, 400)
         response = await self.client.get('/mod-bridge-panel.js')
         self.assertEqual(response.status, 200)

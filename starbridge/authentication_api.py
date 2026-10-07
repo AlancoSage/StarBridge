@@ -47,9 +47,9 @@ def setup_routes(app, state_key, authorize, read_body, bridge):
     async def guide(request):
         authorize(request, state["config"]["app"]["admin_token"])
         platform = request.query.get("platform", "bukkit")
-        if platform not in ("bukkit", "forge", "neoforge"):
+        if platform not in ("bukkit", "forge", "neoforge", "fabric"):
             raise web.HTTPBadRequest(text="不支持的游戏端类型")
-        name = "mod-game-ends.md" if platform in ("forge", "neoforge") else "game-login.md"
+        name = "fabric-game-ends.md" if platform == "fabric" else "mod-game-ends.md" if platform != "bukkit" else "game-login.md"
         return web.FileResponse(Path(__file__).resolve().parent.parent / "docs" / name,
             headers={"Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="StarBridge-{name}"'})
 

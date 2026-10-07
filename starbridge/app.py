@@ -353,7 +353,7 @@ async def plugin_download(request):
     authorized(request, request.app[STATE]["config"]["app"]["admin_token"])
     from . import __bridge_version__
     kind = request.query.get("platform", "bukkit")
-    if kind not in ("bukkit", "forge", "neoforge"):
+    if kind not in ("bukkit", "forge", "neoforge", "fabric"):
         raise web.HTTPBadRequest(text="不支持的游戏端类型")
     if kind == "bukkit":
         if request.query.get("version"):
