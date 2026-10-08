@@ -42,7 +42,7 @@ public final class FabricRuntime {
             JsonObject document=new JsonParser().parse(new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject();
             version=document.get("mcVersion").getAsString();
             for(Map.Entry<String,JsonElement> item:document.getAsJsonObject("packets").entrySet()) {
-                String actual=FabricLoader.getInstance().getMappingResolver().mapClassName("intermediary",item.getValue().getAsString());
+                String actual=nativeApi.runtimeClassName(item.getValue().getAsString());
                 packetNames.put(actual,item.getKey());
             }
         } catch(IOException error){throw new IllegalStateException("Fabric mappings unreadable",error);}

@@ -1,0 +1,1174 @@
+{
+  "minecraft": "26.1",
+  "server": {
+    "url": "https://piston-data.mojang.com/v1/objects/3872a7f07a1a595e651aef8b058dfc2bb3772f46/server.jar",
+    "sha256": "98ab064389a8b34d48ac3d4c5ed858dd9433d0dfd1a12e1cbbda916448d92994",
+    "entry": "META-INF/versions/26.1/server-26.1.jar"
+  },
+  "classes": {
+    "net.minecraft.command.ReturnValueConsumer": "net.minecraft.commands.CommandResultCallback",
+    "net.minecraft.entity.Entity": "net.minecraft.world.entity.Entity",
+    "net.minecraft.entity.ItemEntity": "net.minecraft.world.entity.item.ItemEntity",
+    "net.minecraft.entity.LivingEntity": "net.minecraft.world.entity.LivingEntity",
+    "net.minecraft.entity.player.PlayerEntity": "net.minecraft.world.entity.player.Player",
+    "net.minecraft.network.ClientConnection": "net.minecraft.network.Connection",
+    "net.minecraft.network.message.ArgumentSignatureDataMap": "net.minecraft.commands.arguments.ArgumentSignatures",
+    "net.minecraft.network.message.SignedMessage": "net.minecraft.network.chat.PlayerChatMessage",
+    "net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket": "net.minecraft.network.protocol.common.ServerboundClientInformationPacket",
+    "net.minecraft.network.packet.c2s.common.CommonPongC2SPacket": "net.minecraft.network.protocol.common.ServerboundPongPacket",
+    "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket": "net.minecraft.network.protocol.common.ServerboundKeepAlivePacket",
+    "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket": "net.minecraft.network.protocol.common.ServerboundResourcePackPacket",
+    "net.minecraft.network.packet.c2s.play.AcknowledgeChunksC2SPacket": "net.minecraft.network.protocol.game.ServerboundChunkBatchReceivedPacket",
+    "net.minecraft.network.packet.c2s.play.AcknowledgeReconfigurationC2SPacket": "net.minecraft.network.protocol.game.ServerboundConfigurationAcknowledgedPacket",
+    "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket",
+    "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatPacket",
+    "net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket": "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket",
+    "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatCommandPacket",
+    "net.minecraft.network.packet.c2s.play.MessageAcknowledgmentC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatAckPacket",
+    "net.minecraft.network.packet.c2s.play.PlayerLoadedC2SPacket": "net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket",
+    "net.minecraft.network.packet.c2s.play.PlayerSessionC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatSessionUpdatePacket",
+    "net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket": "net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket",
+    "net.minecraft.registry.RegistryKey": "net.minecraft.resources.ResourceKey",
+    "net.minecraft.server.BanEntry": "net.minecraft.server.players.BanListEntry",
+    "net.minecraft.server.BannedPlayerEntry": "net.minecraft.server.players.UserBanListEntry",
+    "net.minecraft.server.MinecraftServer": "net.minecraft.server.MinecraftServer",
+    "net.minecraft.server.PlayerConfigEntry": "net.minecraft.server.players.NameAndId",
+    "net.minecraft.server.PlayerManager": "net.minecraft.server.players.PlayerList",
+    "net.minecraft.server.ServerConfigList": "net.minecraft.server.players.StoredUserList",
+    "net.minecraft.server.WhitelistEntry": "net.minecraft.server.players.UserWhiteListEntry",
+    "net.minecraft.server.command.CommandManager": "net.minecraft.commands.Commands",
+    "net.minecraft.server.command.ServerCommandSource": "net.minecraft.commands.CommandSourceStack",
+    "net.minecraft.server.network.ServerCommonNetworkHandler": "net.minecraft.server.network.ServerCommonPacketListenerImpl",
+    "net.minecraft.server.network.ServerPlayNetworkHandler": "net.minecraft.server.network.ServerGamePacketListenerImpl",
+    "net.minecraft.server.network.ServerPlayerEntity": "net.minecraft.server.level.ServerPlayer",
+    "net.minecraft.server.network.ServerPlayerInteractionManager": "net.minecraft.server.level.ServerPlayerGameMode",
+    "net.minecraft.text.Text": "net.minecraft.network.chat.Component",
+    "net.minecraft.util.WorldSavePath": "net.minecraft.world.level.storage.LevelResource",
+    "net.minecraft.world.GameMode": "net.minecraft.world.level.GameType",
+    "net.minecraft.world.World": "net.minecraft.world.level.Level"
+  },
+  "methods": [
+    {
+      "owner": "net.minecraft.server.network.ServerCommonNetworkHandler",
+      "name": "getLatency",
+      "actual": "latency",
+      "descriptor": "()I"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerCommonNetworkHandler",
+      "name": "disconnect",
+      "actual": "disconnect",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerCommonNetworkHandler",
+      "name": "disconnect",
+      "actual": "disconnect",
+      "descriptor": "(Lnet/minecraft/network/DisconnectionDetails;)V"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "save",
+      "actual": "saveAllChunks",
+      "descriptor": "(ZZZ)Z"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "getSavePath",
+      "actual": "getWorldPath",
+      "descriptor": "(Lnet/minecraft/world/level/storage/LevelResource;)Ljava/nio/file/Path;"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "isOnlineMode",
+      "actual": "usesAuthentication",
+      "descriptor": "()Z"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "isDedicated",
+      "actual": "isDedicatedServer",
+      "descriptor": "()Z"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "getCommandManager",
+      "actual": "getCommands",
+      "descriptor": "()Lnet/minecraft/commands/Commands;"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "getPlayerManager",
+      "actual": "getPlayerList",
+      "descriptor": "()Lnet/minecraft/server/players/PlayerList;"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "getCommandSource",
+      "actual": "createCommandSourceStack",
+      "descriptor": "()Lnet/minecraft/commands/CommandSourceStack;"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "shutdown",
+      "actual": "stopServer",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "stop",
+      "actual": "halt",
+      "descriptor": "(Z)V"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "tick",
+      "actual": "tickServer",
+      "descriptor": "(Ljava/util/function/BooleanSupplier;)V"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "getWorld",
+      "actual": "getLevel",
+      "descriptor": "(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/server/level/ServerLevel;"
+    },
+    {
+      "owner": "net.minecraft.entity.LivingEntity",
+      "name": "getHealth",
+      "actual": "getHealth",
+      "descriptor": "()F"
+    },
+    {
+      "owner": "net.minecraft.text.Text",
+      "name": "literal",
+      "actual": "literal",
+      "descriptor": "(Ljava/lang/String;)Lnet/minecraft/network/chat/MutableComponent;"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "disconnect",
+      "actual": "disconnect",
+      "descriptor": "(Lnet/minecraft/network/DisconnectionDetails;)V"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "disconnect",
+      "actual": "disconnect",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;)V"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "tick",
+      "actual": "tick",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "getPacketListener",
+      "actual": "getPacketListener",
+      "descriptor": "()Lnet/minecraft/network/PacketListener;"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "remove",
+      "actual": "remove",
+      "descriptor": "(Lnet/minecraft/world/entity/Entity$RemovalReason;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "tick",
+      "actual": "tick",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "onPlayerCollision",
+      "actual": "playerTouch",
+      "descriptor": "(Lnet/minecraft/world/entity/player/Player;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "requestTeleport",
+      "actual": "teleportTo",
+      "descriptor": "(DDD)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "damage",
+      "actual": "hurtServer",
+      "descriptor": "(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getZ",
+      "actual": "getZ",
+      "descriptor": "()D"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getYaw",
+      "actual": "getViewYRot",
+      "descriptor": "(F)F"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "setVelocity",
+      "actual": "setDeltaMovement",
+      "descriptor": "(Lnet/minecraft/world/phys/Vec3;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getYaw",
+      "actual": "getYRot",
+      "descriptor": "()F"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getPitch",
+      "actual": "getXRot",
+      "descriptor": "()F"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getY",
+      "actual": "getY",
+      "descriptor": "()D"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getX",
+      "actual": "getX",
+      "descriptor": "()D"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getCommandSource",
+      "actual": "createCommandSourceStackForNameResolution",
+      "descriptor": "(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/commands/CommandSourceStack;"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "setVelocity",
+      "actual": "setDeltaMovement",
+      "descriptor": "(DDD)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "getPitch",
+      "actual": "getViewXRot",
+      "descriptor": "(F)F"
+    },
+    {
+      "owner": "net.minecraft.network.message.SignedMessage",
+      "name": "getSignedContent",
+      "actual": "signedContent",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.message.SignedMessage",
+      "name": "toString",
+      "actual": "describeSigned",
+      "descriptor": "(Lnet/minecraft/network/chat/PlayerChatMessage;)Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket",
+      "name": "command",
+      "actual": "command",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "timestamp",
+      "actual": "timeStamp",
+      "descriptor": "()Ljava/time/Instant;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "lastSeenMessages",
+      "actual": "lastSeenMessages",
+      "descriptor": "()Lnet/minecraft/network/chat/LastSeenMessages$Update;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "salt",
+      "actual": "salt",
+      "descriptor": "()J"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "command",
+      "actual": "command",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "isWhitelistEnabled",
+      "actual": "isUsingWhitelist",
+      "descriptor": "()Z"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "broadcast",
+      "actual": "broadcastChatMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/PlayerChatMessage;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/network/chat/ChatType$Bound;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "remove",
+      "actual": "remove",
+      "descriptor": "(Lnet/minecraft/server/level/ServerPlayer;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getPlayerList",
+      "actual": "getPlayers",
+      "descriptor": "()Ljava/util/List;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getMaxPlayerCount",
+      "actual": "getMaxPlayers",
+      "descriptor": "()I"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getPlayer",
+      "actual": "getPlayerByName",
+      "descriptor": "(Ljava/lang/String;)Lnet/minecraft/server/level/ServerPlayer;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getUserBanList",
+      "actual": "getBans",
+      "descriptor": "()Lnet/minecraft/server/players/UserBanList;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getPlayer",
+      "actual": "getPlayer",
+      "descriptor": "(Ljava/util/UUID;)Lnet/minecraft/server/level/ServerPlayer;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "onPlayerConnect",
+      "actual": "placeNewPlayer",
+      "descriptor": "(Lnet/minecraft/network/Connection;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/server/network/CommonListenerCookie;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "broadcast",
+      "actual": "broadcastSystemMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;Z)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getWhitelist",
+      "actual": "getWhiteList",
+      "descriptor": "()Lnet/minecraft/server/players/UserWhiteList;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "broadcast",
+      "actual": "broadcastSystemMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;Ljava/util/function/Function;Z)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "broadcast",
+      "actual": "broadcastChatMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/PlayerChatMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/network/chat/ChatType$Bound;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "getOpList",
+      "actual": "getOps",
+      "descriptor": "()Lnet/minecraft/server/players/ServerOpList;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "broadcast",
+      "actual": "broadcastChatMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/PlayerChatMessage;Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/network/chat/ChatType$Bound;)V"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "remove",
+      "actual": "remove",
+      "descriptor": "(Ljava/lang/Object;)Z"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "get",
+      "actual": "get",
+      "descriptor": "(Ljava/lang/Object;)Lnet/minecraft/server/players/StoredUserEntry;"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "save",
+      "actual": "save",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "remove",
+      "actual": "remove",
+      "descriptor": "(Lnet/minecraft/server/players/StoredUserEntry;)Z"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "toString",
+      "actual": "getKeyForUser",
+      "descriptor": "(Ljava/lang/Object;)Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "add",
+      "actual": "add",
+      "descriptor": "(Lnet/minecraft/server/players/StoredUserEntry;)Z"
+    },
+    {
+      "owner": "net.minecraft.server.BanEntry",
+      "name": "getSource",
+      "actual": "getSource",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.BanEntry",
+      "name": "getReason",
+      "actual": "getReason",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayNetworkHandler",
+      "name": "requestTeleport",
+      "actual": "teleport",
+      "descriptor": "(Lnet/minecraft/world/entity/PositionMoveRotation;Ljava/util/Set;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayNetworkHandler",
+      "name": "requestTeleport",
+      "actual": "teleport",
+      "descriptor": "(DDDFF)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerInteractionManager",
+      "name": "getGameMode",
+      "actual": "getGameModeForPlayer",
+      "descriptor": "()Lnet/minecraft/world/level/GameType;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "getEntityWorld",
+      "actual": "level",
+      "descriptor": "()Lnet/minecraft/server/level/ServerLevel;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "getIp",
+      "actual": "getIpAddress",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "sendMessage",
+      "actual": "sendSystemMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "getCommandSource",
+      "actual": "createCommandSourceStack",
+      "descriptor": "()Lnet/minecraft/commands/CommandSourceStack;"
+    },
+    {
+      "owner": "net.minecraft.server.command.CommandManager",
+      "name": "literal",
+      "actual": "literal",
+      "descriptor": "(Ljava/lang/String;)Lcom/mojang/brigadier/builder/LiteralArgumentBuilder;"
+    },
+    {
+      "owner": "net.minecraft.server.command.CommandManager",
+      "name": "getDispatcher",
+      "actual": "getDispatcher",
+      "descriptor": "()Lcom/mojang/brigadier/CommandDispatcher;"
+    },
+    {
+      "owner": "net.minecraft.server.command.CommandManager",
+      "name": "parseAndExecute",
+      "actual": "performPrefixedCommand",
+      "descriptor": "(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.CommandManager",
+      "name": "execute",
+      "actual": "performCommand",
+      "descriptor": "(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "sendMessage",
+      "actual": "sendSystemMessage",
+      "descriptor": "(Lnet/minecraft/network/chat/Component;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "getPlayer",
+      "actual": "getPlayer",
+      "descriptor": "()Lnet/minecraft/server/level/ServerPlayer;"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "getWorld",
+      "actual": "getLevel",
+      "descriptor": "()Lnet/minecraft/server/level/ServerLevel;"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "withReturnValueConsumer",
+      "actual": "withCallback",
+      "descriptor": "(Lnet/minecraft/commands/CommandResultCallback;)Lnet/minecraft/commands/CommandSourceStack;"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "getName",
+      "actual": "getTextName",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "getEntity",
+      "actual": "getEntity",
+      "descriptor": "()Lnet/minecraft/world/entity/Entity;"
+    },
+    {
+      "owner": "net.minecraft.world.World",
+      "name": "getEntity",
+      "actual": "getEntity",
+      "descriptor": "(Ljava/util/UUID;)Lnet/minecraft/world/entity/Entity;"
+    },
+    {
+      "owner": "net.minecraft.world.World",
+      "name": "getRegistryKey",
+      "actual": "dimension",
+      "descriptor": "()Lnet/minecraft/resources/ResourceKey;"
+    },
+    {
+      "owner": "net.minecraft.world.GameMode",
+      "name": "getId",
+      "actual": "getName",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "()Ljava/util/UUID;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "name",
+      "actual": "name",
+      "descriptor": "()Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "()Ljava/util/UUID;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket",
+      "name": "getId",
+      "actual": "getId",
+      "descriptor": "()J"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "acknowledgment",
+      "actual": "lastSeenMessages",
+      "descriptor": "()Lnet/minecraft/network/chat/LastSeenMessages$Update;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "timestamp",
+      "actual": "timeStamp",
+      "descriptor": "()Ljava/time/Instant;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "salt",
+      "actual": "salt",
+      "descriptor": "()J"
+    },
+    {
+      "owner": "net.minecraft.registry.RegistryKey",
+      "name": "getValue",
+      "actual": "identifier",
+      "descriptor": "()Lnet/minecraft/resources/Identifier;"
+    },
+    {
+      "owner": "net.minecraft.entity.player.PlayerEntity",
+      "name": "getGameProfile",
+      "actual": "getGameProfile",
+      "descriptor": "()Lcom/mojang/authlib/GameProfile;"
+    },
+    {
+      "owner": "net.minecraft.entity.player.PlayerEntity",
+      "name": "getGameMode",
+      "actual": "gameMode",
+      "descriptor": "()Lnet/minecraft/world/level/GameType;"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "channelActive",
+      "actual": "channelActive",
+      "descriptor": "(Lio/netty/channel/ChannelHandlerContext;)V"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "channelInactive",
+      "actual": "channelInactive",
+      "descriptor": "(Lio/netty/channel/ChannelHandlerContext;)V"
+    },
+    {
+      "owner": "net.minecraft.command.ReturnValueConsumer",
+      "name": "onResult",
+      "actual": "onResult",
+      "descriptor": "(ZI)V"
+    },
+    {
+      "owner": "net.minecraft.command.ReturnValueConsumer",
+      "name": "onSuccess",
+      "actual": "onSuccess",
+      "descriptor": "(I)V"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.ItemEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.ItemEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.ItemEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;DDD)V"
+    },
+    {
+      "owner": "net.minecraft.entity.LivingEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;)V"
+    },
+    {
+      "owner": "net.minecraft.entity.player.PlayerEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/level/Level;Lcom/mojang/authlib/GameProfile;)V"
+    },
+    {
+      "owner": "net.minecraft.network.ClientConnection",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/protocol/PacketFlow;)V"
+    },
+    {
+      "owner": "net.minecraft.network.message.ArgumentSignatureDataMap",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.message.ArgumentSignatureDataMap",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/util/List;)V"
+    },
+    {
+      "owner": "net.minecraft.network.message.SignedMessage",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/chat/SignedMessageLink;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/network/chat/SignedMessageBody;Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/FilterMask;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/level/ClientInformation;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.CommonPongC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(I)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.CommonPongC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(J)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/util/UUID;Lnet/minecraft/network/protocol/common/ServerboundResourcePackPacket$Action;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.AcknowledgeChunksC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.AcknowledgeChunksC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(F)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.AcknowledgeReconfigurationC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/String;Ljava/time/Instant;JLnet/minecraft/commands/arguments/ArgumentSignatures;Lnet/minecraft/network/chat/LastSeenMessages$Update;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/String;Ljava/time/Instant;JLnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/network/chat/LastSeenMessages$Update;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.MessageAcknowledgmentC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.MessageAcknowledgmentC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(I)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.PlayerLoadedC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "()V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.PlayerSessionC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.PlayerSessionC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/chat/RemoteChatSession$Data;)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(I)V"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/network/FriendlyByteBuf;)V"
+    },
+    {
+      "owner": "net.minecraft.registry.RegistryKey",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/resources/Identifier;Lnet/minecraft/resources/Identifier;)V"
+    },
+    {
+      "owner": "net.minecraft.server.BanEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/Object;Ljava/util/Date;Ljava/lang/String;Ljava/util/Date;Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.server.BanEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/Object;Lcom/google/gson/JsonObject;)V"
+    },
+    {
+      "owner": "net.minecraft.server.BannedPlayerEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/players/NameAndId;)V"
+    },
+    {
+      "owner": "net.minecraft.server.BannedPlayerEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/players/NameAndId;Ljava/util/Date;Ljava/lang/String;Ljava/util/Date;Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.server.BannedPlayerEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lcom/google/gson/JsonObject;)V"
+    },
+    {
+      "owner": "net.minecraft.server.MinecraftServer",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/Thread;Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;Lnet/minecraft/server/packs/repository/PackRepository;Lnet/minecraft/server/WorldStem;Ljava/util/Optional;Ljava/net/Proxy;Lcom/mojang/datafixers/DataFixer;Lnet/minecraft/server/Services;Lnet/minecraft/server/level/progress/LevelLoadListener;Z)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lcom/mojang/authlib/GameProfile;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lcom/mojang/authlib/yggdrasil/response/NameAndId;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/util/UUID;Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerManager",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/core/LayeredRegistryAccess;Lnet/minecraft/world/level/storage/PlayerDataStorage;Lnet/minecraft/server/notifications/NotificationService;)V"
+    },
+    {
+      "owner": "net.minecraft.server.ServerConfigList",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/io/File;Lnet/minecraft/server/notifications/NotificationService;)V"
+    },
+    {
+      "owner": "net.minecraft.server.WhitelistEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/players/NameAndId;)V"
+    },
+    {
+      "owner": "net.minecraft.server.WhitelistEntry",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lcom/google/gson/JsonObject;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.CommandManager",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/commands/Commands$CommandSelection;Lnet/minecraft/commands/CommandBuildContext;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/commands/CommandSource;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec2;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/permissions/PermissionSet;Ljava/lang/String;Lnet/minecraft/network/chat/Component;Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/world/entity/Entity;)V"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/commands/CommandSource;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec2;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/permissions/PermissionSet;Ljava/lang/String;Lnet/minecraft/network/chat/Component;Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/world/entity/Entity;ZLnet/minecraft/commands/CommandResultCallback;Lnet/minecraft/commands/arguments/EntityAnchorArgument$Anchor;Lnet/minecraft/commands/CommandSigningContext;Lnet/minecraft/util/TaskChainer;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerCommonNetworkHandler",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/network/Connection;Lnet/minecraft/server/network/CommonListenerCookie;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayNetworkHandler",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/network/Connection;Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/server/network/CommonListenerCookie;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/server/level/ServerLevel;Lcom/mojang/authlib/GameProfile;Lnet/minecraft/server/level/ClientInformation;)V"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerInteractionManager",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/server/level/ServerPlayer;)V"
+    },
+    {
+      "owner": "net.minecraft.util.WorldSavePath",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.world.GameMode",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Ljava/lang/String;IILjava/lang/String;)V"
+    },
+    {
+      "owner": "net.minecraft.world.World",
+      "name": "<init>",
+      "actual": "<init>",
+      "descriptor": "(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/RegistryAccess;Lnet/minecraft/core/Holder;ZZJI)V"
+    }
+  ],
+  "fields": [
+    {
+      "owner": "net.minecraft.server.network.ServerCommonNetworkHandler",
+      "name": "connection",
+      "actual": "connection",
+      "descriptor": "Lnet/minecraft/network/Connection;"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "I"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "world",
+      "actual": "level",
+      "descriptor": "Lnet/minecraft/world/level/Level;"
+    },
+    {
+      "owner": "net.minecraft.entity.Entity",
+      "name": "fallDistance",
+      "actual": "fallDistance",
+      "descriptor": "D"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket",
+      "name": "command",
+      "actual": "command",
+      "descriptor": "Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.message.ArgumentSignatureDataMap",
+      "name": "EMPTY",
+      "actual": "EMPTY",
+      "descriptor": "Lnet/minecraft/commands/arguments/ArgumentSignatures;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "timestamp",
+      "actual": "timeStamp",
+      "descriptor": "Ljava/time/Instant;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "command",
+      "actual": "command",
+      "descriptor": "Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "lastSeenMessages",
+      "actual": "lastSeenMessages",
+      "descriptor": "Lnet/minecraft/network/chat/LastSeenMessages$Update;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket",
+      "name": "salt",
+      "actual": "salt",
+      "descriptor": "J"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerInteractionManager",
+      "name": "world",
+      "actual": "level",
+      "descriptor": "Lnet/minecraft/server/level/ServerLevel;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "interactionManager",
+      "actual": "gameMode",
+      "descriptor": "Lnet/minecraft/server/level/ServerPlayerGameMode;"
+    },
+    {
+      "owner": "net.minecraft.server.network.ServerPlayerEntity",
+      "name": "networkHandler",
+      "actual": "connection",
+      "descriptor": "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;"
+    },
+    {
+      "owner": "net.minecraft.server.command.ServerCommandSource",
+      "name": "world",
+      "actual": "level",
+      "descriptor": "Lnet/minecraft/server/level/ServerLevel;"
+    },
+    {
+      "owner": "net.minecraft.world.GameMode",
+      "name": "id",
+      "actual": "name",
+      "descriptor": "Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "Ljava/util/UUID;"
+    },
+    {
+      "owner": "net.minecraft.server.PlayerConfigEntry",
+      "name": "name",
+      "actual": "name",
+      "descriptor": "Ljava/lang/String;"
+    },
+    {
+      "owner": "net.minecraft.entity.ItemEntity",
+      "name": "owner",
+      "actual": "target",
+      "descriptor": "Ljava/util/UUID;"
+    },
+    {
+      "owner": "net.minecraft.entity.ItemEntity",
+      "name": "health",
+      "actual": "health",
+      "descriptor": "I"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "Ljava/util/UUID;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket",
+      "name": "id",
+      "actual": "id",
+      "descriptor": "J"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "acknowledgment",
+      "actual": "lastSeenMessages",
+      "descriptor": "Lnet/minecraft/network/chat/LastSeenMessages$Update;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "timestamp",
+      "actual": "timeStamp",
+      "descriptor": "Ljava/time/Instant;"
+    },
+    {
+      "owner": "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket",
+      "name": "salt",
+      "actual": "salt",
+      "descriptor": "J"
+    },
+    {
+      "owner": "net.minecraft.command.ReturnValueConsumer",
+      "name": "EMPTY",
+      "actual": "EMPTY",
+      "descriptor": "Lnet/minecraft/commands/CommandResultCallback;"
+    },
+    {
+      "owner": "net.minecraft.util.WorldSavePath",
+      "name": "ROOT",
+      "actual": "ROOT",
+      "descriptor": "Lnet/minecraft/world/level/storage/LevelResource;"
+    }
+  ],
+  "packets": {
+    "net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket": "net.minecraft.network.protocol.common.ServerboundClientInformationPacket",
+    "net.minecraft.network.packet.c2s.common.CommonPongC2SPacket": "net.minecraft.network.protocol.common.ServerboundPongPacket",
+    "net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket": "net.minecraft.network.protocol.common.ServerboundKeepAlivePacket",
+    "net.minecraft.network.packet.c2s.common.ResourcePackStatusC2SPacket": "net.minecraft.network.protocol.common.ServerboundResourcePackPacket",
+    "net.minecraft.network.packet.c2s.play.AcknowledgeChunksC2SPacket": "net.minecraft.network.protocol.game.ServerboundChunkBatchReceivedPacket",
+    "net.minecraft.network.packet.c2s.play.AcknowledgeReconfigurationC2SPacket": "net.minecraft.network.protocol.game.ServerboundConfigurationAcknowledgedPacket",
+    "net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket",
+    "net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatPacket",
+    "net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket": "net.minecraft.network.protocol.game.ServerboundClientTickEndPacket",
+    "net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatCommandPacket",
+    "net.minecraft.network.packet.c2s.play.MessageAcknowledgmentC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatAckPacket",
+    "net.minecraft.network.packet.c2s.play.PlayerLoadedC2SPacket": "net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket",
+    "net.minecraft.network.packet.c2s.play.PlayerSessionC2SPacket": "net.minecraft.network.protocol.game.ServerboundChatSessionUpdatePacket",
+    "net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket": "net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket"
+  }
+}

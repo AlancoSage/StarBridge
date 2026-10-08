@@ -1,4 +1,4 @@
-"""Build five server-only Fabric adapters with pinned APIs and exact Yarn v2 bindings."""
+"""Build server-only Fabric adapters with pinned APIs and verified native bindings."""
 from __future__ import annotations
 import argparse
 import hashlib
@@ -11,17 +11,22 @@ import tempfile
 import urllib.error
 import urllib.request
 import zipfile
+from bindings import native_bindings, read_specification
 
 ROOT = Path(__file__).resolve().parent
 VERSION = '0.1.0'
 LOADER = '0.16.14'
-VERSIONS = {'1.16.5': 8, '1.18.2': 17, '1.19.2': 17, '1.20.1': 17, '1.21.1': 21}
+NEW_LOADER = '0.19.5'
+VERSIONS = {'1.16.5': 8, '1.18.2': 17, '1.19.2': 17, '1.20.1': 17, '1.21.1': 21,
+            '1.21.8': 21, '1.21.11': 21, '26.1': 25, '26.2': 25, '26.3': 25}
 YARN = {
     '1.16.5': ('10', '9a7263629e5870f2788cc947f932b3d8d8606c29145babe1377b4c49796da615'),
     '1.18.2': ('4', '707f6efcfa69446817a532fe5f90011bdcd991f3827978d04184e39c23a3774b'),
     '1.19.2': ('28', '116df44bc49704d9e0ac8f4e99eb0f7ae5550c6041ff7f2915461e776283301f'),
     '1.20.1': ('10', '5444b470f35b892862908bb27314c0b5b325369fd60896d8d809e635d5371bea'),
     '1.21.1': ('3', '4ec570889585cb958b7d3c9dd94ce4064b16ab797dffec152bc8486c59a4010b'),
+    '1.21.8': ('1', 'af0be370862072ba1b2f30aed5473e52ae2e0f232d89090741319553895a6043'),
+    '1.21.11': ('6', 'e8112359716235dc4fd7f0bd4a6162fd728e0d1067d9fa02f289edaaccd37718'),
 }
 DEPENDENCIES = {
     'fabric-loader-0.16.14.jar': ('https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.16.14/fabric-loader-0.16.14.jar', '9ed7b7f4197153ad97d71b4b9cd9148989e8f0c600934b035ce45f3ef003efc0'),
@@ -47,7 +52,7 @@ def fetch(name, url, expected, cache):
     path = cache/name
     if path.is_file() and sha256(path) == expected:
         return path
-    for directory in (ROOT.parent/'.tools/fabric', ROOT.parent/'.tools/legacy-mods', ROOT.parent/'bridge-mods/build/dependencies'):
+    for directory in (ROOT.parent/'.tools/fabric', ROOT.parent/'.tools/fabric-new', ROOT.parent/'.tools/legacy-mods', ROOT.parent/'bridge-mods/build/dependencies'):
         source = directory/name
         if source.is_file() and sha256(source) == expected:
             shutil.copyfile(source, path)
@@ -85,7 +90,7 @@ def mappings(mc, jar):
                 raise ValueError('Yarn member without an owner')
             target = methods if row[1] == 'm' else fields
             target.append({'owner': owner, 'name': row[4], 'intermediary': row[3], 'descriptor': row[2]})
-    if mc == '1.21.1':
+    if mc in ('1.21.1', '1.21.8', '1.21.11'):
         # Java record canonical constructors are not always named by Tiny v2.
         for name, descriptor in (
             ('CommandExecutionC2SPacket', '(Ljava/lang/String;)V'),
@@ -145,7 +150,7 @@ def mixin_sources(document):
         arguments = '@Coerce Object source, String command, CallbackInfoReturnable<Integer> callback'
         check = 'if (!FabricRuntime.allowCommand(source)) callback.setReturnValue(Integer.valueOf(0));'
     else:
-        result_type = 'V' if document['mcVersion'] == '1.21.1' else 'I'
+        result_type = 'I' if document['mcVersion'] in ('1.19.2', '1.20.1') else 'V'
         execution = member(document, manager, 'execute', '(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)' + result_type)
         callback = 'CallbackInfo' if result_type == 'V' else 'CallbackInfoReturnable<Integer>'
         arguments = 'com.mojang.brigadier.ParseResults<?> results, String command, ' + callback + ' callback'
@@ -154,21 +159,28 @@ def mixin_sources(document):
     result['CommandsExecuteMixin'] = wrap(manager, 'CommandsExecuteMixin',
         inject(execution, 'HEAD', arguments, check, cancellable=True))
     result['DamageMixin'] = wrap('net.minecraft.entity.LivingEntity', 'DamageMixin',
-        inject(member(document, entity, 'damage', '(Lnet/minecraft/class_1282;F)Z'), 'HEAD', 'CallbackInfoReturnable<Boolean> callback',
+        inject(member(document, entity, 'damage'), 'HEAD', 'CallbackInfoReturnable<Boolean> callback',
                'if (FabricRuntime.lockedEntity(this)) callback.setReturnValue(Boolean.FALSE);', cancellable=True))
     result['PickupMixin'] = wrap('net.minecraft.entity.ItemEntity', 'PickupMixin',
-        inject(member(document, entity, 'onPlayerCollision', '(Lnet/minecraft/class_1657;)V'), 'HEAD', '@Coerce Object player, CallbackInfo callback',
+        inject(member(document, entity, 'onPlayerCollision'), 'HEAD', '@Coerce Object player, CallbackInfo callback',
                'if (FabricRuntime.lockedEntity(player)) callback.cancel();', cancellable=True))
     player_manager = 'net.minecraft.server.PlayerManager'
     join = member(document, player_manager, 'onPlayerConnect')
     parameters = '@Coerce Object connection, @Coerce Object player, '
-    if document['mcVersion'] == '1.21.1':
+    if VERSIONS[document['mcVersion']] >= 21:
         parameters += '@Coerce Object data, '
     result['PlayerJoinMixin'] = wrap(player_manager, 'PlayerJoinMixin',
         inject(join, 'TAIL', parameters + 'CallbackInfo callback', 'FabricRuntime.join(player);'))
-    if document['mcVersion'] in ('1.19.2', '1.20.1', '1.21.1'):
+    if document['mcVersion'] not in ('1.16.5', '1.18.2'):
+        signed_message = classes['net.minecraft.network.message.SignedMessage'].replace('.', '/')
+        server_player = classes['net.minecraft.server.network.ServerPlayerEntity'].replace('.', '/')
+        prefix = f'(L{signed_message};L{server_player};'
+        choices = [row for row in document['methods'] if row['owner'] == player_manager
+                   and row['name'] == 'broadcast' and row['descriptor'].startswith(prefix)]
+        if len(choices) != 1:
+            raise ValueError('Exact signed chat broadcast binding is missing or ambiguous')
         result['PlayerManagerChatMixin'] = wrap('net.minecraft.server.PlayerManager', 'PlayerManagerChatMixin',
-            inject(member(document, 'net.minecraft.server.PlayerManager', 'broadcast', '(Lnet/minecraft/class_7471;Lnet/minecraft/class_3222;Lnet/minecraft/class_2556$class_7602;)V'),
+            inject(member(document, player_manager, 'broadcast', choices[0]['descriptor']),
                    'HEAD', '@Coerce Object message, @Coerce Object player, @Coerce Object parameters, CallbackInfo callback',
                    'if (!FabricRuntime.allowChat(player, message)) callback.cancel();', cancellable=True))
     return result
@@ -176,10 +188,16 @@ def mixin_sources(document):
 
 def build(mc, jdk, cache):
     libraries = [fetch(name, url, digest, cache) for name, (url, digest) in DEPENDENCIES.items()]
-    yarn_build, digest = YARN[mc]
-    coordinate = f'{mc}+build.{yarn_build}'
-    yarn = fetch(f'yarn-{mc}-v2.jar', f'https://maven.fabricmc.net/net/fabricmc/yarn/{coordinate}/yarn-{coordinate}-v2.jar', digest, cache)
-    document = mappings(mc, yarn)
+    if mc in YARN:
+        yarn_build, digest = YARN[mc]
+        coordinate = f'{mc}+build.{yarn_build}'
+        yarn = fetch(f'yarn-{mc}-v2.jar', f'https://maven.fabricmc.net/net/fabricmc/yarn/{coordinate}/yarn-{coordinate}-v2.jar', digest, cache)
+        document = mappings(mc, yarn)
+    else:
+        specification = read_specification(ROOT/'bindings'/f'{mc}.json', mc)
+        server = specification['server']
+        bundled = fetch(f'server-{mc}.jar', server['url'], server['sha256'], cache)
+        document = native_bindings(specification, bundled)
     generated = mixin_sources(document)
     directory = ROOT/'build'/mc
     directory.mkdir(parents=True, exist_ok=True)
@@ -202,7 +220,8 @@ def build(mc, jdk, cache):
         metadata = {'schemaVersion': 1, 'id': 'starbridge', 'version': VERSION, 'name': 'StarBridge',
                     'description': 'Server-side StarBridge QQ and account integration.', 'environment': 'server',
                     'entrypoints': {'main': ['cn.starbridge.fabric.StarBridgeFabric']}, 'mixins': ['starbridge-fabric.mixins.json'],
-                    'depends': {'fabricloader': '>=' + LOADER, 'minecraft': mc, 'java': '>=' + str(VERSIONS[mc])}}
+                    'depends': {'fabricloader': '>=' + (LOADER if mc in ('1.16.5','1.18.2','1.19.2','1.20.1','1.21.1') else NEW_LOADER),
+                                'minecraft': mc, 'java': '>=' + str(VERSIONS[mc])}}
         resources = {'fabric.mod.json': metadata,
                      'starbridge-fabric-mappings.json': document,
                      'starbridge-fabric.mixins.json': {'required': True, 'minVersion': '0.8', 'package': 'cn.starbridge.fabric.mixin',
@@ -230,7 +249,7 @@ def build(mc, jdk, cache):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--java-home', type=Path, default=Path(os.environ.get('JAVA_HOME', '')))
-    parser.add_argument('--version', choices=VERSIONS, help='Omit to build all five supported game versions.')
+    parser.add_argument('--version', choices=VERSIONS, help='Omit to build all supported game versions.')
     parser.add_argument('--cache', type=Path, default=ROOT/'build/dependencies')
     args = parser.parse_args()
     for mc in [args.version] if args.version else VERSIONS:

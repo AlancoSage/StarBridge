@@ -16,20 +16,22 @@ class NativeReleaseAssetTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root/'starbridge').mkdir()
         (self.root/'bridge/target').mkdir(parents=True)
-        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.4"\n__forge_version__="0.1.0"\n', encoding='utf-8')
+        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.5"\n__forge_version__="0.1.0"\n', encoding='utf-8')
 
-    def artifact(self, item, *, override=None, missing_core=False, missing_resource=False, missing_mixin=False, major=None):
+    def artifact(self, item, *, override=None, binding_override=None, missing_core=False, missing_resource=False, missing_mixin=False, major=None):
         path = self.root/'bridge/target'/native_filename(item, '0.1.0')
         legacy = item['platform'] == 'forge' and item['version'] in ('1.7.10', '1.12.2', '1.16.5')
         core = ['cn/starbridge/mods/BridgeEngine.class', 'cn/starbridge/mods/LegacyMod.class'] if legacy else [
             'cn/starbridge/forge/StarBridge.class', 'cn/starbridge/forge/GameLogin.class']
         if item['platform'] == 'fabric':
-            metadata = {'id': 'starbridge', 'version': '0.1.0', 'environment': 'server', 'depends': {'minecraft': item['version']},
+            metadata = {'id': 'starbridge', 'version': '0.1.0', 'environment': 'server', 'depends': {'minecraft': item['version'], 'java': '>=' + str(item['java'])},
                         'entrypoints': {'main': ['cn.starbridge.fabric.StarBridgeFabric']}, 'mixins': ['starbridge-fabric.mixins.json']}
+            if item.get('loader_version'):
+                metadata['depends']['fabricloader'] = '>=' + item['loader_version']
             metadata.update(override or {})
             name, content = 'fabric.mod.json', json.dumps(metadata)
             mixins = list(FABRIC_MIXINS)
-            if item['version'] in ('1.19.2', '1.20.1', '1.21.1'):
+            if item['version'] not in ('1.16.5', '1.18.2'):
                 mixins.append('PlayerManagerChatMixin')
             core = list(FABRIC_CORE) + ['cn/starbridge/fabric/mixin/' + name + '.class' for name in mixins]
         elif item['version'] in ('1.7.10', '1.12.2'):
@@ -43,7 +45,11 @@ class NativeReleaseAssetTests(unittest.TestCase):
             if item['platform'] == 'fabric' and not missing_resource:
                 archive.writestr('starbridge-fabric.mixins.json', json.dumps({'required': not missing_mixin,
                     'package': 'cn.starbridge.fabric.mixin', 'mixins': mixins, 'injectors': {'defaultRequire': 1}}))
-                archive.writestr('starbridge-fabric-mappings.json', json.dumps({'mcVersion': item['version']}))
+                bindings = {'mcVersion': item['version']}
+                if item['version'].startswith('26.'):
+                    bindings['namespace'] = 'official'
+                bindings.update(binding_override or {})
+                archive.writestr('starbridge-fabric-mappings.json', json.dumps(bindings))
             for class_name in core[1:] if missing_core else core:
                 archive.writestr(class_name, b'\xca\xfe\xba\xbe\x00\x00' + (major or item['java'] + 44).to_bytes(2, 'big'))
         return path
@@ -51,16 +57,16 @@ class NativeReleaseAssetTests(unittest.TestCase):
     def catalog(self, items):
         (self.root/'starbridge/game_bridges.py').write_text('GAME_BRIDGES = '+repr(tuple(items)), encoding='utf-8')
 
-    def test_all_twelve_native_assets_are_required_with_distinct_loader_names(self):
+    def test_all_seventeen_native_assets_are_required_with_distinct_loader_names(self):
         self.catalog(GAME_BRIDGES)
         for item in GAME_BRIDGES:
             self.artifact(item)
         assets = native_assets(self.root)
-        self.assertEqual(len(assets), 12)
-        self.assertEqual(len(set(path.name for path in assets)), 12)
+        self.assertEqual(len(assets), 17)
+        self.assertEqual(len(set(path.name for path in assets)), 17)
         self.assertEqual({path.name for path in assets if path.name.startswith('StarBridge-Fabric-')}, {
-            f'StarBridge-Fabric-{version}-0.1.0.jar' for version in ('1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1')})
-        (self.root/'bridge/target/StarBridge-Fabric-1.21.1-0.1.0.jar').unlink()
+            f'StarBridge-Fabric-{version}-0.1.0.jar' for version in ('1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1', '1.21.8', '1.21.11', '26.1', '26.2', '26.3')})
+        (self.root/'bridge/target/StarBridge-Fabric-26.3-0.1.0.jar').unlink()
         with self.assertRaisesRegex(ValueError, '缺少游戏端构建'):
             native_assets(self.root)
 
@@ -84,6 +90,36 @@ class NativeReleaseAssetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Java 要求不一致'):
             validate_native_mod(self.artifact(item, major=61), item, '0.1.0')
         validate_native_mod(self.artifact(item, major=52), item, '0.1.0')
+
+    def test_fabric_26_requires_official_names_and_preserves_java_25_limit(self):
+        item = {'platform': 'fabric', 'version': '26.3', 'java': 25}
+        validate_native_mod(self.artifact(item, major=52), item, '0.1.0')
+        validate_native_mod(self.artifact(item, major=69), item, '0.1.0')
+        with self.assertRaisesRegex(ValueError, 'Java 要求不一致'):
+            validate_native_mod(self.artifact(item, major=70), item, '0.1.0')
+        with self.assertRaisesRegex(ValueError, '命名空间不一致'):
+            validate_native_mod(self.artifact(item, binding_override={'namespace': 'intermediary'}), item, '0.1.0')
+        item = {'platform': 'fabric', 'version': '1.21.11', 'java': 21}
+        with self.assertRaisesRegex(ValueError, '命名空间不一致'):
+            validate_native_mod(self.artifact(item, binding_override={'namespace': 'official'}), item, '0.1.0')
+
+    def test_fabric_loader_and_java_dependencies_match_panel_requirements(self):
+        item = {'platform': 'fabric', 'version': '26.3', 'java': 25, 'loader_version': '0.19.5'}
+        validate_native_mod(self.artifact(item), item, '0.1.0')
+        for dependencies in ({'minecraft': '26.3', 'java': '>=21', 'fabricloader': '>=0.19.5'},
+                             {'minecraft': '26.3', 'java': '>=25', 'fabricloader': '>=0.16.14'}):
+            with self.subTest(dependencies=dependencies):
+                with self.assertRaisesRegex(ValueError, '元数据不一致'):
+                    validate_native_mod(self.artifact(item, override={'depends': dependencies}), item, '0.1.0')
+
+    def test_064_source_catalog_requires_only_its_twelve_native_assets(self):
+        versions = ('1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1')
+        historical = tuple(item for item in GAME_BRIDGES if item['platform'] != 'fabric' or item['version'] in versions)
+        self.catalog(historical)
+        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.4"\n__forge_version__="0.1.0"\n', encoding='utf-8')
+        for item in historical:
+            self.artifact(item)
+        self.assertEqual(len(native_assets(self.root)), 12)
 
     def test_historical_catalog_and_single_forge_release_do_not_require_fabric(self):
         historical = tuple(item for item in GAME_BRIDGES if item['platform'] != 'fabric')

@@ -24,6 +24,7 @@ public final class FabricHost implements GameHost {
     private final FabricNative nativeApi;
     private final Object server,manager;
     private final String version;
+    private final String profileIdGetter,profileNameGetter;
     private final Path catalog;
     private final ArrayBlockingQueue<Runnable> callbacks=new ArrayBlockingQueue<Runnable>(512);
     private final Map<UUID,FabricPlayer> wrappers=new HashMap<UUID,FabricPlayer>();
@@ -31,6 +32,9 @@ public final class FabricHost implements GameHost {
     public FabricHost(Object server,String mcVersion) {
         FabricRuntime.initialize();nativeApi=Objects.requireNonNull(FabricRuntime.nativeApi,"Fabric native mappings not initialized");
         this.server=server;version=mcVersion;
+        // Authlib 7 replaced these getters with the GameProfile record accessors.
+        profileIdGetter=nativeApi.hasExternalMethod(PROFILE,"id","()Ljava/util/UUID;")?"id":"getId";
+        profileNameGetter=nativeApi.hasExternalMethod(PROFILE,"name","()Ljava/lang/String;")?"name":"getName";
         if(!mcVersion.equals(nativeApi.minecraftVersion()))throw new IllegalStateException("Fabric game version does not match native mappings");
         manager=nativeApi.call(server,SERVER,"getPlayerManager");
         Object root=nativeApi.field(null,"net.minecraft.util.WorldSavePath","ROOT");
@@ -43,7 +47,7 @@ public final class FabricHost implements GameHost {
     public FabricPlayer wrap(Object value) {
         if(!isPlayer(value))throw new IllegalArgumentException("Not a native server player");
         Object profile=nativeApi.call(value,PLAYER,"getGameProfile");
-        UUID id=(UUID)nativeApi.direct(profile,PROFILE,"getId","()Ljava/util/UUID;");
+        UUID id=(UUID)nativeApi.direct(profile,PROFILE,profileIdGetter,"()Ljava/util/UUID;");
         FabricPlayer found=wrappers.get(id);
         if(found==null||found.handle()!=value){found=new FabricPlayer(value,profile,id);wrappers.put(id,found);}
         return found;
@@ -80,7 +84,11 @@ public final class FabricHost implements GameHost {
         status.addProperty("max_players",((Number)nativeApi.call(manager,MANAGER,"getMaxPlayerCount")).intValue());
         status.addProperty("whitelist_enabled",(Boolean)nativeApi.call(manager,MANAGER,"isWhitelistEnabled"));return status;
     }
-    private Object profile(UUID id,String name){return nativeApi.create(PROFILE,id,name);}
+    private Object profile(UUID id,String name) {
+        // From 1.21.11 the native ban, operator and whitelist files use NameAndId.
+        String owner=nativeApi.hasClass("net.minecraft.server.PlayerConfigEntry")?"net.minecraft.server.PlayerConfigEntry":PROFILE;
+        return nativeApi.create(owner,id,name);
+    }
     private Object bans(){return nativeApi.call(manager,MANAGER,"getUserBanList");}
     private Object whites(){return nativeApi.call(manager,MANAGER,"getWhitelist");}
     private Object ops(){return nativeApi.call(manager,MANAGER,"getOpList");}
@@ -128,6 +136,8 @@ public final class FabricHost implements GameHost {
         Object source=nativeApi.call(server,SERVER,"getCommandSource");
         int count;
         String managerOwner="net.minecraft.server.command.CommandManager",sourceOwner="net.minecraft.server.command.ServerCommandSource";
+        String entry=nativeApi.hasMethod(managerOwner,"parseAndExecute")?"parseAndExecute":
+            nativeApi.hasMethod(managerOwner,"executeWithPrefix")?"executeWithPrefix":"execute";
         if(nativeApi.hasClass("net.minecraft.command.ReturnValueConsumer")&&nativeApi.hasMethod(sourceOwner,"withReturnValueConsumer")) {
             String callbackOwner="net.minecraft.command.ReturnValueConsumer";
             Class<?> callbackType=nativeApi.type(callbackOwner);
@@ -147,9 +157,8 @@ public final class FabricHost implements GameHost {
                 return null;
             });
             source=nativeApi.call(source,sourceOwner,"withReturnValueConsumer",callback);
-            nativeApi.call(manager,managerOwner,"executeWithPrefix",source,command);count=result[0];
+            nativeApi.call(manager,managerOwner,entry,source,command);count=result[0];
         } else {
-            String entry=nativeApi.hasMethod(managerOwner,"executeWithPrefix")?"executeWithPrefix":"execute";
             count=((Number)nativeApi.call(manager,managerOwner,entry,source,command)).intValue();
         }
         if(count<=0)throw new IllegalStateException("Command failed");return "命令已执行（"+count+"）";
@@ -182,14 +191,18 @@ public final class FabricHost implements GameHost {
         private boolean wasLocked;
         private double anchorX,anchorY,anchorZ;
         FabricPlayer(Object entity,Object profile,UUID id) {
-            this.entity=entity;this.id=id;name=(String)nativeApi.direct(profile,PROFILE,"getName","()Ljava/lang/String;");captureAnchor();
+            this.entity=entity;this.id=id;name=(String)nativeApi.direct(profile,PROFILE,profileNameGetter,"()Ljava/lang/String;");captureAnchor();
         }
         public Object handle(){return entity;}public UUID id(){return id;}public String name(){return name;}
         public String ip(){return (String)nativeApi.call(entity,SERVER_PLAYER,"getIp");}
         private double coordinate(String axis){return ((Number)nativeApi.call(entity,ENTITY,"get"+axis)).doubleValue();}
         private void captureAnchor(){anchorX=coordinate("X");anchorY=coordinate("Y");anchorZ=coordinate("Z");}
         private void refreshAnchor(){boolean locked=bridge!=null&&bridge.locked(id);if(locked&&!wasLocked)captureAnchor();wasLocked=locked;}
-        public void message(String value){nativeApi.call(entity,PLAYER,"sendMessage",text(value),false);}
+        public void message(String value) {
+            if(nativeApi.hasClass("net.minecraft.server.PlayerConfigEntry"))
+                nativeApi.call(entity,SERVER_PLAYER,"sendMessage",text(value));
+            else nativeApi.call(entity,PLAYER,"sendMessage",text(value),false);
+        }
         public void kick(String value) {
             String owner=nativeApi.hasMethod(COMMON_HANDLER,"disconnect")?COMMON_HANDLER:PLAY_HANDLER;
             nativeApi.call(handler(this),owner,"disconnect",text(value));
@@ -202,7 +215,7 @@ public final class FabricHost implements GameHost {
                 else {yaw=((Number)nativeApi.call(entity,ENTITY,"getYaw")).floatValue();pitch=((Number)nativeApi.call(entity,ENTITY,"getPitch")).floatValue();}
                 nativeApi.call(handler(this),PLAY_HANDLER,"requestTeleport",anchorX,anchorY,anchorZ,yaw,pitch);
             }
-            nativeApi.call(entity,ENTITY,"setVelocity",0D,0D,0D);nativeApi.set(entity,ENTITY,"fallDistance",0F);
+            nativeApi.call(entity,ENTITY,"setVelocity",0D,0D,0D);nativeApi.setFloating(entity,ENTITY,"fallDistance",0D);
         }
         public JsonObject details() {
             JsonObject value=new JsonObject();value.addProperty("health",((Number)nativeApi.call(entity,"net.minecraft.entity.LivingEntity","getHealth")).doubleValue());
@@ -210,8 +223,13 @@ public final class FabricHost implements GameHost {
             value.addProperty("ping",ping);
             Object interactions=nativeApi.field(entity,SERVER_PLAYER,"interactionManager");
             Object mode=nativeApi.call(interactions,"net.minecraft.server.network.ServerPlayerInteractionManager","getGameMode");
-            value.addProperty("game_mode",((String)nativeApi.call(mode,"net.minecraft.world.GameMode","getName")).toUpperCase(Locale.ROOT));
-            String getter=nativeApi.hasMethod(SERVER_PLAYER,"getServerWorld")?"getServerWorld":"getWorld";
+            String modeOwner="net.minecraft.world.GameMode";
+            String modeGetter=nativeApi.hasMethod(modeOwner,"getName","()Ljava/lang/String;")?"getName":"getId";
+            if(!nativeApi.hasMethod(modeOwner,modeGetter,"()Ljava/lang/String;"))
+                throw new IllegalStateException("Native game mode string identifier missing");
+            value.addProperty("game_mode",((String)nativeApi.call(mode,modeOwner,modeGetter)).toUpperCase(Locale.ROOT));
+            String getter=nativeApi.hasMethod(SERVER_PLAYER,"getServerWorld")?"getServerWorld":
+                nativeApi.hasMethod(SERVER_PLAYER,"getEntityWorld")?"getEntityWorld":"getWorld";
             Object world=nativeApi.call(entity,SERVER_PLAYER,getter),key=nativeApi.call(world,"net.minecraft.world.World","getRegistryKey");
             String owner=nativeApi.hasClass("net.minecraft.registry.RegistryKey")?"net.minecraft.registry.RegistryKey":"net.minecraft.util.registry.RegistryKey";
             value.addProperty("world",nativeApi.call(key,owner,"getValue").toString());return value;

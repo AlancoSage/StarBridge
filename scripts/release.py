@@ -56,7 +56,7 @@ def native_filename(item, mod_version):
         raise ValueError('不支持的游戏端发布类型或版本')
     if not isinstance(mod_version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', mod_version):
         raise ValueError('游戏端发布版本错误')
-    if type(item.get('java')) is not int or item['java'] not in (8, 17, 21):
+    if type(item.get('java')) is not int or item['java'] not in (8, 17, 21, 25):
         raise ValueError('游戏端 Java 要求错误')
     return f'StarBridge-{loader}-{version}-{mod_version}.jar'
 
@@ -81,6 +81,8 @@ def validate_native_mod(path, item, mod_version):
                     or metadata.get('version') != mod_version or metadata.get('environment') != 'server'
                     or not isinstance(metadata.get('depends'), dict)
                     or metadata['depends'].get('minecraft') != item['version']
+                    or metadata['depends'].get('java') != '>=' + str(item['java'])
+                    or (item.get('loader_version') and metadata['depends'].get('fabricloader') != '>=' + item['loader_version'])
                     or not isinstance(metadata.get('entrypoints'), dict)
                     or metadata['entrypoints'].get('main') != ['cn.starbridge.fabric.StarBridgeFabric']
                     or metadata.get('mixins') != ['starbridge-fabric.mixins.json']):
@@ -90,7 +92,7 @@ def validate_native_mod(path, item, mod_version):
                     raise ValueError(f'游戏端缺少必要资源：{path.name}')
                 config = json.loads(archive.read('starbridge-fabric.mixins.json'))
                 required_mixins = set(FABRIC_MIXINS)
-                if item['version'] in ('1.19.2', '1.20.1', '1.21.1'):
+                if item['version'] not in ('1.16.5', '1.18.2'):
                     required_mixins.add('PlayerManagerChatMixin')
                 if (not isinstance(config, dict) or config.get('required') is not True
                     or config.get('package') != 'cn.starbridge.fabric.mixin'
@@ -104,6 +106,9 @@ def validate_native_mod(path, item, mod_version):
                 bindings = json.loads(archive.read('starbridge-fabric-mappings.json'))
                 if not isinstance(bindings, dict) or bindings.get('mcVersion') != item['version']:
                     raise ValueError(f'游戏端映射版本不一致：{path.name}')
+                expected_namespace = 'official' if item['version'].startswith('26.') else 'intermediary'
+                if bindings.get('namespace', 'intermediary') != expected_namespace:
+                    raise ValueError(f'游戏端映射命名空间不一致：{path.name}')
             else:
                 metadata_name = 'mcmod.info' if item['version'] in ('1.7.10', '1.12.2') else 'META-INF/' + (
                     'neoforge.mods.toml' if item['platform'] == 'neoforge' else 'mods.toml')

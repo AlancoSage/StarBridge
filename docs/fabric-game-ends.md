@@ -1,10 +1,10 @@
 # Fabric 游戏端
 
-**适用：星桥 Bot 0.6.4+ · Fabric 游戏端模组 0.1.0。** Fabric 服务端使用独立星桥模组，连接同一台 Bot 即可接入 QQ 聊天、玩家管理、白名单与游戏登录。Paper / Spigot、Forge 和 NeoForge 的 JAR 继续按各自文档安装。
+**适用：星桥 Bot 0.6.5+ · Fabric 游戏端模组 0.1.0。** Fabric 服务端使用独立星桥模组，连接同一台 Bot 即可接入 QQ 聊天、玩家管理、白名单与游戏登录。Paper / Spigot、Forge 和 NeoForge 的 JAR 继续按各自文档安装。Bot 0.6.4 已提供前五个 Fabric 版本；新增版本从 0.6.5 起提供。
 
 ## 选择 Minecraft 与 Java
 
-每个版本使用对应的 JAR，不能跨 Minecraft 版本替换。下表固定使用 **Fabric Loader 0.16.14**；加载器本身最低 Java 8，游戏服务端仍按 Minecraft 要求选择 Java。
+每个版本使用对应的 JAR，不能跨 Minecraft 版本替换。旧五版固定使用 **Fabric Loader 0.16.14**，新增五版固定使用 **0.19.5**；游戏服务端按表中要求选择 Java。
 
 | Minecraft | Fabric Loader | 运行 Java | 星桥文件 |
 | --- | --- | --- | --- |
@@ -13,6 +13,11 @@
 | 1.19.2 | 0.16.14 | 17 | `StarBridge-Fabric-1.19.2-0.1.0.jar` |
 | 1.20.1 | 0.16.14 | 17 | `StarBridge-Fabric-1.20.1-0.1.0.jar` |
 | 1.21.1 | 0.16.14 | 21 | `StarBridge-Fabric-1.21.1-0.1.0.jar` |
+| 1.21.8 | 0.19.5 | 21 | `StarBridge-Fabric-1.21.8-0.1.0.jar` |
+| 1.21.11 | 0.19.5 | 21 | `StarBridge-Fabric-1.21.11-0.1.0.jar` |
+| 26.1 | 0.19.5 | 25 | `StarBridge-Fabric-26.1-0.1.0.jar` |
+| 26.2 | 0.19.5 | 25 | `StarBridge-Fabric-26.2-0.1.0.jar` |
+| 26.3 | 0.19.5 | 25 | `StarBridge-Fabric-26.3-0.1.0.jar` |
 
 从 [Fabric 官方服务端下载页](https://fabricmc.net/use/server/) 安装相应 Minecraft 版本的服务端。星桥自身**不依赖 Fabric API**，无需为星桥给玩家安装客户端模组；整合包其他模组要求的 Fabric API、客户端组件和 Java 版本仍按整合包说明安装。Loader 的依赖与版本信息来自 [Fabric 官方元数据 API](https://github.com/FabricMC/fabric-meta)。
 
@@ -29,7 +34,7 @@
 
 ### 连接配置
 
-五个 Fabric 版本均使用 UTF-8 配置：`config/starbridge-bridge.properties`。
+十个 Fabric 版本均使用 UTF-8 配置：`config/starbridge-bridge.properties`。
 
 ```properties
 endpoint=http://127.0.0.1:8088
@@ -70,21 +75,26 @@ allowed-commands=list
 
 ## 开发与构建
 
-游戏端复用 Java 8 公共桥接引擎，以 Fabric Loader 的 `ModInitializer` 启动，通过精确的官方 Yarn 映射与 Loader `MappingResolver` 访问该版本的原生方法，Mixin 安装生命周期与认证拦截。每个 Minecraft 版本独立打包，不依赖 Loom，也不把 Minecraft、Fabric Loader 或 Fabric API 装入成品 JAR。
+游戏端复用 Java 8 公共桥接引擎，以 Fabric Loader 的 `ModInitializer` 启动。1.x 使用精确的官方 Yarn 映射与 Loader `MappingResolver` 访问原生方法；26.x 的官方服务端不再混淆，直接使用实际类名、方法名和签名，并在构建时逐项校验对应版本的官方服务端字节码。Mixin 安装生命周期与认证拦截。每个 Minecraft 版本独立打包，不依赖 Loom，也不把 Minecraft、Fabric Loader 或 Fabric API 装入成品 JAR。
 
-构建使用 **Python 3.11+ 与 JDK 17**，编译参数 `--release 8`；这只表示星桥字节码最低 Java 8，不改变 Minecraft 自身的 Java 要求。固定编译依赖与 Yarn 映射从 Fabric 官方 Maven 获取并核对校验值，成品输出到 `bridge/target/`。
+构建使用 **Python 3.11+ 与 JDK 17**，编译参数 `--release 8`；这只表示星桥字节码最低 Java 8，不改变 Minecraft 自身的 Java 要求。固定编译依赖与 Yarn 映射从 Fabric 官方 Maven 获取并核对校验值；26.x 官方服务端包由 Mojang 版本清单定位并校验，仅在 Python 中读取类声明，无需用 JDK 17 启动 Java 25 游戏服。成品输出到 `bridge/target/`。
 
-| Minecraft | 固定 Yarn v2 映射 |
+| Minecraft | 固定映射或声明来源 |
 | --- | --- |
 | 1.16.5 | `net.fabricmc:yarn:1.16.5+build.10:v2` |
 | 1.18.2 | `net.fabricmc:yarn:1.18.2+build.4:v2` |
 | 1.19.2 | `net.fabricmc:yarn:1.19.2+build.28:v2` |
 | 1.20.1 | `net.fabricmc:yarn:1.20.1+build.10:v2` |
 | 1.21.1 | `net.fabricmc:yarn:1.21.1+build.3:v2` |
+| 1.21.8 | `net.fabricmc:yarn:1.21.8+build.1:v2` |
+| 1.21.11 | `net.fabricmc:yarn:1.21.11+build.6:v2` |
+| 26.1 / 26.2 / 26.3 | 各自官方服务端 JAR 的实际类与成员声明，`official` 命名空间 |
 
-Fabric Loader 固定为 `net.fabricmc:fabric-loader:0.16.14`，Mixin 使用该加载器官方依赖 `net.fabricmc:sponge-mixin:0.15.5+mixin.0.8.7`，ASM 为 `9.8`。这些是编译和加载器依赖，不需要管理员手动复制到 `mods/`。
+构建脚本固定 Loader 与 Mixin / ASM 编译依赖，并核对摘要；运行服务端安装表中对应的 Loader。这些是编译和加载器依赖，不需要管理员手动复制到 `mods/`。26.x 不依赖不存在的 Yarn 或 `server_mappings` 下载。
 
-Windows，在项目根目录构建全部五个版本：
+以下命令供维护者在完整源码检出中使用；保留 `bridge-fabric/build.py`、`bindings.py`、`classfile.py`、`bindings/26.1.json`、`26.2.json`、`26.3.json` 与 `bridge-mods/common/` 公共引擎。Bot 部署 ZIP 提供成品 JAR，不包含桥接构建源码和依赖缓存。
+
+Windows，在项目根目录构建全部十个版本：
 
 ```powershell
 python bridge-fabric/build.py --java-home 'C:\Program Files\Java\jdk-17'
@@ -102,7 +112,7 @@ Linux：
 python3 bridge-fabric/build.py --java-home /path/to/jdk17
 ```
 
-加上 `--version 1.20.1` 可只构建对应版本；不指定时构建全部五版。依赖默认缓存到 `bridge-fabric/build/dependencies`，可用 `--cache /path/to/cache` 指定其他目录。使用 `bridge/target/` 的最终 JAR 部署，构建过程中不需要启动游戏服务器。
+加上 `--version 26.3` 可只构建对应版本；不指定时构建全部十版。依赖默认缓存到 `bridge-fabric/build/dependencies`，可用 `--cache /path/to/cache` 指定其他目录。使用 `bridge/target/` 的最终 JAR 部署，构建过程中不需要启动游戏服务器。
 
 ## 验证范围
 
@@ -114,6 +124,12 @@ python3 bridge-fabric/build.py --java-home /path/to/jdk17
 - 白名单增删与申请审核执行回执，踢出、封禁、带来源标记的解封和保留独立处罚。
 - 原生控制台命令白名单，以及关闭认证后正常游戏指令的执行。
 
-1.21.1 还检查了离线会话中的原生 signed command 包和 ACK 状态；这不代表已验证正版账号的密码学签名链。测试使用隔离 Bot、离线模式与模拟 QQ 私聊，未验证真实正版会话、真实 QQ 服务、全部整合包或其他 Loader 构建号。正式部署请在自己的模组组合中复查，不据此声明兼容所有历史或未来版本。
+新增 **1.21.8 / Java 21** 与 **1.21.11 / Java 21** 在 **Fabric Loader 0.19.5** 的真实专用测试服上，各通过 21 项离线协议客户端检查，包含上面的登录、联动与管理流程。两版还检查了 signed command 包的确认状态，1.21.11 验证了新版玩家档案、白名单及封禁记录结构；解封不会删除相同理由的原生独立处罚。
+
+**26.1 / Java 25 / Fabric Loader 0.19.5** 的真实专用测试服也通过 21 项离线协议客户端检查，包括登录、聊天联动、玩家与白名单管理、原生封禁来源保护和允许的控制台命令；检查了原生 signed command 包的 ACK 与校验状态。
+
+**26.2 / Java 25** 与 **26.3 / Java 25** 在 **Fabric Loader 0.19.5** 的真实专用测试服上，各通过 23 项检查。测试客户端分别使用对应版本官方服务端的 `ProtocolInfo` 与 `StreamCodec` 编解码，经本机 TCP 完成真实连接、配置阶段、密码与 QQ 登录、聊天、后台会话重建、白名单、踢出、封禁与命令执行；同时核对新版白名单身份结构，以及带签名命令包的 ACK 与校验状态。没有借用其他游戏版本的协议定义。
+
+1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3 检查了离线会话中的原生 signed command 包和 ACK 状态；这不代表已验证正版账号的密码学签名链。测试使用隔离 Bot、离线模式与模拟 QQ 私聊，未验证真实正版会话、真实 QQ 服务、完整 GUI 客户端、全部整合包或其他 Loader 构建号。正式部署请在自己的模组组合中复查，不据此声明兼容所有历史或未来版本。
 
 相关文档：[游戏登录](game-login.md)、[Forge / NeoForge 游戏端](mod-game-ends.md)、[Minecraft 版本兼容与 Java 选择](minecraft-compatibility.md)。

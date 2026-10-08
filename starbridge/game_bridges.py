@@ -14,6 +14,11 @@ GAME_BRIDGES = (
     {"platform": "fabric", "version": "1.19.2", "loader_version": "0.16.14", "java": 17, "config": "properties"},
     {"platform": "fabric", "version": "1.20.1", "loader_version": "0.16.14", "java": 17, "config": "properties"},
     {"platform": "fabric", "version": "1.21.1", "loader_version": "0.16.14", "java": 21, "config": "properties"},
+    {"platform": "fabric", "version": "1.21.8", "loader_version": "0.19.5", "java": 21, "config": "properties"},
+    {"platform": "fabric", "version": "1.21.11", "loader_version": "0.19.5", "java": 21, "config": "properties"},
+    {"platform": "fabric", "version": "26.1", "loader_version": "0.19.5", "java": 25, "config": "properties"},
+    {"platform": "fabric", "version": "26.2", "loader_version": "0.19.5", "java": 25, "config": "properties"},
+    {"platform": "fabric", "version": "26.3", "loader_version": "0.19.5", "java": 25, "config": "properties"},
 )
 
 LOADER_LABELS = {"forge": "Forge", "neoforge": "NeoForge", "fabric": "Fabric"}

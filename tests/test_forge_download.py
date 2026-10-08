@@ -50,11 +50,11 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
             response = await self.client.get('/api/plugin/catalog', headers=self.headers)
             catalog = (await response.json())['bridges']
-            self.assertEqual(len(catalog), 12)
-            self.assertEqual(len({item['filename'] for item in catalog}), 12)
+            self.assertEqual(len(catalog), 17)
+            self.assertEqual(len({item['filename'] for item in catalog}), 17)
             fabric = [item for item in catalog if item['platform'] == 'fabric']
-            self.assertEqual([item['version'] for item in fabric], ['1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1'])
-            self.assertEqual([item['java'] for item in fabric], [8, 17, 17, 17, 21])
+            self.assertEqual([item['version'] for item in fabric], ['1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1', '1.21.8', '1.21.11', '26.1', '26.2', '26.3'])
+            self.assertEqual([item['java'] for item in fabric], [8, 17, 17, 17, 21, 21, 21, 25, 25, 25])
             self.assertTrue(all(item['config'] == 'properties' and item['label'].startswith('Fabric ') for item in fabric))
             self.assertTrue(all(item['available'] for item in catalog))
             for item in catalog:

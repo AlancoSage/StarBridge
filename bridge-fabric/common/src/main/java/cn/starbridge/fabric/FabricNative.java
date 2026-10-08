@@ -9,13 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 
-/** Exact Yarn member bindings, translated from intermediary to the active loader namespace. */
+/** Exact member bindings in intermediary or the unobfuscated official runtime namespace. */
 public final class FabricNative {
     private final MappingResolver resolver;
     private final String minecraftVersion;
+    private final boolean officialNamespace;
     private final Map<String,String> classes=new HashMap<String,String>();
     private final Map<String,List<Member>> methods=new HashMap<String,List<Member>>();
-    private final Map<String,Member> fields=new HashMap<String,Member>();
+    private final Map<String,List<Member>> fields=new HashMap<String,List<Member>>();
     private final Map<String,Class<?>> loaded=new ConcurrentHashMap<String,Class<?>>();
     private final Map<String,Method> boundMethods=new ConcurrentHashMap<String,Method>();
     private final Map<String,Field> boundFields=new ConcurrentHashMap<String,Field>();
@@ -37,6 +38,10 @@ public final class FabricNative {
             if(input==null)throw new IllegalStateException("Fabric native mappings missing");
             JsonObject document=new JsonParser().parse(new InputStreamReader(input,StandardCharsets.UTF_8)).getAsJsonObject();
             minecraftVersion=document.get("mcVersion").getAsString();
+            String namespace=document.has("namespace")?document.get("namespace").getAsString():"intermediary";
+            if(!namespace.equals("intermediary")&&!namespace.equals("official"))
+                throw new IllegalStateException("Fabric native mapping namespace unsupported");
+            officialNamespace=namespace.equals("official");
             for(Map.Entry<String,JsonElement> entry:document.getAsJsonObject("classes").entrySet())
                 classes.put(entry.getKey().replace('/','.'),entry.getValue().getAsString().replace('/','.'));
             for(JsonElement value:document.getAsJsonArray("methods")) {
@@ -49,7 +54,9 @@ public final class FabricNative {
             for(JsonElement value:document.getAsJsonArray("fields")) {
                 Member member=new Member(value.getAsJsonObject());
                 String key=member.owner+"#"+member.name;
-                if(fields.put(key,member)!=null)throw new IllegalStateException("Ambiguous mapped field: "+key);
+                List<Member> list=fields.get(key);
+                if(list==null){list=new ArrayList<Member>();fields.put(key,list);}
+                list.add(member);
             }
         } catch(IOException error) {throw new IllegalStateException("Fabric native mappings unreadable",error);}
     }
@@ -57,18 +64,32 @@ public final class FabricNative {
     public boolean hasClass(String named){return classes.containsKey(named);}
     public String minecraftVersion(){return minecraftVersion;}
     public boolean hasMethod(String owner,String name){return methods.containsKey(owner+"#"+name);}
+    public boolean hasMethod(String owner,String name,String descriptor) {
+        List<Member> choices=methods.get(owner+"#"+name);
+        if(choices!=null)for(Member member:choices)if(member.descriptor.equals(descriptor))return true;
+        return false;
+    }
     public boolean hasField(String owner,String name){return fields.containsKey(owner+"#"+name);}
+    public String runtimeClassName(String binding) {
+        return officialNamespace?binding:resolver.mapClassName("intermediary",binding);
+    }
+    private String runtimeMethodName(String owner,String name,String descriptor) {
+        return officialNamespace?name:resolver.mapMethodName("intermediary",owner,name,descriptor);
+    }
+    private String runtimeFieldName(String owner,String name,String descriptor) {
+        return officialNamespace?name:resolver.mapFieldName("intermediary",owner,name,descriptor);
+    }
     public String methodName(String owner,String name,String descriptor) {
         List<Member> choices=methods.get(owner+"#"+name);
         if(choices!=null)for(Member member:choices)if(member.descriptor.equals(descriptor))
-            return resolver.mapMethodName("intermediary",classes.get(owner),member.intermediary,member.descriptor);
+            return runtimeMethodName(classes.get(owner),member.intermediary,member.descriptor);
         throw new IllegalStateException("Native mapped descriptor missing: "+owner+"#"+name);
     }
 
     public Class<?> type(String named) {
         Class<?> saved=loaded.get(named);if(saved!=null)return saved;
         String intermediary=classes.get(named);
-        String actual=intermediary==null?named:resolver.mapClassName("intermediary",intermediary);
+        String actual=intermediary==null?named:runtimeClassName(intermediary);
         try {
             Class<?> value=Class.forName(actual,false,FabricNative.class.getClassLoader());loaded.put(named,value);return value;
         } catch(ClassNotFoundException error){throw new IllegalStateException("Native class unavailable: "+named,error);}
@@ -85,7 +106,7 @@ public final class FabricNative {
                 int end=descriptor.indexOf(';',cursor[0]);
                 if(end<0)throw new IllegalArgumentException("Invalid native descriptor");
                 String intermediary=descriptor.substring(cursor[0],end).replace('/','.');cursor[0]=end+1;
-                String actual=intermediary.startsWith("net.minecraft.")?resolver.mapClassName("intermediary",intermediary):intermediary;
+                String actual=intermediary.startsWith("net.minecraft.")?runtimeClassName(intermediary):intermediary;
                 try{return Class.forName(actual,false,FabricNative.class.getClassLoader());}
                 catch(ClassNotFoundException error){throw new IllegalStateException("Native descriptor class unavailable",error);}
             default:throw new IllegalArgumentException("Invalid native descriptor");
@@ -115,7 +136,7 @@ public final class FabricNative {
         Method saved=boundMethods.get(member.key());if(saved!=null)return saved;
         String owner=classes.get(member.owner);
         if(owner==null)throw new IllegalStateException("Native method owner missing: "+member.owner);
-        String actual=resolver.mapMethodName("intermediary",owner,member.intermediary,member.descriptor);
+        String actual=runtimeMethodName(owner,member.intermediary,member.descriptor);
         try {
             Method value=type(member.owner).getDeclaredMethod(actual,parameters(member.descriptor));
             if(value.getReturnType()!=returnType(member.descriptor))throw new IllegalStateException("Native method return descriptor mismatch");
@@ -139,6 +160,12 @@ public final class FabricNative {
         return invoke(bind(found),target,arguments);
     }
     /** Direct external Java API invocation still requires an exact descriptor. */
+    public boolean hasExternalMethod(String owner,String name,String descriptor) {
+        try {
+            Method method=type(owner).getDeclaredMethod(name,parameters(descriptor));
+            return method.getReturnType()==returnType(descriptor);
+        } catch(NoSuchMethodException absent){return false;}
+    }
     public Object direct(Object target,String owner,String name,String descriptor,Object...arguments) {
         try {
             Class<?>[] parameters=parameters(descriptor);
@@ -150,8 +177,10 @@ public final class FabricNative {
     }
     private Field bindField(String owner,String name) {
         String key=owner+"#"+name;Field saved=boundFields.get(key);if(saved!=null)return saved;
-        Member member=fields.get(key);if(member==null)throw new IllegalStateException("Native mapped field missing: "+key);
-        String actual=resolver.mapFieldName("intermediary",classes.get(owner),member.intermediary,member.descriptor);
+        List<Member> choices=fields.get(key);if(choices==null)throw new IllegalStateException("Native mapped field missing: "+key);
+        if(choices.size()!=1)throw new IllegalStateException("Native mapped field ambiguous: "+key);
+        Member member=choices.get(0);
+        String actual=runtimeFieldName(classes.get(owner),member.intermediary,member.descriptor);
         try {
             Field value=type(owner).getDeclaredField(actual);
             if(value.getType()!=descriptorType(member.descriptor,new int[]{0}))throw new IllegalStateException("Native field descriptor mismatch: "+key);
@@ -168,6 +197,13 @@ public final class FabricNative {
         if(value==null?field.getType().isPrimitive():!boxed(field.getType()).isInstance(value))throw new IllegalArgumentException("Native field value mismatch");
         try{field.set(Modifier.isStatic(field.getModifiers())?null:target,value);}
         catch(IllegalAccessException error){throw new IllegalStateException("Native field inaccessible",error);}
+    }
+    /** Native fall distance changed from float to double; retain the exact declared type. */
+    public void setFloating(Object target,String owner,String name,double value) {
+        Class<?> kind=bindField(owner,name).getType();
+        if(kind==float.class)set(target,owner,name,Float.valueOf((float)value));
+        else if(kind==double.class)set(target,owner,name,Double.valueOf(value));
+        else throw new IllegalStateException("Native floating field descriptor mismatch: "+owner+"#"+name);
     }
     public Object create(String owner,Object...arguments) {
         Class<?> type=type(owner);Constructor<?> found=null;

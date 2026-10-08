@@ -16,7 +16,8 @@ public final class FabricPacketGate extends ChannelInboundHandlerAdapter {
     private static final Set<String> SAFE=new HashSet<String>(Arrays.asList(
         "KeepAliveC2SPacket","PongC2SPacket","TeleportConfirmC2SPacket","ClientSettingsC2SPacket",
         "ResourcePackStatusC2SPacket","MessageAcknowledgmentC2SPacket","ChatSessionUpdateC2SPacket",
-        "AcknowledgeReconfigurationC2SPacket"));
+        "AcknowledgeReconfigurationC2SPacket","ClientOptionsC2SPacket","CommonPongC2SPacket",
+        "PlayerSessionC2SPacket","AcknowledgeChunksC2SPacket","PlayerLoadedC2SPacket","ClientTickEndC2SPacket"));
     private final Object connection;
     private volatile FabricRuntime.Session session;
     private long lastLogin;
