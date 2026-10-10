@@ -8,7 +8,7 @@
 
 ## 已实现
 
-- Folia 游戏端：与 Paper / Spigot 共用 `StarBridge-0.5.1.jar`，自动选择全局与玩家实体调度，支持聊天、档案、绑定、白名单、处罚回执和内置密码 / QQ 登录；接入方式与验证范围见 [Minecraft 兼容说明](docs/minecraft-compatibility.md#folia-接入)。
+- Folia 游戏端：与 Paper / Spigot 共用 `StarBridge-0.5.2.jar`，自动选择全局与玩家实体调度，支持聊天、档案、绑定、白名单、处罚回执和内置密码 / QQ 登录；接入方式与验证范围见 [Minecraft 兼容说明](docs/minecraft-compatibility.md#folia-接入)。
 - Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1，以及 NeoForge 1.20.4、1.20.6、1.21.1、1.21.4、1.21.8、1.21.11、26.1.2、26.2，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。NeoForge 仅提供正式构建。
 - Fabric 游戏端：1.16.5、1.18.2、1.19.2、1.20.1、1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3，按游戏版本提供独立 JAR，星桥无需 Fabric API 或客户端模组，详见 [Fabric 安装说明](docs/fabric-game-ends.md)。
 
@@ -49,7 +49,7 @@
 
 Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用 4 个区域线程、两名相隔 8192 格的离线协议玩家，验证密码与 QQ 登录、双区域档案、广播、白名单、处罚和正常停服。QQ 流程通过隔离 OneBot 接口完成，未验证正版档案签名链或真实 QQ 发送；具体版本与范围见 [兼容说明](docs/minecraft-compatibility.md#已完成哪些验证)。
 
-另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md) 与 [Fabric 模组](docs/fabric-game-ends.md)：对应 1.16.5 及以前的游戏端使用 Java 8，1.18.2–1.20.4 使用 Java 17，NeoForge 1.20.6 与各加载器的 1.21.x 使用 Java 21，Fabric 26.1–26.3 与 NeoForge 26.1.2 / 26.2 使用 Java 25。当前不支持基岩版原生服务端。游戏登录默认关闭；模组服和 Folia 使用内置或自动引擎，Paper / Spigot 可选 AuthMe 兼容模式。
+另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md) 与 [Fabric 模组](docs/fabric-game-ends.md)：对应 1.16.5 及以前的游戏端使用 Java 8，1.18.2–1.20.4 使用 Java 17，NeoForge 1.20.6 与各加载器的 1.21.x 使用 Java 21，Fabric 26.1–26.3 与 NeoForge 26.1.2 / 26.2 使用 Java 25。当前不支持基岩版原生服务端。游戏登录默认关闭；模组服和 Folia 使用内置或自动引擎，普通 Paper / Spigot 可选 AuthMe、nLogin、LoginSecurity 兼容，LibreLogin 需要普通 Paper；详见 [登录插件接入范围](docs/game-login.md#可选登录插件)。
 
 ## 1. 启动主程序
 
@@ -164,7 +164,7 @@ groups = ["你的QQ群号"]
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.8 配套通用插件：`bridge/target/StarBridge-0.5.1.jar`，也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.9 配套通用插件：`bridge/target/StarBridge-0.5.2.jar`，也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。
@@ -181,7 +181,7 @@ allowed-commands:
 
 4. 重启游戏服务器。管理面板应显示游戏服务器在线。
 
-Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版本或手动开启调度开关。游戏登录选择「星桥内置」或「自动」，不要安装 AuthMe。安装、升级或移除登录插件时完整停止并重启游戏服，不使用插件热卸载；详见 [Folia 接入](docs/minecraft-compatibility.md#folia-接入)。
+Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版本或手动开启调度开关。游戏登录选择「星桥内置」或「自动」，不要安装第三方登录插件。安装、升级或移除登录插件时完整停止并重启游戏服，不使用插件热卸载；详见 [Folia 接入](docs/minecraft-compatibility.md#folia-接入)。
 
 完整的档案记录需要 0.3.0 游戏插件。升级时替换旧 JAR，保留原 `plugins/StarBridge/config.yml`，然后重启游戏服务器。0.2.0 仍可执行游戏管理操作，但不会上报 IP 和带 UUID 的入服事件；更早版本会提示升级。
 
@@ -232,7 +232,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 ### 游戏登录
 
-「成员 → 游戏登录」可按服务器启用，选择注册密码与绑定 QQ 私聊确认，调整时限和尝试次数。没有 AuthMe 时提供内置登录限制，Paper / Spigot 也支持可选 AuthMe API v3 兼容模式；Folia 仅使用内置或自动引擎，不接入 AuthMe。使用 0.5.1 游戏插件，进服 `/login <密码>`（简写 `/l <密码>`）或 `/qqlogin`（简写 `/ql`）；旧账号通过 `/account-password` 验证注册邮箱设置密码。默认不开启，未登录限制操作、超时断开，重连需重新验证。Paper / Spigot 已有 AuthMe 账号首次关联验证其原账号所有权，不覆盖旧密码。
+「成员 → 游戏登录」可按服务器启用，选择注册密码与绑定 QQ 私聊确认，调整时限和尝试次数。没有第三方登录插件时提供内置限制；普通 Paper / Spigot 可选 AuthMe、nLogin、LoginSecurity，LibreLogin 仅普通 Paper。Folia 仅使用内置或自动引擎，不接入第三方登录 API。使用 0.5.2 游戏插件，进服 `/login <密码>`（简写 `/l <密码>`）或 `/qqlogin`（简写 `/ql`）；旧账号通过 `/account-password` 验证注册邮箱设置密码。默认不开启，未登录限制操作、超时断开，重连需重新验证。已有原账号首次关联核实原身份，不覆盖旧密码；nLogin 每连接仍需原生认证，使用 /starbridge:login 或 /starbridge:ql 避免命令冲突，LibreLogin 没有可用 TOTP 实现时拒绝带密钥账号。需要可信关联的插件各自保存记录。同一游戏服只启用一个认证插件；混合加载器部署选自动。具体原生命令与验证范围见 [游戏登录文档](docs/game-login.md#可选登录插件)。
 
 接入、已有账号迁移、命令日志保护与 API 详见 [游戏登录文档](docs/game-login.md)，面板可直接下载。插件运行时关闭 Spigot 原生玩家命令回显，避免 `/login` 密码写入服务器日志，卸载恢复原值；第三方日志插件需配置登录指令脱敏。
 
@@ -261,7 +261,7 @@ Windows 构建脚本仅下载 Spigot 官方编译 API，不打包整个服务器
 
 - 「扩展 → 定时任务插件 → 管理任务」支持间隔、指定星期与北京时间执行，动作包括群 / 游戏公告、预设命令和备份。插件可统一启停，并按动作、服务器和群授权；停用后自动与立即执行均暂停，重新启用不补发错过的任务。已有任务和执行记录保留。
 - 「扩展 → 插件 → 权限」控制群消息、群命令、游戏通知与模板读取能力，限制服务器、群、使用者和 QQ 允许 / 拒绝名单，保存立即生效。
-- 「成员 → 白名单申请」开放 `/白名单 玩家名 [理由]` 和 `/白名单状态`，支持资格限制、面板人工审核、离线待下发和游戏端确认。Paper / Spigot / Folia 使用 0.5.1 游戏插件；默认关闭申请。
+- 「成员 → 白名单申请」开放 `/白名单 玩家名 [理由]` 和 `/白名单状态`，支持资格限制、面板人工审核、离线待下发和游戏端确认。Paper / Spigot / Folia 使用 0.5.2 游戏插件；默认关闭申请。
 
 这些数据随备份保存，恢复后定时任务自动停用。操作说明和 API 见 [定时任务与白名单申请](docs/automation-and-whitelist.md)。
 

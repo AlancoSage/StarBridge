@@ -21,7 +21,7 @@ public final class PackagedJarCheck {
                 byte[] buffer = new byte[1024]; int length;
                 while ((length = descriptor.read(buffer)) != -1) bytes.write(buffer, 0, length);
                 String yaml = new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
-                assert yaml.contains("version: 0.5.1") && yaml.contains("folia-supported: true");
+                assert yaml.contains("version: 0.5.2") && yaml.contains("folia-supported: true");
             }
         }
         Object instance = gson.newInstance();

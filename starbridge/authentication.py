@@ -23,8 +23,8 @@ def validate_settings(value):
     if not isinstance(value, dict) or value.keys() - DEFAULTS.keys():
         raise RegistrationError("游戏登录设置包含未知字段")
     result = {**deepcopy(DEFAULTS), **value}
-    if result["login_engine"] not in ("auto", "builtin", "authme"):
-        raise RegistrationError("登录引擎请选择自动、星桥内置或 AuthMe 兼容")
+    if result["login_engine"] not in ("auto", "builtin", "authme", "nlogin", "loginsecurity", "librelogin"):
+        raise RegistrationError("登录引擎请选择自动、星桥内置、AuthMe、nLogin、LoginSecurity 或 LibreLogin 兼容")
     ids = result["enabled_servers"]
     if (not isinstance(ids, list) or len(ids) > 100
             or any(not isinstance(sid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", sid) for sid in ids)

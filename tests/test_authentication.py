@@ -40,7 +40,7 @@ class PasswordTests(unittest.TestCase):
                         {"enabled_servers": ["survival"], "password_login": False, "qq_login": False}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 validate_settings({**DEFAULTS, **changes})
-        for engine in ("auto", "builtin", "authme"):
+        for engine in ("auto", "builtin", "authme", "nlogin", "loginsecurity", "librelogin"):
             self.assertEqual(validate_settings({"login_engine": engine})["login_engine"], engine)
 
 
@@ -85,6 +85,38 @@ class GameAuthenticationTests(unittest.IsolatedAsyncioTestCase):
         response = await self.client.post("/bridge/survival/tick", headers=self.bridge, json={"auth_sessions": [payload or self.payload("heartbeat")]})
         self.assertEqual(response.status, 200, await response.text())
         return await response.json()
+
+    async def test_external_engine_settings_roundtrip_fences_sessions_and_reaches_bridge_policy(self):
+        for engine in ("authme", "nlogin", "loginsecurity", "librelogin", "builtin", "auto"):
+            with self.subTest(engine=engine):
+                await self.action("join")
+                self.assertTrue(self.auth.sessions)
+                old_revision = self.auth.revision
+                settings = {**deepcopy(self.auth.settings), "login_engine": engine}
+                response = await self.client.put("/api/authentication/settings", headers=self.admin,
+                                                 json={"settings": settings, "revision": old_revision})
+                self.assertEqual(response.status, 200, await response.text())
+                saved = await response.json()
+                self.assertEqual(saved["settings"]["login_engine"], engine)
+                self.assertNotEqual(saved["revision"], old_revision)
+                self.assertFalse(self.auth.sessions)
+                response = await self.client.get("/api/authentication/settings", headers=self.admin)
+                self.assertEqual((await response.json())["settings"]["login_engine"], engine)
+                self.assertEqual(json.loads(self.auth.path.read_text(encoding="utf-8"))["login_engine"], engine)
+                heartbeat = await self.heartbeat()
+                self.assertEqual(heartbeat["authentication"]["login_engine"], engine)
+                self.assertTrue(heartbeat["authentication"]["required"])
+
+    async def test_unknown_engine_rejection_preserves_live_sessions_and_revision(self):
+        await self.action("join")
+        old_revision, old_sessions = self.auth.revision, set(self.auth.sessions)
+        response = await self.client.put("/api/authentication/settings", headers=self.admin,
+                                         json={"settings": {**deepcopy(self.auth.settings), "login_engine": "unknown"},
+                                               "revision": old_revision})
+        self.assertEqual(response.status, 400)
+        self.assertEqual(self.auth.revision, old_revision)
+        self.assertEqual(set(self.auth.sessions), old_sessions)
+        self.assertEqual(self.auth.settings["login_engine"], "auto")
 
     def bind(self, qq="123456789"):
         code = self.store.issue_code("survival", self.identity, "Steve")
@@ -281,7 +313,9 @@ class GameAuthenticationTests(unittest.IsolatedAsyncioTestCase):
         response = await self.client.get("/api/authentication/guide", headers=self.admin)
         self.assertEqual(response.status, 200)
         self.assertIn("StarBridge-game-login.md", response.headers["Content-Disposition"])
-        self.assertIn("AuthMe", await response.text())
+        guide = await response.text()
+        for provider in ("AuthMe", "nLogin", "LoginSecurity", "LibreLogin"):
+            self.assertIn(provider, guide)
         response = await self.client.post("/api/v1/account/password/request", headers={"Origin": "https://unknown.example"}, json={"player": "Steve", "email": "123456789@qq.com"})
         self.assertEqual(response.status, 403); self.assertFalse(self.sent)
         response = await self.client.post("/api/v1/account/password/request", data="not json")

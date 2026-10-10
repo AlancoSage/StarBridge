@@ -50,6 +50,7 @@ jobs:
           ./bridge/test.ps1 -JavaHome $env:JAVA_HOME
           ./bridge/test-scheduler.ps1 -JavaHome $env:JAVA_HOME
           ./bridge/test-game-login-folia.ps1 -JavaHome $env:JAVA_HOME
+          ./bridge/test-login-adapters.ps1 -JavaHome $env:JAVA_HOME
       - name: Build Forge 1.20.1 bridge and test
         if: steps.version.outputs.needed == 'true'
         shell: pwsh

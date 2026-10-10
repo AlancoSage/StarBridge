@@ -10,7 +10,9 @@ import java.io.*;
 import java.util.*;
 
 /** Optional public API v3 integration. No AuthMe classes or user passwords are bundled. */
-final class AuthMeLink {
+final class AuthMeLink implements LoginLink {
+    private static final Set<String> OWNERSHIP_COMMANDS = Collections.unmodifiableSet(new HashSet<>(
+        Arrays.asList("authme:login", "authme:l", "authme:totp", "authme:verification", "authme:captcha")));
     private final Object api;
     private final Method authenticated, registered, login, register, logout;
     private final Properties managed = new Properties();
@@ -30,10 +32,16 @@ final class AuthMeLink {
         register = type.getMethod("forceRegister", Player.class, String.class, boolean.class);
         logout = type.getMethod("forceLogout", Player.class);
     }
-    boolean authenticated(Player player) throws ReflectiveOperationException {
+    public String id() { return "authme"; }
+    public String displayName() { return "AuthMe"; }
+    public Set<String> ownershipCommands() { return OWNERSHIP_COMMANDS; }
+    public String ownershipPrompt() {
+        return "这是已有 AuthMe 账号，首次关联请再输入 /authme:login <原 AuthMe 密码> 验证所有权；以后可用星桥密码或 QQ 登录。";
+    }
+    public boolean authenticated(Player player) throws ReflectiveOperationException {
         return Boolean.TRUE.equals(authenticated.invoke(api, player));
     }
-    boolean start(Player player) throws ReflectiveOperationException {
+    public boolean start(Player player) throws ReflectiveOperationException {
         if (authenticated(player)) return true;
         if (Boolean.TRUE.equals(registered.invoke(api, player.getName()))) {
             // A public website name claim is not proof of ownership of an older AuthMe account.
@@ -47,7 +55,7 @@ final class AuthMeLink {
         }
         return true;
     }
-    void remember(Player player) throws IOException {
+    public void remember(Player player) throws IOException {
         String name = player.getName().toLowerCase(Locale.ROOT), identity = BukkitCompatibility.identity(player).toString();
         if (identity.equals(managed.getProperty(name))) return;
         if (managed.size() >= 10000 && !managed.containsKey(name)) throw new IOException("AuthMe link capacity reached");
@@ -59,5 +67,5 @@ final class AuthMeLink {
         catch (AtomicMoveNotSupportedException ex) { Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING); }
         managed.clear(); managed.putAll(next);
     }
-    void logout(Player player) throws ReflectiveOperationException { logout.invoke(api, player); }
+    public void logout(Player player) throws ReflectiveOperationException { logout.invoke(api, player); }
 }

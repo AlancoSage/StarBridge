@@ -171,7 +171,7 @@ const pageKeywords = {
   servers: 'Minecraft MC 插件 游戏 群聊 服务器', bindings: '玩家 验证码 绑定',
   players: '玩家 在线 离线 UUID 封禁 踢出 白名单 管理',
   accounts: '注册 申请 邮箱 邮件 SMTP API 网站 账号 验证码',
-  authentication: '登录 密码 QQ 验证 认证 AuthMe 游戏 安全',
+  authentication: '登录 密码 QQ 验证 认证 AuthMe nLogin LoginSecurity LibreLogin 游戏 安全',
   features: '同步 通知 退群 名片 消息 事件',
   commands: '执行 指令 控制台 远程命令', logs: '日志 活动 错误',
   app: '端口 地址 数据库 登录 重启 系统 软件设置',
@@ -576,7 +576,7 @@ async function downloadPluginJar() {
     const response = await fetch('/api/plugin', {headers: {Authorization: 'Bearer ' + token}, signal: AbortSignal.timeout(30000), cache: 'no-store'});
     if (!response.ok) throw Error('插件下载失败：' + response.status);
     const url = URL.createObjectURL(await response.blob()), link = node('a');
-    link.href = url; link.download = 'StarBridge-0.5.1.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.href = url; link.download = 'StarBridge-0.5.2.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     latestPlayerActionId = null;
     notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版 StarBridge JAR，然后重启游戏服务器。', 'success');
   } catch (error) { notice('player-notice', error.message, 'error'); selectTab('players'); }

@@ -26,6 +26,7 @@ public final class GameLoginFoliaCheck {
     private static final AtomicInteger queued = new AtomicInteger(), checks = new AtomicInteger(), authMeAccess = new AtomicInteger();
     private static volatile boolean enabled = true;
     private static Plugin authMe;
+    private static final Map<String, Plugin> otherLoginPlugins = new HashMap<>();
     private static volatile CompletableFuture<JsonObject> passwordAnswer;
 
     @SuppressWarnings("unchecked")
@@ -160,8 +161,8 @@ public final class GameLoginFoliaCheck {
             return task;
         });
         PluginManager manager = proxy(PluginManager.class, (self, method, values) -> switch (method.getName()) {
-            case "getPlugin" -> authMe;
-            case "isPluginEnabled" -> authMe != null;
+            case "getPlugin" -> "AuthMe".equals(values[0]) ? authMe : otherLoginPlugins.get(values[0]);
+            case "isPluginEnabled" -> "AuthMe".equals(values[0]) ? authMe != null : otherLoginPlugins.containsKey(values[0]);
             default -> fallback(method);
         });
         Server server = proxy(Server.class, (self, method, values) -> switch (method.getName()) {
@@ -263,7 +264,19 @@ public final class GameLoginFoliaCheck {
             check(login.locked(replacement.player) && replacement.kicked.isEmpty(), "Unsupported AuthMe must fail closed before an entity-scheduled kick");
             replacement.drain();
             check(!replacement.kicked.isEmpty() && authMeAccess.get() == 0, "Folia must reject AuthMe without invoking its API");
+            Plugin unsafeNative = authMe;
             authMe = null;
+            for (String nativeName : List.of("nLogin", "LoginSecurity", "LibreLogin")) {
+                otherLoginPlugins.put(nativeName, unsafeNative);
+                FakePlayer refused = new FakePlayer(UUID.randomUUID(), "Refused"); players.add(refused);
+                refused.inRegion(() -> login.onJoin(new PlayerJoinEvent(refused.player, "")));
+                login.accept(policy(true, "r4-" + nativeName));
+                check(login.locked(refused.player) && refused.kicked.isEmpty(), "Unsupported native API closes the gate before an entity-scheduled kick: " + nativeName);
+                refused.drain();
+                check(!refused.kicked.isEmpty() && authMeAccess.get() == 0, "Folia must reject external login without invoking player or native APIs: " + nativeName);
+                refused.inRegion(() -> login.onQuit(new PlayerQuitEvent(refused.player, "")));
+                otherLoginPlugins.clear();
+            }
             FakePlayer after = new FakePlayer(UUID.randomUUID(), "After"); players.add(after);
             after.inRegion(() -> login.onJoin(new PlayerJoinEvent(after.player, "")));
             login.accept(policy(true, "r5"));

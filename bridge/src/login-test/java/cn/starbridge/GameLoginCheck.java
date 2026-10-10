@@ -25,6 +25,7 @@ public final class GameLoginCheck {
     private static FakePlayer actor;
     private static boolean authMe;
     private static Plugin installedAuthMe;
+    private static final Map<String, Plugin> otherLoginPlugins = new HashMap<>();
     private static final List<JsonObject> requests = Collections.synchronizedList(new ArrayList<>());
     private static volatile CompletableFuture<JsonObject> passwordAnswer;
     private static final AtomicBoolean offline = new AtomicBoolean();
@@ -103,6 +104,22 @@ public final class GameLoginCheck {
         }
         throw new AssertionError("Missing current connection heartbeat");
     }
+    /** Simulates the native plain /login collision without loading an unrelated provider's API. */
+    private static LoginLink allowPlainNativeLogin(GameLogin login) throws Exception {
+        Field policyField = GameLogin.class.getDeclaredField("policy"); policyField.setAccessible(true);
+        Object policy = policyField.get(login);
+        Field linkField = policy.getClass().getDeclaredField("external"); linkField.setAccessible(true);
+        LoginLink installed = (LoginLink) linkField.get(policy);
+        LoginLink nativePlainCommands = proxy(LoginLink.class, (self, method, values) -> {
+            if (method.getName().equals("ownershipCommands")) {
+                Set<String> commands = new HashSet<>(installed.ownershipCommands()); commands.add("login");
+                return Collections.unmodifiableSet(commands);
+            }
+            return method.invoke(installed, values);
+        });
+        linkField.set(policy, nativePlainCommands);
+        return installed;
+    }
     public static void main(String[] args) throws Exception {
         assert GameLogin.commandName("/l Password 123").equals("login");
         assert GameLogin.commandName("/ql").equals("qqlogin");
@@ -117,8 +134,8 @@ public final class GameLoginCheck {
             return defaultValue(method);
         });
         PluginManager manager = proxy(PluginManager.class, (self, method, values) -> {
-            if (method.getName().equals("isPluginEnabled")) return authMe;
-            if (method.getName().equals("getPlugin")) return authMe ? installedAuthMe : null;
+            if (method.getName().equals("isPluginEnabled")) return "AuthMe".equals(values[0]) ? authMe : otherLoginPlugins.containsKey(values[0]);
+            if (method.getName().equals("getPlugin")) return "AuthMe".equals(values[0]) ? (authMe ? installedAuthMe : null) : otherLoginPlugins.get(values[0]);
             return defaultValue(method);
         });
         Server server = proxy(Server.class, (self, method, values) -> switch (method.getName()) {
@@ -127,6 +144,7 @@ public final class GameLoginCheck {
             case "getPluginManager" -> manager;
             case "getScheduler" -> scheduler;
             case "getLogger" -> logger;
+            case "isPrimaryThread" -> true;
             case "getName", "getVersion", "getBukkitVersion" -> "StarBridge isolated test";
             default -> defaultValue(method);
         });
@@ -227,6 +245,42 @@ public final class GameLoginCheck {
             current = snapshotFor(login, actor);
             login.accept(policy(true, "r4", status(current, "authenticated", "r4")));
             assert api.logins == 1 && login.locked(actor.player) : "An unlinked existing AuthMe account needs its own proof";
+            LoginLink originalAdapter = allowPlainNativeLogin(login);
+            List<String> nativeHandlerInputs = new ArrayList<>();
+            for (String text : List.of("/login Native Secret With Spaces", "/l Native Alias Secret With Spaces", "/authme:login Original AuthMe Password")) {
+                PlayerCommandPreprocessEvent nativeProof = new PlayerCommandPreprocessEvent(actor.player, text);
+                nativeProof.setCancelled(true); login.onCommand(nativeProof);
+                if (!nativeProof.isCancelled()) nativeHandlerInputs.add(nativeProof.getMessage());
+                assert !nativeProof.isCancelled() && nativeProof.getMessage().equals(text) : "Awaiting native proof preserves plain and namespaced native commands and arguments";
+            }
+            Field routingConnections = GameLogin.class.getDeclaredField("connections"); routingConnections.setAccessible(true);
+            Object pendingConnection = ((Map<?, ?>) routingConnections.get(login)).get(actor.id);
+            Field routingInFlight = pendingConnection.getClass().getDeclaredField("inFlight"); routingInFlight.setAccessible(true);
+            pump(() -> {
+                try { return !routingInFlight.getBoolean(pendingConnection); }
+                catch (IllegalAccessException error) { throw new AssertionError(error); }
+            });
+            JsonObject earlierPassword = latest("password");
+            passwordAnswer = new CompletableFuture<>();
+            String websiteSecret = "Website Secret With Spaces";
+            PlayerCommandPreprocessEvent explicitWebsite = new PlayerCommandPreprocessEvent(actor.player, "/StArBrIdGe:LoGiN " + websiteSecret);
+            login.onCommand(explicitWebsite);
+            if (!explicitWebsite.isCancelled()) nativeHandlerInputs.add(explicitWebsite.getMessage());
+            assert explicitWebsite.isCancelled() && explicitWebsite.getMessage().equals("/starbridge:login") : "Explicit StarBridge namespace remains cancelled and masked while awaiting native authentication";
+            pump(() -> latest("password") != earlierPassword);
+            JsonObject websiteRequest = latest("password");
+            assert websiteRequest.get("password").getAsString().equals(websiteSecret) : "Explicit website command retains spaces only in the private bridge request";
+            PlayerCommandPreprocessEvent explicitAlias = new PlayerCommandPreprocessEvent(actor.player, "/STARBRIDGE:L Alias Website Secret");
+            login.onCommand(explicitAlias);
+            if (!explicitAlias.isCancelled()) nativeHandlerInputs.add(explicitAlias.getMessage());
+            assert explicitAlias.isCancelled() && explicitAlias.getMessage().equals("/starbridge:login") : "Explicit StarBridge alias also stays masked under the native command collision";
+            assert nativeHandlerInputs.size() == 3 && nativeHandlerInputs.stream().noneMatch(text -> text.contains(websiteSecret) || text.contains("Alias Website Secret")) : "Native handlers never receive a website password through explicit StarBridge commands";
+            int beforeWebsiteAnswer = actor.messages.size();
+            passwordAnswer.complete(status(websiteRequest, "pending", "r4"));
+            pump(() -> actor.messages.size() > beforeWebsiteAnswer);
+            Field routingPolicy = GameLogin.class.getDeclaredField("policy"); routingPolicy.setAccessible(true);
+            Field routingLink = routingPolicy.get(login).getClass().getDeclaredField("external"); routingLink.setAccessible(true);
+            routingLink.set(routingPolicy.get(login), originalAdapter);
             PlayerCommandPreprocessEvent originalLogin = new PlayerCommandPreprocessEvent(actor.player, "/authme:login Original AuthMe Password");
             originalLogin.setCancelled(true); login.onCommand(originalLogin); assert !originalLogin.isCancelled();
             api.authenticated = true; timers.forEach(Runnable::run); assert !login.locked(actor.player);
@@ -236,6 +290,31 @@ public final class GameLoginCheck {
             actor = new FakePlayer(UUID.randomUUID()); login.onJoin(new PlayerJoinEvent(actor.player, "")); authMe = false;
             JsonObject absent = policy(true, "r6"); absent.getAsJsonObject("authentication").addProperty("login_engine", "authme");
             login.accept(absent); assert !actor.kicked.isEmpty() : "An explicit AuthMe policy cannot fall back without AuthMe";
+            LoginLinks adapters = new LoginLinks(plugin);
+            assert adapters.select("auto") == null && adapters.select("builtin") == null : "Without a native plugin, automatic login stays builtin";
+            for (String engine : List.of("authme", "nlogin", "loginsecurity", "librelogin", "unknown")) {
+                boolean rejected = false;
+                try { adapters.select(engine); } catch (IllegalStateException expected) { rejected = true; }
+                assert rejected : "Missing or unknown explicit engines cannot fall back to builtin: " + engine;
+            }
+            authMe = true;
+            otherLoginPlugins.put("nLogin", plugin);
+            for (String engine : List.of("auto", "builtin", "authme", "nlogin")) {
+                boolean rejected = false;
+                try { adapters.select(engine); } catch (IllegalStateException expected) { rejected = true; }
+                assert rejected : "Two enabled native authentication owners must be rejected: " + engine;
+            }
+            otherLoginPlugins.clear(); authMe = false;
+            actor = new FakePlayer(UUID.randomUUID()); login.onJoin(new PlayerJoinEvent(actor.player, ""));
+            login.accept(policy(false, "r7"));
+            for (String nativeName : List.of("AuthMe", "nLogin", "LoginSecurity", "LibreLogin")) {
+                if (nativeName.equals("AuthMe")) authMe = true;
+                else otherLoginPlugins.put(nativeName, plugin);
+                PlayerCommandPreprocessEvent nativeLogin = new PlayerCommandPreprocessEvent(actor.player, "/l Native Password");
+                login.onCommand(nativeLogin);
+                assert !nativeLogin.isCancelled() && nativeLogin.getMessage().equals("/l Native Password") : "Disabled StarBridge login leaves native plugin commands intact: " + nativeName;
+                otherLoginPlugins.clear(); authMe = false;
+            }
             System.out.println("Game login checks passed: pending event gate, command masking, native log protection, silent heartbeat, reconnect fencing, backend restart, policy changes; optional AuthMe API, asynchronous registration/login, logout, conflict denial.");
         } finally {
             login.close();
