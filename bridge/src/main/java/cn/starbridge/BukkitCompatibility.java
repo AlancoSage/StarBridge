@@ -110,11 +110,15 @@ final class BukkitCompatibility {
     }
 
     static void runTask(Plugin plugin, Runnable task) {
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, task);
+        BridgeScheduler.runGlobal(plugin, task);
     }
 
     static void repeat(Plugin plugin, Runnable task, long delay, long period) {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, task, delay, period);
+        BridgeScheduler.repeatGlobal(plugin, task, delay, period);
+    }
+
+    static boolean runPlayer(Plugin plugin, Player player, Runnable task, Runnable retired) {
+        return BridgeScheduler.runPlayer(plugin, player, task, retired);
     }
 
     static boolean optionalEvent(Plugin plugin, String name, Consumer<Event> handler) {
@@ -160,8 +164,11 @@ final class BukkitCompatibility {
     }
 
     static void ban(OfflinePlayer player, String reason) {
+        Method withoutKick = player instanceof Player ? method(Player.class, "ban", String.class, Date.class, String.class, boolean.class) : null;
         Method modern = method(OfflinePlayer.class, "ban", String.class, Date.class, String.class);
-        if (modern != null) {
+        if (withoutKick != null) {
+            if (call(withoutKick, player, reason, null, "StarBridge", false) == null) throw new IllegalStateException("Ban failed");
+        } else if (modern != null) {
             if (call(modern, player, reason, null, "StarBridge") == null) throw new IllegalStateException("Ban failed");
         } else {
             Object list = bans("NAME");
@@ -176,21 +183,65 @@ final class BukkitCompatibility {
         Object profiles = bans("PROFILE");
         Method profile = method(OfflinePlayer.class, "getPlayerProfile");
         if (profiles != null && profile != null) banCall(profiles, "pardon", call(profile, player));
-        Object names = bans("NAME");
-        if (names != null) banCall(names, "pardon", player.getName());
-        else if (profiles == null) call(method(OfflinePlayer.class, "setBanned", boolean.class), player, false);
+        else {
+            Object names = bans("NAME");
+            if (names != null) banCall(names, "pardon", player.getName());
+            else call(method(OfflinePlayer.class, "setBanned", boolean.class), player, false);
+        }
         if (player.isBanned()) throw new IllegalStateException("Unban not confirmed");
     }
 
-    static String banReason(OfflinePlayer player) {
+    private static Object banEntry(OfflinePlayer player) {
         Object entry = null;
         Object profiles = bans("PROFILE");
         Method profile = method(OfflinePlayer.class, "getPlayerProfile");
         if (profiles != null && profile != null) entry = banCall(profiles, "getBanEntry", call(profile, player));
-        Object names = bans("NAME");
-        if (entry == null && names != null) entry = banCall(names, "getBanEntry", player.getName());
+        else {
+            Object names = bans("NAME");
+            if (names != null) entry = banCall(names, "getBanEntry", player.getName());
+        }
+        return entry;
+    }
+
+    private static String banEntryValue(Object entry, String getter) {
         if (entry == null) return null;
-        try { return (String) call(method(Class.forName("org.bukkit.BanEntry"), "getReason"), entry); }
+        try { return (String) call(method(Class.forName("org.bukkit.BanEntry"), getter), entry); }
         catch (ClassNotFoundException ignored) { return null; }
+    }
+
+    static String banReason(OfflinePlayer player) { return banEntryValue(banEntry(player), "getReason"); }
+    static String banSource(OfflinePlayer player) { return banEntryValue(banEntry(player), "getSource"); }
+
+    private static Object detachedProfile(UUID identity, String name) {
+        Method factory = method(Bukkit.class, "createProfile", UUID.class, String.class);
+        if (factory == null) factory = method(Bukkit.class, "createPlayerProfile", UUID.class, String.class);
+        return call(factory, null, identity, name);
+    }
+
+    /** Global ban-list work uses a detached profile, never a connected player's ban()/profile API. */
+    static boolean foliaBanned(UUID identity, String name) {
+        return Boolean.TRUE.equals(banCall(bans("PROFILE"), "isBanned", detachedProfile(identity, name)));
+    }
+
+    static void foliaBan(UUID identity, String name, String reason) {
+        Object profile = detachedProfile(identity, name);
+        Object list = bans("PROFILE");
+        if (banCall(list, "addBan", profile, reason, null, "StarBridge") == null
+                || !Boolean.TRUE.equals(banCall(list, "isBanned", profile))) throw new IllegalStateException("Ban not confirmed");
+    }
+
+    static void foliaUnban(UUID identity, String name) {
+        Object profile = detachedProfile(identity, name);
+        Object list = bans("PROFILE");
+        banCall(list, "pardon", profile);
+        if (Boolean.TRUE.equals(banCall(list, "isBanned", profile))) throw new IllegalStateException("Unban not confirmed");
+    }
+
+    static String foliaBanReason(UUID identity, String name) {
+        return banEntryValue(banCall(bans("PROFILE"), "getBanEntry", detachedProfile(identity, name)), "getReason");
+    }
+
+    static String foliaBanSource(UUID identity, String name) {
+        return banEntryValue(banCall(bans("PROFILE"), "getBanEntry", detachedProfile(identity, name)), "getSource");
     }
 }

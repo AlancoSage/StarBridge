@@ -16,6 +16,13 @@ public final class PackagedJarCheck {
                 }
             }
             assert jar.getEntry("META-INF/licenses/Gson-LICENSE.txt") != null;
+            try (java.io.InputStream descriptor = jar.getInputStream(jar.getEntry("plugin.yml"))) {
+                java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[1024]; int length;
+                while ((length = descriptor.read(buffer)) != -1) bytes.write(buffer, 0, length);
+                String yaml = new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+                assert yaml.contains("version: 0.5.1") && yaml.contains("folia-supported: true");
+            }
         }
         Object instance = gson.newInstance();
         assert "\"星桥\"".equals(gson.getMethod("toJson", Object.class).invoke(instance, "星桥"));
@@ -23,6 +30,7 @@ public final class PackagedJarCheck {
         Class.forName("cn.starbridge.StarBridgePlugin", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.GameLogin", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.AuthMeLink", false, gson.getClassLoader()).getDeclaredMethods();
+        Class.forName("cn.starbridge.BridgeScheduler", false, gson.getClassLoader()).getDeclaredMethods();
         System.out.println("Packaged Java 8 JAR checks passed: isolated Gson and production class signatures");
     }
 }

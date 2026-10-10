@@ -1,8 +1,9 @@
 name: StarBridge
-version: 0.5.0
+version: 0.5.1
 main: cn.starbridge.StarBridgePlugin
 # Intentionally uses Bukkit's legacy loader so pre-1.13 servers can load the same JAR.
 # All version-sensitive calls are isolated in BukkitCompatibility.
+folia-supported: true
 description: QQ and Minecraft community bridge
 author: StarBridge
 softdepend: [AuthMe]

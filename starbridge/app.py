@@ -357,7 +357,7 @@ async def plugin_download(request):
         raise web.HTTPBadRequest(text="不支持的游戏端类型")
     if kind == "bukkit":
         if request.query.get("version"):
-            raise web.HTTPBadRequest(text="Paper / Spigot 插件无需按游戏版本下载")
+            raise web.HTTPBadRequest(text="Paper / Spigot / Folia 插件无需按游戏版本下载")
         filename = f"StarBridge-{__bridge_version__}.jar"
     else:
         from .game_bridges import bridge_filename

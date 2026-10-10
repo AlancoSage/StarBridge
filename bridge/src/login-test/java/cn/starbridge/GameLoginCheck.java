@@ -96,6 +96,13 @@ public final class GameLoginCheck {
         }
         return null;
     }
+    private static JsonObject snapshotFor(GameLogin login, FakePlayer player) {
+        for (JsonElement element : login.snapshot()) {
+            JsonObject record = element.getAsJsonObject();
+            if (record.get("uuid").getAsString().equals(player.id.toString())) return record;
+        }
+        throw new AssertionError("Missing current connection heartbeat");
+    }
     public static void main(String[] args) throws Exception {
         assert GameLogin.commandName("/l Password 123").equals("login");
         assert GameLogin.commandName("/ql").equals("qqlogin");
@@ -200,7 +207,7 @@ public final class GameLoginCheck {
             installedAuthMe = plugin; authMe = true;
             login.accept(policy(true, "r4"));
             var api = fr.xephi.authme.api.v3.AuthMeApi.INSTANCE;
-            JsonObject current = login.snapshot().get(0).getAsJsonObject();
+            JsonObject current = snapshotFor(login, actor);
             login.accept(policy(true, "r4", status(current, "authenticated", "r4")));
             assert login.locked(actor.player) : "A requested AuthMe login is not a completed login";
             assert api.registrations == 1;
@@ -210,13 +217,14 @@ public final class GameLoginCheck {
             assert !login.locked(actor.player);
             PlayerCommandPreprocessEvent logout = new PlayerCommandPreprocessEvent(actor.player, "/logout"); login.onCommand(logout);
             assert logout.isCancelled() && login.locked(actor.player) && api.logouts == 1;
-            current = login.snapshot().get(0).getAsJsonObject();
+            current = snapshotFor(login, actor);
             login.accept(policy(true, "r4", status(current, "authenticated", "r4")));
             assert api.logins == 1 && api.registrations == 1 && login.locked(actor.player);
             api.authenticated = true; timers.forEach(Runnable::run); assert !login.locked(actor.player);
             api.authenticated = false; timers.forEach(Runnable::run); assert login.locked(actor.player);
+            login.onQuit(new PlayerQuitEvent(actor.player, ""));
             actor = new FakePlayer(UUID.randomUUID()); login.onJoin(new PlayerJoinEvent(actor.player, ""));
-            current = login.snapshot().get(0).getAsJsonObject();
+            current = snapshotFor(login, actor);
             login.accept(policy(true, "r4", status(current, "authenticated", "r4")));
             assert api.logins == 1 && login.locked(actor.player) : "An unlinked existing AuthMe account needs its own proof";
             PlayerCommandPreprocessEvent originalLogin = new PlayerCommandPreprocessEvent(actor.player, "/authme:login Original AuthMe Password");
@@ -224,6 +232,7 @@ public final class GameLoginCheck {
             api.authenticated = true; timers.forEach(Runnable::run); assert !login.locked(actor.player);
             JsonObject invalid = policy(true, "r5"); invalid.getAsJsonObject("authentication").addProperty("login_engine", "builtin");
             login.accept(invalid); assert !actor.kicked.isEmpty();
+            login.onQuit(new PlayerQuitEvent(actor.player, ""));
             actor = new FakePlayer(UUID.randomUUID()); login.onJoin(new PlayerJoinEvent(actor.player, "")); authMe = false;
             JsonObject absent = policy(true, "r6"); absent.getAsJsonObject("authentication").addProperty("login_engine", "authme");
             login.accept(absent); assert !actor.kicked.isEmpty() : "An explicit AuthMe policy cannot fall back without AuthMe";

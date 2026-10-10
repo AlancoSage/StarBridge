@@ -56,5 +56,26 @@
       "sha256": "5d0f35511f69d82e3da6e5a24bc55846490f3f7708b49d835e88ba55ff167d15",
       "bytes": 1692840
     }
-  ]
+  ],
+  "folia_runtime_verification": {
+    "checked_at": "2026-10-10",
+    "version": "1.21.8",
+    "build": 6,
+    "channel": "STABLE",
+    "java": 21,
+    "threaded_regions_workers": 4,
+    "player_separation_blocks": 8192,
+    "server_url": "https://fill-data.papermc.io/v1/objects/233843cfd5001b6f658fcab549178d694cc37f0277d004ea295de0a94c57278f/folia-1.21.8-6.jar",
+    "server_sha256": "233843cfd5001b6f658fcab549178d694cc37f0277d004ea295de0a94c57278f",
+    "plugin_version": "0.5.1",
+    "tested_plugin_sha256": "dbec5a6d015cc239aaef0b35a64e3ad548d5c6c6d43bc88ffeb2ce4115e7e2e1",
+    "checks_passed": 35,
+    "decoder_errors": 0,
+    "heartbeat_errors": 0,
+    "graceful_exit_code": 0,
+    "scope": "Actual dedicated server with offline native protocol clients and isolated StarBridge / OneBot backend; passwords, QQ confirmation flow, snapshots, broadcasts, commands, whitelist, kick, profile bans, reconnects and normal shutdown",
+    "real_qq_delivery_tested": false,
+    "cryptographic_online_profile_signing_tested": false,
+    "other_folia_builds_runtime_tested": false
+  }
 }

@@ -1,6 +1,6 @@
 # 星桥游戏登录
 
-游戏插件版本：**0.5.0 通用兼容构建**。面向跨版本 Spigot / Paper，插件最低 Java 8，服务端按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。AuthMe 为可选依赖；服务器没有安装时使用星桥内置登录。
+适用：**星桥 Bot 0.6.8 · 游戏插件 0.5.1 通用兼容构建**。Spigot / Paper / Folia 使用同一个 JAR，插件最低 Java 8，服务端按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。Paper / Spigot 可以选用 AuthMe；Folia 使用星桥内置登录。
 
 **Forge / NeoForge** 按 Minecraft 版本下载独立 JAR，放在 `mods/`，连接配置放在 `config/`。只支持内置或自动引擎；密码、QQ 确认与 `/l`、`/ql` 使用方式相同。支持版本、Java 要求和安装步骤见 [Forge 与 NeoForge 游戏端](mod-game-ends.md)。
 
@@ -16,11 +16,17 @@
 
 | 登录引擎 | 行为 |
 | --- | --- |
-| 自动 | 没有 AuthMe 时使用内置限制；安装并启用 AuthMe 后使用 API 兼容 |
+| 自动 | 没有 AuthMe 时使用内置限制；Paper / Spigot 安装并启用 AuthMe 后使用 API 兼容；Folia 不支持 AuthMe |
 | 星桥内置 | 用于未安装 AuthMe 的服务器；检测到 AuthMe 时拒绝放行，提示修改引擎 |
-| AuthMe 兼容 | 需要自行安装支持 API v3 的 AuthMe；缺失或 API 不可用时拒绝放行 |
+| AuthMe 兼容 | 仅 Paper / Spigot；需要自行安装支持 API v3 的 AuthMe，缺失或 API 不可用时拒绝放行 |
 
 服务器、登录方式、时限、尝试次数、QQ 确认有效期与请求间隔均在面板调整。保存会使现有游戏会话失效，在线玩家需要重新验证；无需手改登录设置文件。插件首次启动需成功同步星桥策略才能知道某服务器未启用认证，同步前暂时限制操作；应先启动主程序并保持桥接可达。其他登录插件尚未提供适配，不要与内置登录同时启用。
+
+### Folia 服务器
+
+从面板下载 **Paper / Spigot / Folia 插件**，放入 `plugins/`，保留 `plugins/StarBridge/config.yml`，使用 Folia 自身要求的 Java；1.21.8 正式 build 6 使用 Java 21。选择「星桥内置」或「自动」，不要安装 AuthMe。Folia 上已启用 AuthMe 或选择 AuthMe 引擎时星桥拒绝放行并在游戏日志说明原因。
+
+Folia 的登录回复、策略变更与超时检查在玩家所属实体线程处理，跨区域移动、退出重连和晚到的确认结果不会沿用旧连接。安装、升级或移除认证插件时完整停止并重启服务器，不使用热卸载或运行中强制停用。面板登录设置可以正常保存应用。具体实测版本与操作范围见 [Folia 接入](minecraft-compatibility.md#folia-接入)。
 
 ## 玩家操作
 
@@ -40,6 +46,8 @@
 
 ## 可选 AuthMe
 
+本节适用于 Paper / Spigot。Folia 不调用传统 AuthMe API，使用上面的内置登录步骤。
+
 通过 [AuthMe 官方 API v3](https://github.com/AuthMe/AuthMeReloaded/blob/master/authme-core/src/main/java/fr/xephi/authme/api/v3/AuthMeApi.java) 接入；不打包 AuthMe、不读取或改写其已有密码。星桥确认密码或 QQ 后请求登录，并等待 `isAuthenticated` 变为真才放行，不能把异步调用已提交当成登录完成。
 
 没有 AuthMe 账号的玩家，API 创建一个带随机内部凭证的 AuthMe 账号，再登录。用户日常输入的仍是星桥密码，密码哈希保存在星桥数据库；不会把星桥密码复制到 AuthMe。
@@ -50,7 +58,7 @@
 
 保留这份关联文件。若关闭星桥认证，AuthMe 将恢复使用自己的登录方式；自动创建账号的内部随机密码不是网页密码。关闭前应通过 AuthMe 自己的账号管理为玩家建立可用凭证，不能假定两个密码库已同步。
 
-AuthMe 仍可能因注册限制、账号封禁或其登录超时拒绝请求，应检查其配置。真实服务器上的插件组合需要联调，当前验证包含编译与隔离 API / Bukkit 事件测试，没有宣称已完成实服测试。
+AuthMe 仍可能因注册限制、账号封禁或其登录超时拒绝请求，应检查其配置。AuthMe 组合当前验证包含编译与隔离 API / Bukkit 事件测试，未完成所有 AuthMe 插件组合的实服验证；这与 [Folia 内置登录验证](minecraft-compatibility.md#已完成哪些验证) 分开记录。
 
 ## 账号关联管理
 

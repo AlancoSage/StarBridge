@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public final class StarBridgePlugin extends JavaPlugin implements Listener {
@@ -27,12 +28,22 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private final LinkedBlockingDeque<JsonObject> events = new LinkedBlockingDeque<>(500);
     private final LinkedBlockingDeque<JsonObject> results = new LinkedBlockingDeque<>(500);
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
-    // Accessed only on the game thread; prevents retries from executing twice in this session.
+    // Only the global scheduler owns completed jobs; entity callbacks return through it.
     private final LinkedHashMap<String, JsonObject> completed = new LinkedHashMap<>();
-    private final Map<UUID, Long> bindingCooldown = new HashMap<>();
-    private final Map<UUID, OfflinePlayer> knownPlayers = new HashMap<>();
-    private final Map<UUID, Long> lastPlayed = new HashMap<>();
-    private final Map<UUID, String> lastAddresses = new HashMap<>();
+    private final Map<UUID, Long> bindingCooldown = new ConcurrentHashMap<>();
+    private final Map<UUID, OfflinePlayer> knownPlayers = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastPlayed = new ConcurrentHashMap<>();
+    private final Map<UUID, String> lastAddresses = new ConcurrentHashMap<>();
+    private final Map<UUID, Player> livePlayers = new ConcurrentHashMap<>();
+    private final Map<UUID, Player> pendingSnapshots = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
+    private final Object playerLifecycle = new Object();
+    private volatile boolean stopping;
+    private static final class PlayerState {
+        final Player connection;
+        final JsonObject record;
+        PlayerState(Player connection, JsonObject record) { this.connection = connection; this.record = record; }
+    }
     private List<OfflinePlayer> recentPlayers = Collections.emptyList();
     private long nextCatalogUpdate;
     private volatile Set<String> allowedCommands;
@@ -44,6 +55,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private GameLogin login;
 
     @Override public void onEnable() {
+        stopping = false;
         saveDefaultConfig();
         String endpoint = getConfig().getString("endpoint", "").replaceAll("/+$", "");
         String sid = getConfig().getString("server-id", "");
@@ -71,20 +83,27 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         for (OfflinePlayer p : Bukkit.getOfflinePlayers()) knownPlayers.put(BukkitCompatibility.identity(p), p);
         for (OfflinePlayer p : Bukkit.getWhitelistedPlayers()) knownPlayers.put(BukkitCompatibility.identity(p), p);
         for (OfflinePlayer p : knownPlayers.values()) lastPlayed.put(BukkitCompatibility.identity(p), BukkitCompatibility.lastPlayed(p));
-        updateSnapshot();
+        BukkitCompatibility.runTask(this, this::updateSnapshot);
         BukkitCompatibility.repeat(this, this::updateSnapshot, 20, 20);
         io.scheduleWithFixedDelay(this::tick, 0, 1, TimeUnit.SECONDS);
         getLogger().info("星桥已启动，将连接 " + endpoint + "，使用 /qbind 获取绑定码。");
     }
 
     @Override public void onDisable() {
+        synchronized (playerLifecycle) {
+            stopping = true;
+            livePlayers.clear(); pendingSnapshots.clear(); playerStates.clear(); knownPlayers.clear();
+            recentPlayers = Collections.emptyList();
+            inFlight.clear();
+        }
         if (login != null) login.close();
         if (io != null) io.shutdownNow();
         if (identities != null) identities.shutdownNow();
-        Bukkit.getScheduler().cancelTasks(this);
+        BridgeScheduler.cancel(this);
     }
 
     private void updateSnapshot() {
+        if (BridgeScheduler.isFolia()) { updateFoliaSnapshot(); return; }
         JsonObject value = new JsonObject();
         JsonArray players = new JsonArray();
         List<Player> online = BukkitCompatibility.players();
@@ -138,6 +157,94 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         snapshot = value;
     }
 
+    /** Player fields are copied on their owning region; the global region only assembles copies. */
+    private void capturePlayer(Player player) {
+        UUID identity = BukkitCompatibility.identity(player);
+        if (stopping || livePlayers.get(identity) != player || !player.isOnline()) return;
+        JsonObject record = new JsonObject();
+        record.addProperty("op", player.isOp());
+        record.addProperty("whitelisted", player.isWhitelisted());
+        record.addProperty("world", player.getWorld().getName());
+        record.addProperty("game_mode", player.getGameMode().name());
+        Double health = BukkitCompatibility.health(player);
+        Integer ping = BukkitCompatibility.ping(player);
+        if (health != null) record.addProperty("health", health);
+        if (ping != null) record.addProperty("ping", ping);
+        String address = player.getAddress() != null && player.getAddress().getAddress() != null
+            ? player.getAddress().getAddress().getHostAddress() : "";
+        synchronized (playerLifecycle) {
+            if (!stopping && livePlayers.get(identity) == player) {
+                lastAddresses.put(identity, address);
+                playerStates.put(identity, new PlayerState(player, record));
+            }
+        }
+    }
+
+    private void updateFoliaSnapshot() {
+        if (stopping) return;
+        Map<UUID, Player> online = new HashMap<>();
+        JsonArray names = new JsonArray();
+        for (Player player : BukkitCompatibility.players()) {
+            UUID identity = BukkitCompatibility.identity(player);
+            online.put(identity, player);
+            synchronized (playerLifecycle) {
+                if (stopping) return;
+                if (livePlayers.putIfAbsent(identity, player) == null || !knownPlayers.containsKey(identity))
+                    knownPlayers.put(identity, BukkitCompatibility.offline(identity, player.getName()));
+            }
+            names.add(new JsonPrimitive(player.getName()));
+            if (pendingSnapshots.putIfAbsent(identity, player) == null) {
+                BukkitCompatibility.runPlayer(this, player, () -> {
+                    try { capturePlayer(player); }
+                    finally { pendingSnapshots.remove(identity, player); }
+                }, () -> pendingSnapshots.remove(identity, player));
+            }
+        }
+        List<OfflinePlayer> ordered = new ArrayList<>(knownPlayers.values());
+        ordered.removeIf(p -> p.getName() == null || !p.getName().matches("[A-Za-z0-9_]{1,16}"));
+        ordered.sort(Comparator.comparing((OfflinePlayer p) -> !online.containsKey(BukkitCompatibility.identity(p)))
+            .thenComparing(Comparator.comparingLong((OfflinePlayer p) -> lastPlayed.getOrDefault(BukkitCompatibility.identity(p), 0L)).reversed()));
+        JsonArray records = new JsonArray();
+        for (OfflinePlayer player : ordered.subList(0, Math.min(500, ordered.size()))) {
+            UUID identity = BukkitCompatibility.identity(player);
+            Player current = online.get(identity);
+            PlayerState state = playerStates.get(identity);
+            // The backend requires a complete record. A new entity's first capture may still
+            // be queued; publish its name now and its details on the next complete snapshot.
+            if (current != null && (state == null || state.connection != current)) continue;
+            if (current == null && player instanceof Player) {
+                OfflinePlayer offline = BukkitCompatibility.offline(identity, player.getName());
+                if (offline instanceof Player) continue; // Player list is still completing a transition.
+                knownPlayers.put(identity, offline);
+                player = offline;
+            }
+            JsonObject record = new JsonObject();
+            record.addProperty("uuid", identity.toString()); record.addProperty("name", player.getName());
+            record.addProperty("online", current != null); record.addProperty("banned", BukkitCompatibility.foliaBanned(identity, player.getName()));
+            if (current == null && !(player instanceof Player)) {
+                record.addProperty("whitelisted", player.isWhitelisted()); record.addProperty("op", player.isOp());
+            }
+            record.addProperty("last_played", current != null ? System.currentTimeMillis() : lastPlayed.getOrDefault(identity, 0L));
+            record.addProperty("ip", lastAddresses.getOrDefault(identity, ""));
+            if (current != null && state != null && state.connection == current) {
+                for (Map.Entry<String, JsonElement> field : state.record.entrySet()) record.add(field.getKey(), field.getValue().deepCopy());
+            }
+            records.add(record);
+        }
+        JsonObject value = new JsonObject();
+        value.add("player_records", records);
+        value.add("players", names);
+        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application", "managed_sanctions")));
+        value.addProperty("java_version", System.getProperty("java.version", "unknown"));
+        value.addProperty("server_software", Bukkit.getName());
+        value.add("auth_sessions", login.snapshot());
+        value.addProperty("players_truncated", ordered.size() > 500);
+        value.addProperty("whitelist_enabled", Bukkit.hasWhitelist());
+        value.addProperty("max_players", Bukkit.getMaxPlayers());
+        value.addProperty("version", Bukkit.getBukkitVersion());
+        synchronized (playerLifecycle) { if (!stopping) snapshot = value; }
+    }
+
     private JsonObject post(String route, JsonObject data) throws Exception {
         BridgeHttp.Response response = BridgeHttp.request(base + route, token, gson.toJson(data), route.equals("/auth") ? 16000 : 6000);
         if (response.status != 200) {
@@ -177,7 +284,10 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             for (JsonElement element : response.getAsJsonArray("jobs")) {
                 JsonObject job = element.getAsJsonObject();
                 String id = job.get("id").getAsString();
-                if (inFlight.add(id)) BukkitCompatibility.runTask(this, () -> execute(job));
+                if (inFlight.add(id)) {
+                    try { BukkitCompatibility.runTask(this, () -> execute(job)); }
+                    catch (RuntimeException exception) { inFlight.remove(id); throw exception; }
+                }
             }
         } catch (Exception ex) {
             if (System.currentTimeMillis() - lastWarning > 30000) {
@@ -195,11 +305,26 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     }
 
     private void execute(JsonObject job) {
+        synchronized (playerLifecycle) {
+            if (stopping || !isEnabled()) { inFlight.remove(job.get("id").getAsString()); return; }
+            executeActive(job);
+        }
+    }
+
+    private void executeActive(JsonObject job) {
         String id = job.get("id").getAsString();
         if (!completed.containsKey(id) && "whitelist_application".equals(job.get("kind").getAsString())
             && job.get("expires").getAsDouble() * 1000 >= System.currentTimeMillis()) {
             applyWhitelist(job);
             return; // Keep inFlight until the asynchronous identity lookup completes.
+        }
+        if (BridgeScheduler.isFolia() && !completed.containsKey(id)
+                && job.get("expires").getAsDouble() * 1000 >= System.currentTimeMillis()) {
+            String kind = job.get("kind").getAsString();
+            if ("broadcast".equals(kind)) { broadcastFolia(job); return; }
+            if ("player_action".equals(kind) && ("kick".equals(job.get("action").getAsString()) || "ban".equals(job.get("action").getAsString()))) {
+                manageFoliaKick(job); return;
+            }
         }
         try {
             if (completed.containsKey(id)) { addResult(completed.get(id)); return; }
@@ -249,7 +374,77 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         } finally { inFlight.remove(id); }
     }
 
+    private void finishJob(String id, boolean ok, String detail) {
+        if (stopping) { inFlight.remove(id); return; }
+        JsonObject result = new JsonObject();
+        result.addProperty("id", id); result.addProperty("ok", ok); result.addProperty("detail", detail);
+        completed.put(id, result);
+        if (completed.size() > 2000) completed.remove(completed.keySet().iterator().next());
+        addResult(result); inFlight.remove(id);
+    }
+
+    private void finishFromPlayer(String id, boolean ok, String detail) {
+        if (!stopping && isEnabled()) BukkitCompatibility.runTask(this, () -> finishJob(id, ok, detail));
+        else inFlight.remove(id);
+    }
+
+    private void broadcastFolia(JsonObject job) {
+        String id = job.get("id").getAsString();
+        String raw = job.get("text").getAsString();
+        String text = raw.substring(0, Math.min(raw.length(), 600));
+        List<Player> recipients = BukkitCompatibility.players();
+        if (recipients.isEmpty()) { finishJob(id, true, "消息已同步（当前没有在线玩家）"); return; }
+        AtomicInteger remaining = new AtomicInteger(recipients.size()), failures = new AtomicInteger();
+        Runnable done = () -> {
+            if (remaining.decrementAndGet() == 0)
+                finishFromPlayer(id, failures.get() == 0, failures.get() == 0 ? "消息已同步" : "部分玩家消息未发送：任务过期或玩家线程不可用");
+        };
+        for (Player player : recipients) BukkitCompatibility.runPlayer(this, player, () -> {
+            try {
+              synchronized (playerLifecycle) {
+                if (stopping || !isEnabled()) { failures.incrementAndGet(); return; }
+                if (job.get("expires").getAsDouble() * 1000 < System.currentTimeMillis()) failures.incrementAndGet();
+                else if (player.isOnline() && player.hasPermission("bukkit.broadcast.user")) player.sendMessage(text);
+              }
+            } catch (RuntimeException ex) { failures.incrementAndGet(); }
+            finally { done.run(); }
+        }, () -> { failures.incrementAndGet(); done.run(); });
+    }
+
+    private void manageFoliaKick(JsonObject job) {
+        String id = job.get("id").getAsString();
+        try {
+            String detail = managePlayer(job, true);
+            UUID identity = UUID.fromString(job.get("uuid").getAsString());
+            Player player = BukkitCompatibility.player(identity);
+            boolean ban = "ban".equals(job.get("action").getAsString());
+            if (player == null) { finishJob(id, ban, ban ? detail : "玩家已离线，请刷新后重试"); return; }
+            String configured = job.has("reason") ? job.get("reason").getAsString() : "";
+            String reason = configured.trim().isEmpty() ? "服务器管理员通过星桥执行操作" : configured;
+            String kickReason = ban && job.has("kick_reason") ? job.get("kick_reason").getAsString() : reason;
+            BukkitCompatibility.runPlayer(this, player, () -> {
+                try {
+                  synchronized (playerLifecycle) {
+                    if (stopping || !isEnabled()) { inFlight.remove(id); return; }
+                    if (!ban && job.get("expires").getAsDouble() * 1000 < System.currentTimeMillis()) {
+                        finishFromPlayer(id, false, "任务已过期，未踢出玩家"); return;
+                    }
+                    if (!player.isOnline() || BukkitCompatibility.player(identity) != player) {
+                        finishFromPlayer(id, ban, ban ? detail : "玩家已离线或连接已变化，请刷新后重试"); return;
+                    }
+                    player.kickPlayer(kickReason);
+                    finishFromPlayer(id, true, detail);
+                  }
+                } catch (RuntimeException ex) { finishFromPlayer(id, ban, ban ? detail + "；断开连接失败，请检查游戏端" : "踢出失败，请检查游戏端"); }
+            }, () -> finishFromPlayer(id, ban, ban ? detail : "玩家已离线，未执行踢出"));
+        } catch (RuntimeException ex) { finishJob(id, false, "玩家操作失败：" + ex.getClass().getSimpleName()); }
+    }
+
     private String managePlayer(JsonObject job) {
+        return managePlayer(job, false);
+    }
+
+    private String managePlayer(JsonObject job, boolean deferKick) {
         UUID identity = UUID.fromString(job.get("uuid").getAsString());
         String name = job.get("player").getAsString();
         String action = job.get("action").getAsString();
@@ -262,18 +457,23 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         if (reason.trim().isEmpty()) reason = "服务器管理员通过星桥执行操作";
         switch (action) {
             case "kick":
-                if (online == null || !online.isOnline()) throw new IllegalStateException("玩家已离线，请刷新后重试");
-                online.kickPlayer(reason);
+                if (online == null || !deferKick && !online.isOnline()) throw new IllegalStateException("玩家已离线，请刷新后重试");
+                if (!deferKick) online.kickPlayer(reason);
                 return "已踢出 " + name;
             case "ban":
-                BukkitCompatibility.ban(target, reason);
-                if (online != null && online.isOnline()) online.kickPlayer(job.has("kick_reason") ? job.get("kick_reason").getAsString() : reason);
+                if (BridgeScheduler.isFolia()) BukkitCompatibility.foliaBan(identity, name, reason);
+                else BukkitCompatibility.ban(target, reason);
+                if (!deferKick && online != null && online.isOnline()) online.kickPlayer(job.has("kick_reason") ? job.get("kick_reason").getAsString() : reason);
                 return "已永久封禁 " + name;
             case "unban":
-                if (job.has("expected_ban_reason") && target.isBanned()
-                    && !job.get("expected_ban_reason").getAsString().equals(BukkitCompatibility.banReason(target)))
+                boolean banned = BridgeScheduler.isFolia() ? BukkitCompatibility.foliaBanned(identity, name) : target.isBanned();
+                String banReason = BridgeScheduler.isFolia() ? BukkitCompatibility.foliaBanReason(identity, name) : BukkitCompatibility.banReason(target);
+                String banSource = BridgeScheduler.isFolia() ? BukkitCompatibility.foliaBanSource(identity, name) : BukkitCompatibility.banSource(target);
+                if (job.has("expected_ban_reason") && banned
+                    && (!job.get("expected_ban_reason").getAsString().equals(banReason) || !"StarBridge".equals(banSource)))
                     throw new IllegalStateException("当前封禁属于其他处罚，或核心无法校验封禁来源；未自动解除");
-                BukkitCompatibility.unban(target);
+                if (BridgeScheduler.isFolia()) BukkitCompatibility.foliaUnban(identity, name);
+                else BukkitCompatibility.unban(target);
                 return "已解除 " + name + " 的封禁";
             case "whitelist_add":
             case "whitelist_remove":
@@ -323,13 +523,22 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     }
 
     private void completeWhitelist(JsonObject job, UUID identity, String name) {
+        synchronized (playerLifecycle) {
+            if (stopping || !isEnabled()) { inFlight.remove(job.get("id").getAsString()); return; }
+            completeWhitelistActive(job, identity, name);
+        }
+    }
+
+    private void completeWhitelistActive(JsonObject job, UUID identity, String name) {
         String id = job.get("id").getAsString();
         try {
             if (job.get("expires").getAsDouble() * 1000 < System.currentTimeMillis()) {
                 finishWhitelist(id, false, "任务已过期，未加入白名单"); return;
             }
             OfflinePlayer target = BukkitCompatibility.offline(identity, name);
-            if (target.isBanned()) { finishWhitelist(id, false, "玩家已被服务器封禁，未加入白名单"); return; }
+            if (BridgeScheduler.isFolia() ? BukkitCompatibility.foliaBanned(identity, name) : target.isBanned()) {
+                finishWhitelist(id, false, "玩家已被服务器封禁，未加入白名单"); return;
+            }
             target.setWhitelisted(true);
             if (!target.isWhitelisted()) throw new IllegalStateException("Whitelist write failed");
             UUID serverIdentity = BukkitCompatibility.identity(target);
@@ -375,16 +584,32 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
     public void onChat(AsyncPlayerChatEvent event) { event("chat", event.getPlayer().getName(), event.getMessage()); }
     @EventHandler public void onJoin(PlayerJoinEvent event) {
+        if (BridgeScheduler.isFolia()) {
+            Player player = event.getPlayer();
+            synchronized (playerLifecycle) {
+                if (stopping) return;
+                livePlayers.put(BukkitCompatibility.identity(player), player);
+            }
+            capturePlayer(player);
+        }
         lastPlayed.put(BukkitCompatibility.identity(event.getPlayer()), System.currentTimeMillis());
-        nextCatalogUpdate = 0;
+        BukkitCompatibility.runTask(this, () -> nextCatalogUpdate = 0);
         joined(event.getPlayer());
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
-        bindingCooldown.remove(BukkitCompatibility.identity(event.getPlayer()));
-        knownPlayers.put(BukkitCompatibility.identity(event.getPlayer()), BukkitCompatibility.offline(BukkitCompatibility.identity(event.getPlayer()), event.getPlayer().getName()));
-        lastPlayed.put(BukkitCompatibility.identity(event.getPlayer()), System.currentTimeMillis());
-        nextCatalogUpdate = 0;
-        event("quit", event.getPlayer().getName(), "");
+        Player player = event.getPlayer();
+        UUID identity = BukkitCompatibility.identity(player);
+        String name = player.getName();
+        bindingCooldown.remove(identity);
+        livePlayers.remove(identity, player);
+        playerStates.computeIfPresent(identity, (uuid, state) -> state.connection == player ? null : state);
+        pendingSnapshots.remove(identity, player);
+        lastPlayed.put(identity, System.currentTimeMillis());
+        BukkitCompatibility.runTask(this, () -> {
+            knownPlayers.put(identity, BukkitCompatibility.offline(identity, name));
+            nextCatalogUpdate = 0;
+        });
+        event("quit", name, "");
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -409,10 +634,9 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                 message = "请在服务器 QQ 群发送：绑定 " + code + "（5 分钟有效，请勿转发给他人）";
             } catch (Exception ex) { message = "获取验证码失败，请联系管理员检查星桥连接。"; }
             String result = message;
-            if (isEnabled()) BukkitCompatibility.runTask(this, () -> {
-                Player current = BukkitCompatibility.player(playerId);
-                if (current != null && current.isOnline() && connectionNonce.equals(login.nonce(current)) && !login.locked(current)) current.sendMessage(result);
-            });
+            if (isEnabled()) BukkitCompatibility.runPlayer(this, player, () -> {
+                if (player.isOnline() && BukkitCompatibility.player(playerId) == player && connectionNonce.equals(login.nonce(player)) && !login.locked(player)) player.sendMessage(result);
+            }, () -> { });
         });
         return true;
     }

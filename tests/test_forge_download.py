@@ -5,6 +5,7 @@ from unittest.mock import patch
 from aiohttp.test_utils import TestClient, TestServer
 from starbridge.app import create_app
 from starbridge.game_bridges import bridge_catalog, bridge_filename
+from starbridge import __bridge_version__
 from test_starbridge import config
 
 
@@ -17,7 +18,7 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
         await self.client.start_server()
         self.headers = {'Authorization': 'Bearer ' + self.cfg['app']['admin_token']}
         (self.root / 'bridge/target').mkdir(parents=True)
-        (self.root / 'bridge/target/StarBridge-0.5.0.jar').write_bytes(b'bukkit-fixture')
+        (self.root / 'bridge/target' / f'StarBridge-{__bridge_version__}.jar').write_bytes(b'bukkit-fixture')
         for item in bridge_catalog():
             (self.root / 'bridge/target' / item['filename']).write_bytes(item['filename'].encode())
 
@@ -34,6 +35,8 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(await response.read(), expected)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
                 self.assertIn('attachment;', response.headers['Content-Disposition'])
+                if platform == 'bukkit':
+                    self.assertIn(f'StarBridge-{__bridge_version__}.jar', response.headers['Content-Disposition'])
             for platform in ('forge', 'fabric'):
                 response = await self.client.get('/api/plugin?platform='+platform)
                 self.assertEqual(response.status, 401)

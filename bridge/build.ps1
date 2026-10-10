@@ -28,7 +28,7 @@ Get-VerifiedDependency -Path $asmCommons -Url 'https://repo.maven.apache.org/mav
 $sources = @(Get-ChildItem -LiteralPath (Join-Path $project 'src\main\java\cn\starbridge') -Filter '*.java' | ForEach-Object FullName)
 & "$JavaHome\bin\javac.exe" --release 8 -encoding UTF-8 -cp "$api;$gson" -d $classes @sources
 if ($LASTEXITCODE -ne 0) { throw 'Java 编译失败' }
-$jar = Join-Path $target 'StarBridge-0.5.0.jar'
+$jar = Join-Path $target 'StarBridge-0.5.1.jar'
 $toolClasses = Join-Path $target 'build-tools'
 New-Item -ItemType Directory -Force -Path $toolClasses | Out-Null
 & "$JavaHome\bin\javac.exe" --release 8 -encoding UTF-8 -cp "$asm;$asmCommons" -d $toolClasses (Join-Path $project 'tools\ShadeJar.java')

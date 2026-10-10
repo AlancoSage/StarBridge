@@ -11,7 +11,7 @@ $tests = Join-Path $target 'compat-test-classes'
 $api = Join-Path $target 'spigot-api-1.8.8-shaded.jar'
 $gson = Join-Path $target 'gson-2.13.2.jar'
 $asm = Join-Path $target 'asm-9.8.jar'
-$jar = Join-Path $target 'StarBridge-0.5.0.jar'
+$jar = Join-Path $target 'StarBridge-0.5.1.jar'
 $expected = '2e192832b9ddb70d89b376559282969371d9b062110d5b93aa698ae9784f8608'
 if (-not (Test-Path -LiteralPath $api) -or (Get-FileHash -LiteralPath $api -Algorithm SHA256).Hash -ne $expected) {
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12

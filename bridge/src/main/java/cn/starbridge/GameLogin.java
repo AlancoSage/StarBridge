@@ -19,19 +19,49 @@ import org.bukkit.plugin.Plugin;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-/** All Bukkit access and connection transitions run on the game thread. HTTP uses two bounded workers. */
+/** Player transitions run on their owning scheduler; HTTP uses two bounded workers. */
 final class GameLogin implements Listener {
     interface Transport { JsonObject post(String route, JsonObject data) throws Exception; }
+    private static final class Policy {
+        final boolean known, required, passwordLogin, qqLogin;
+        final String revision, engine;
+        final int loginSeconds;
+        final AuthMeLink authMe;
+        final long generation;
+        Policy(boolean known, boolean required, boolean passwordLogin, boolean qqLogin,
+               String revision, String engine, int loginSeconds, AuthMeLink authMe, long generation) {
+            this.known = known; this.required = required; this.passwordLogin = passwordLogin; this.qqLogin = qqLogin;
+            this.revision = revision; this.engine = engine; this.loginSeconds = loginSeconds;
+            this.authMe = authMe; this.generation = generation;
+        }
+        boolean sameSettings(Policy other) {
+            return known == other.known && required == other.required && passwordLogin == other.passwordLogin
+                && qqLogin == other.qqLogin && revision.equals(other.revision) && engine.equals(other.engine)
+                && loginSeconds == other.loginSeconds && authMe == other.authMe;
+        }
+    }
+    private static final class Authentication {
+        final boolean authenticated;
+        final long generation;
+        Authentication(boolean authenticated, long generation) { this.authenticated = authenticated; this.generation = generation; }
+    }
     private static final class Connection {
+        // Capture these only on the entity thread. Heartbeats never read live player state.
+        final Player player;
         final UUID uuid;
         final String nonce = UUID.randomUUID().toString(), name, ip;
-        volatile boolean authenticated;
+        volatile Authentication authentication = new Authentication(false, -1);
+        // Scheduling metadata is shared with the global timer, not player login state.
+        final AtomicBoolean timeoutQueued = new AtomicBoolean();
+        // Remaining fields are confined to this player's scheduler.
         boolean inFlight;
         boolean proof, awaitingAuthMe;
-        long authMeDeadline;
+        long authMeDeadline, proofGeneration = -1;
         long deadline = System.currentTimeMillis() + 120000, lastCommand;
         Connection(Player player) {
+            this.player = player;
             uuid = BukkitCompatibility.identity(player); name = player.getName();
             ip = player.getAddress() != null && player.getAddress().getAddress() != null
                 ? player.getAddress().getAddress().getHostAddress() : "";
@@ -48,13 +78,11 @@ final class GameLogin implements Listener {
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(64), runnable -> { Thread thread = new Thread(runnable, "StarBridge-Login"); thread.setDaemon(true); return thread; });
-    private volatile boolean policyKnown, required = true;
-    private boolean passwordLogin = true, qqLogin = true;
-    private String revision = "";
-    private int loginSeconds = 120;
-    private AuthMeLink authMe;
+    private volatile Policy policy = new Policy(false, true, true, true, "", "auto", 120, null, 0);
+    private volatile boolean closed;
+    private AuthMeLink configuredAuthMe;
     private Plugin linkedPlugin;
-    private String engine = "auto";
+    private boolean authMeFoliaWarning;
     private Field commandLogField;
     private boolean originalCommandLogs, ownsCommandLogs, commandLogWarning;
 
@@ -67,14 +95,20 @@ final class GameLogin implements Listener {
         }
         BukkitCompatibility.optionalEvent(plugin, "org.bukkit.event.entity.EntityPickupItemEvent", event -> gateOptional(event, "getEntity"));
         BukkitCompatibility.optionalEvent(plugin, "org.bukkit.event.inventory.InventoryDragEvent", event -> gateOptional(event, "getWhoClicked"));
-        BukkitCompatibility.repeat(plugin, this::checkTimeouts, 20, 20);
-        for (Player player : BukkitCompatibility.players()) begin(player);
+        BridgeScheduler.repeatGlobal(plugin, this::checkTimeouts, 20, 20);
+        for (Player player : BukkitCompatibility.players()) {
+            if (BridgeScheduler.isFolia()) BridgeScheduler.runPlayer(plugin, player, () -> begin(player), null);
+            else begin(player);
+        }
     }
 
     boolean locked(Player player) {
-        if (policyKnown && !required) return false;
+        Policy current = policy;
+        if (current.known && !current.required) return false;
         Connection connection = connections.get(BukkitCompatibility.identity(player));
-        return !policyKnown || connection == null || !connection.authenticated;
+        if (!current.known || connection == null || connection.player != player) return true;
+        Authentication authentication = connection.authentication;
+        return !authentication.authenticated || authentication.generation != current.generation;
     }
 
     String nonce(Player player) {
@@ -82,7 +116,7 @@ final class GameLogin implements Listener {
         return connection == null ? "" : connection.nonce;
     }
 
-    private boolean protectCommandLogs() {
+    private synchronized boolean protectCommandLogs() {
         try {
             if (ownsCommandLogs) { commandLogField.setBoolean(null, false); return true; }
             // Spigot logs command arguments before PlayerCommandPreprocessEvent.
@@ -98,88 +132,120 @@ final class GameLogin implements Listener {
         }
     }
 
-    private void restoreCommandLogs() {
+    private synchronized void restoreCommandLogs() {
         if (!ownsCommandLogs) return;
         try { commandLogField.setBoolean(null, originalCommandLogs); }
         catch (IllegalAccessException ignored) { }
         ownsCommandLogs = false;
     }
 
-    void accept(JsonObject response) {
-        if (!response.has("authentication")) {
+    synchronized void accept(JsonObject response) {
+        if (closed || !response.has("authentication")) {
             // An older backend has no authentication policy; never assume it means disabled.
             return;
         }
-        JsonObject policy = response.getAsJsonObject("authentication");
-        boolean previousKnown = policyKnown, previousRequired = required;
-        String previousRevision = revision;
-        required = policy.get("required").getAsBoolean();
-        passwordLogin = policy.get("password_login").getAsBoolean();
-        qqLogin = policy.get("qq_login").getAsBoolean();
-        loginSeconds = Math.max(30, Math.min(600, policy.get("login_seconds").getAsInt()));
-        revision = policy.get("revision").getAsString(); policyKnown = true;
-        engine = policy.has("login_engine") ? policy.get("login_engine").getAsString() : "auto";
-        if (required && (!policy.get("available").getAsBoolean()
-                || !configureEngine()
-                || passwordLogin && !protectCommandLogs())) {
-            policyKnown = false;
-            for (Player player : BukkitCompatibility.players()) player.kickPlayer("星桥游戏认证尚未就绪，请联系管理员检查登录引擎、AuthMe API 与认证设置。");
+        JsonObject value = response.getAsJsonObject("authentication");
+        Policy previous = policy;
+        boolean required = value.get("required").getAsBoolean();
+        boolean passwordLogin = value.get("password_login").getAsBoolean();
+        boolean qqLogin = value.get("qq_login").getAsBoolean();
+        int loginSeconds = Math.max(30, Math.min(600, value.get("login_seconds").getAsInt()));
+        String revision = value.get("revision").getAsString();
+        String engine = value.has("login_engine") ? value.get("login_engine").getAsString() : "auto";
+        boolean ready = true;
+        AuthMeLink link = null;
+        if (required) {
+            try { link = configureEngine(engine); }
+            catch (IllegalStateException exception) { ready = false; }
+            ready = ready && value.get("available").getAsBoolean() && (!passwordLogin || protectCommandLogs());
+        }
+        Policy candidate = new Policy(ready, required, passwordLogin, qqLogin, revision, engine, loginSeconds, link, previous.generation);
+        final Policy accepted = new Policy(ready, required, passwordLogin, qqLogin, revision, engine, loginSeconds, link,
+            candidate.sameSettings(previous) ? previous.generation : previous.generation + 1);
+        policy = accepted;
+        if (!ready) {
+            for (Connection connection : connections.values()) dispatch(connection, () -> {
+                if (policy.generation == accepted.generation) kick(connection, "星桥游戏认证尚未就绪，请联系管理员检查登录引擎、AuthMe API 与认证设置。");
+            });
             return;
         }
         if (!required) {
-            for (Connection connection : connections.values()) connection.authenticated = true;
+            for (Connection connection : connections.values()) dispatch(connection, () -> {
+                if (policy.generation == accepted.generation) connection.authentication = new Authentication(true, accepted.generation);
+            });
             return;
         }
-        if (previousKnown && (!previousRequired || !previousRevision.equals(revision))) {
-            for (Player player : BukkitCompatibility.players()) begin(player);
+        if (previous.known && !candidate.sameSettings(previous)) {
+            for (Connection connection : connections.values()) dispatch(connection, () -> {
+                if (policy.generation == accepted.generation) begin(connection.player);
+            });
         }
         if (response.has("authentication_results")) for (JsonElement element : response.getAsJsonArray("authentication_results")) {
             JsonObject result = element.getAsJsonObject();
             Connection connection = connections.get(UUID.fromString(result.get("uuid").getAsString()));
             if (connection == null || !connection.nonce.equals(result.get("nonce").getAsString())) continue;
-            if ("missing".equals(result.get("status").getAsString())) {
-                Player player = BukkitCompatibility.player(connection.uuid);
+            dispatch(connection, () -> {
+                if (policy.generation != accepted.generation) return;
                 // A backend restart gets a fresh nonce, fencing all delayed old callbacks.
-                if (player != null && player.isOnline()) begin(player);
-            } else apply(connection, result, false, false);
+                if ("missing".equals(result.get("status").getAsString())) begin(connection.player);
+                else apply(connection, result, false, false);
+            });
         }
     }
 
-    private boolean configureEngine() {
+    private AuthMeLink configureEngine(String engine) {
         Plugin installed = Bukkit.getPluginManager().getPlugin("AuthMe");
         boolean enabled = installed != null && installed.isEnabled();
-        if ("builtin".equals(engine) && enabled || "authme".equals(engine) && !enabled) return false;
-        if (!enabled) { authMe = null; linkedPlugin = null; return !"authme".equals(engine); }
-        if (authMe != null && linkedPlugin == installed) return true;
-        try { authMe = new AuthMeLink(installed, plugin); linkedPlugin = installed; return true; }
+        // AuthMe's traditional Bukkit API has no region-thread ownership contract.
+        // Do not invoke it on Folia merely because its plugin can be loaded there.
+        if (BridgeScheduler.isFolia() && enabled) {
+            if (!authMeFoliaWarning) plugin.getLogger().severe("Folia 游戏登录仅支持星桥内置引擎，请移除 AuthMe 并重启；不能安全调用传统 AuthMe API。");
+            authMeFoliaWarning = true;
+            configuredAuthMe = null; linkedPlugin = null;
+            throw new IllegalStateException("AuthMe is not supported on Folia");
+        }
+        if ("builtin".equals(engine) && enabled || "authme".equals(engine) && !enabled)
+            throw new IllegalStateException("Login engine is unavailable or conflicting");
+        if (!enabled) { configuredAuthMe = null; linkedPlugin = null; authMeFoliaWarning = false; return null; }
+        if (configuredAuthMe != null && linkedPlugin == installed) return configuredAuthMe;
+        try { configuredAuthMe = new AuthMeLink(installed, plugin); linkedPlugin = installed; return configuredAuthMe; }
         catch (ReflectiveOperationException | RuntimeException | java.io.IOException ex) {
             plugin.getLogger().severe("AuthMe API v3 无法接入，请检查版本与启动日志；星桥未放行游戏登录。");
-            authMe = null; linkedPlugin = null; return false;
+            configuredAuthMe = null; linkedPlugin = null;
+            throw new IllegalStateException("AuthMe API is unavailable", ex);
         }
     }
 
     JsonArray snapshot() {
         JsonArray records = new JsonArray();
-        for (Player player : BukkitCompatibility.players()) {
-            Connection connection = connections.get(BukkitCompatibility.identity(player));
-            if (connection != null) records.add(connection.request("heartbeat"));
+        for (Connection connection : connections.values()) {
+            records.add(connection.request("heartbeat"));
             if (records.size() >= 500) break;
         }
         return records;
     }
 
     private void begin(Player player) {
+        if (closed || !plugin.isEnabled() || !player.isOnline()) return;
         Connection connection = new Connection(player);
-        connection.deadline = System.currentTimeMillis() + loginSeconds * 1000L;
-        connections.put(connection.uuid, connection);
-        if (policyKnown && !required) { connection.authenticated = true; return; }
-        player.sendMessage("星桥正在检查本次游戏登录，请稍候……");
+        Policy current;
+        synchronized (this) {
+            // A region event can race onDisable while capturing the address.
+            if (closed || !plugin.isEnabled()) return;
+            current = policy;
+            connection.deadline = System.currentTimeMillis() + current.loginSeconds * 1000L;
+            connections.put(connection.uuid, connection);
+        }
+        if (current.known && !current.required) { connection.authentication = new Authentication(true, current.generation); return; }
+        message(connection, "星桥正在检查本次游戏登录，请稍候……");
         submit(connection, connection.request("join"), true);
     }
 
     private void submit(Connection connection, JsonObject payload, boolean joining) {
+        if (!current(connection)) { payload.remove("password"); return; }
         if (connection.inFlight) { message(connection, "认证请求正在处理中，请稍候。"); return; }
         connection.inFlight = true;
+        Policy submittedPolicy = policy;
         try {
             workers.execute(() -> {
                 JsonObject result;
@@ -191,10 +257,11 @@ final class GameLogin implements Listener {
                     payload.remove("password");
                 }
                 JsonObject answer = result;
-                if (plugin.isEnabled()) BukkitCompatibility.runTask(plugin, () -> {
-                    if (connections.get(connection.uuid) != connection) return;
+                queue(connection, () -> {
                     connection.inFlight = false;
+                    if (submittedPolicy.known && policy.generation != submittedPolicy.generation) return;
                     if (answer.has("error")) {
+                        if (policy.known && !policy.required) return;
                         message(connection, answer.get("error").getAsString());
                         if (joining) kick(connection, "认证服务不可用，请稍后重新进入服务器。");
                     } else apply(connection, answer, joining, true);
@@ -210,71 +277,103 @@ final class GameLogin implements Listener {
     private void apply(Connection connection, JsonObject result, boolean joining, boolean notify) {
         if (connections.get(connection.uuid) != connection) return;
         if (!result.has("nonce") || !connection.nonce.equals(result.get("nonce").getAsString())) return;
-        if (policyKnown && result.has("revision") && !revision.equals(result.get("revision").getAsString())) return;
+        Policy current = policy;
+        if (current.known && result.has("revision") && !current.revision.equals(result.get("revision").getAsString())) return;
         String status = result.get("status").getAsString();
         if ("authenticated".equals(status)) {
+            if (!current.known || !current.required) return;
+            if (connection.proof && connection.proofGeneration != current.generation) { begin(connection.player); return; }
             if (!connection.proof) {
-                connection.proof = true;
-                if (authMe == null) complete(connection);
+                connection.proof = true; connection.proofGeneration = current.generation;
+                if (current.authMe == null) complete(connection, current);
                 else {
-                    Player player = BukkitCompatibility.player(connection.uuid);
+                    Player player = connection.player;
                     if (player == null || !player.isOnline()) return;
-                    connection.awaitingAuthMe = true; connection.authMeDeadline = System.currentTimeMillis() + loginSeconds * 1000L;
+                    connection.awaitingAuthMe = true; connection.authMeDeadline = System.currentTimeMillis() + current.loginSeconds * 1000L;
                     try {
-                        if (!authMe.start(player)) message(connection, "这是已有 AuthMe 账号，首次关联请再输入 /authme:login <原 AuthMe 密码> 验证所有权；以后可用星桥密码或 QQ 登录。");
-                        finishAuthMe(connection, player);
+                        if (!current.authMe.start(player)) message(connection, "这是已有 AuthMe 账号，首次关联请再输入 /authme:login <原 AuthMe 密码> 验证所有权；以后可用星桥密码或 QQ 登录。");
+                        finishAuthMe(connection, current);
                     } catch (ReflectiveOperationException | RuntimeException | java.io.IOException ex) { kick(connection, "AuthMe 登录同步失败，请联系管理员检查插件设置。"); }
                 }
             }
         } else if ("disabled".equals(status)) {
             // Only a synchronized disabled policy can release the movement/command gate.
-            if (policyKnown && !required) connection.authenticated = true;
+            if (current.known && !current.required) connection.authentication = new Authentication(true, current.generation);
         } else if ("denied".equals(status)) {
-            connection.authenticated = false; kick(connection, result.get("message").getAsString());
+            connection.authentication = new Authentication(false, current.generation); kick(connection, result.get("message").getAsString());
         } else if (joining && "pending".equals(status)) {
             connection.deadline = System.currentTimeMillis() + result.get("expires_in").getAsInt() * 1000L;
             message(connection, prompt());
-        } else if (notify && result.has("message") && !connection.authenticated) message(connection, result.get("message").getAsString());
+        } else if (notify && result.has("message") && !connection.authentication.authenticated) message(connection, result.get("message").getAsString());
     }
 
-    private void complete(Connection connection) {
-        if (!connection.authenticated) {
-            connection.authenticated = true; connection.awaitingAuthMe = false;
+    private void complete(Connection connection, Policy current) {
+        if (!connection.authentication.authenticated || connection.authentication.generation != current.generation) {
+            connection.authentication = new Authentication(true, current.generation); connection.awaitingAuthMe = false;
             message(connection, "登录成功，欢迎回来！");
         }
     }
-    private void finishAuthMe(Connection connection, Player player) throws ReflectiveOperationException, java.io.IOException {
-        if (connection.proof && connection.awaitingAuthMe && authMe.authenticated(player)) {
-            authMe.remember(player); complete(connection);
+    private void finishAuthMe(Connection connection, Policy current) throws ReflectiveOperationException, java.io.IOException {
+        if (connection.proof && connection.awaitingAuthMe && current.authMe.authenticated(connection.player)) {
+            current.authMe.remember(connection.player); complete(connection, current);
         }
     }
 
     private String prompt() {
-        return "请登录：" + (passwordLogin ? "/login <注册时的密码>（或 /l <密码>） " : "") + (qqLogin ? "或 /qqlogin（简写 /ql，绑定 QQ 私聊确认）" : "")
+        Policy current = policy;
+        return "请登录：" + (current.passwordLogin ? "/login <注册时的密码>（或 /l <密码>） " : "") + (current.qqLogin ? "或 /qqlogin（简写 /ql，绑定 QQ 私聊确认）" : "")
             + "。旧账号可在网页「设置登录密码」验证邮箱后设置密码。";
     }
+    private boolean current(Connection connection) {
+        return !closed && plugin.isEnabled() && connections.get(connection.uuid) == connection;
+    }
+    private void queue(Connection connection, Runnable task) {
+        queue(connection, task, null);
+    }
+    private void queue(Connection connection, Runnable task, Runnable done) {
+        if (!current(connection)) { if (done != null) done.run(); return; }
+        BridgeScheduler.runPlayer(plugin, connection.player, () -> {
+            try { if (current(connection) && connection.player.isOnline()) task.run(); }
+            finally { if (done != null) done.run(); }
+        }, () -> {
+            connections.remove(connection.uuid, connection);
+            if (done != null) done.run();
+        });
+    }
+    private void dispatch(Connection connection, Runnable task) {
+        if (BridgeScheduler.isFolia()) queue(connection, task);
+        else if (current(connection) && connection.player.isOnline()) task.run();
+    }
+    // These two methods are called only by entity tasks or player events.
     private void message(Connection connection, String text) {
-        Player player = BukkitCompatibility.player(connection.uuid);
-        if (player != null && player.isOnline() && connections.get(connection.uuid) == connection) player.sendMessage(text);
+        if (current(connection) && connection.player.isOnline()) connection.player.sendMessage(text);
     }
     private void kick(Connection connection, String text) {
-        Player player = BukkitCompatibility.player(connection.uuid);
-        if (player != null && player.isOnline() && connections.get(connection.uuid) == connection) player.kickPlayer(text);
+        if (current(connection) && connection.player.isOnline()) connection.player.kickPlayer(text);
     }
     private void checkTimeouts() {
+        if (closed) return;
         protectCommandLogs();
-        for (Player player : BukkitCompatibility.players()) {
-            Connection connection = connections.get(BukkitCompatibility.identity(player));
-            if (policyKnown && required && authMe != null && connection != null) {
-                try {
-                    if (connection.awaitingAuthMe) {
-                        finishAuthMe(connection, player);
-                        if (connection.awaitingAuthMe && System.currentTimeMillis() >= connection.authMeDeadline) kick(connection, "AuthMe 同步超时，请检查其注册限制与登录设置。");
-                    } else if (connection.authenticated && !authMe.authenticated(player)) { begin(player); continue; }
-                } catch (ReflectiveOperationException | RuntimeException | java.io.IOException ex) { kick(connection, "AuthMe 登录状态不可用，请联系管理员。"); }
-            }
-            if (connection != null && locked(player) && System.currentTimeMillis() >= connection.deadline) kick(connection, "登录超时，请重新进入服务器。");
+        for (Connection connection : connections.values()) {
+            if (BridgeScheduler.isFolia()) {
+                if (connection.timeoutQueued.compareAndSet(false, true))
+                    queue(connection, () -> checkTimeout(connection), () -> connection.timeoutQueued.set(false));
+            } else dispatch(connection, () -> checkTimeout(connection));
         }
+    }
+    private void checkTimeout(Connection connection) {
+        Policy current = policy;
+        Player player = connection.player;
+        if (current.known && current.required && connection.proof && connection.proofGeneration != current.generation) { begin(player); return; }
+        if (current.known && current.required && current.authMe != null) {
+            try {
+                if (connection.awaitingAuthMe) {
+                    finishAuthMe(connection, current);
+                    if (connection.awaitingAuthMe && System.currentTimeMillis() >= connection.authMeDeadline) kick(connection, "AuthMe 同步超时，请检查其注册限制与登录设置。");
+                } else if (connection.authentication.authenticated && !current.authMe.authenticated(player)) { begin(player); return; }
+            } catch (ReflectiveOperationException | RuntimeException | java.io.IOException ex) { kick(connection, "AuthMe 登录状态不可用，请联系管理员。"); }
+        }
+        if (locked(player) && System.currentTimeMillis() >= connection.deadline) kick(connection, "登录超时，请重新进入服务器。");
     }
     static String commandName(String message) {
         String first = message.split("\\s", 2)[0].toLowerCase(Locale.ROOT);
@@ -285,15 +384,16 @@ final class GameLogin implements Listener {
         return first;
     }
     private void login(Player player, String name, String arg) {
-        if (!policyKnown) { player.sendMessage("正在同步认证设置，请稍后重试。"); return; }
-        if (!required) { player.sendMessage("此服务器没有启用星桥游戏登录。"); return; }
+        Policy current = policy;
+        if (!current.known) { player.sendMessage("正在同步认证设置，请稍后重试。"); return; }
+        if (!current.required) { player.sendMessage("此服务器没有启用星桥游戏登录。"); return; }
         Connection connection = connections.get(BukkitCompatibility.identity(player));
-        if (connection == null) { begin(player); return; }
-        if (connection.authenticated) { player.sendMessage("你已经登录。"); return; }
+        if (connection == null || connection.player != player || connection.proof && connection.proofGeneration != current.generation) { begin(player); return; }
+        if (!locked(player)) { player.sendMessage("你已经登录。"); return; }
         if (System.currentTimeMillis() - connection.lastCommand < 1000) return;
         connection.lastCommand = System.currentTimeMillis();
         boolean password = name.equals("login");
-        if (password && !passwordLogin || !password && !qqLogin) { player.sendMessage("此登录方式没有开放。"); return; }
+        if (password && !current.passwordLogin || !password && !current.qqLogin) { player.sendMessage("此登录方式没有开放。"); return; }
         if (password && (arg.length() < 8 || arg.length() > 128)) { player.sendMessage("正确格式：/login <8–128 字符密码> 或 /l <密码>，请勿在公共聊天中发送密码。"); return; }
         JsonObject data = connection.request(password ? "password" : "qq");
         if (password) data.addProperty("password", arg);
@@ -302,23 +402,24 @@ final class GameLogin implements Listener {
 
     @EventHandler(priority=EventPriority.LOWEST)
     public void onCommand(PlayerCommandPreprocessEvent event) {
+        Policy current = policy;
         String name = commandName(event.getMessage());
         boolean own = name.equals("login") || name.equals("qqlogin");
         Connection connection = connections.get(BukkitCompatibility.identity(event.getPlayer()));
-        if (name.equals("logout") && policyKnown && required) {
+        if (name.equals("logout") && current.known && current.required) {
             event.setCancelled(true);
-            try { if (authMe != null) authMe.logout(event.getPlayer()); }
+            try { if (current.authMe != null) current.authMe.logout(event.getPlayer()); }
             catch (ReflectiveOperationException ex) { event.getPlayer().kickPlayer("AuthMe 退出登录失败，请重新连接。"); return; }
             begin(event.getPlayer());
         } else if ((name.equals("authme:login") || name.equals("authme:l") || name.equals("authme:totp")
-                || name.equals("authme:verification") || name.equals("authme:captcha")) && policyKnown && required && authMe != null
-                && connection != null && connection.proof && connection.awaitingAuthMe) {
+                || name.equals("authme:verification") || name.equals("authme:captcha")) && current.known && current.required && current.authMe != null
+                && connection != null && connection.proof && connection.proofGeneration == current.generation && connection.awaitingAuthMe) {
             // AuthMe's LOWEST listener blocks namespaced commands before login by default.
             // Permit only its fixed authentication commands after independent StarBridge proof;
             // AuthMe command handlers still verify credentials, permissions and additional codes.
             event.setCancelled(false);
             return;
-        } else if (own && (!policyKnown || required || !Bukkit.getPluginManager().isPluginEnabled("AuthMe"))) {
+        } else if (own && (!current.known || current.required || !Bukkit.getPluginManager().isPluginEnabled("AuthMe"))) {
             String original = event.getMessage();
             int split = original.indexOf(' ');
             String arg = split < 0 ? "" : original.substring(split + 1);
@@ -330,8 +431,10 @@ final class GameLogin implements Listener {
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) { begin(event.getPlayer()); }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
-        Connection connection = connections.remove(BukkitCompatibility.identity(event.getPlayer()));
-        if (connection != null && policyKnown && required) {
+        Connection connection = connections.get(BukkitCompatibility.identity(event.getPlayer()));
+        if (connection == null || connection.player != event.getPlayer() || !connections.remove(connection.uuid, connection)) return;
+        Policy current = policy;
+        if (!closed && current.known && current.required) {
             try { workers.execute(() -> { try { transport.post("/auth", connection.request("leave")); } catch (Exception ignored) { } }); }
             catch (RejectedExecutionException ignored) { }
         }
@@ -344,7 +447,7 @@ final class GameLogin implements Listener {
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void onTeleport(PlayerTeleportEvent event) {
         Connection connection = connections.get(BukkitCompatibility.identity(event.getPlayer()));
-        boolean synchronizing = connection != null && connection.proof && connection.awaitingAuthMe
+        boolean synchronizing = connection != null && connection.proof && connection.proofGeneration == policy.generation && connection.awaitingAuthMe
             && event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN;
         if (locked(event.getPlayer()) && !synchronizing) event.setCancelled(true);
     }
@@ -387,9 +490,14 @@ final class GameLogin implements Listener {
         if (actor instanceof Player && locked((Player) actor)) ((Cancellable) event).setCancelled(true);
     }
 
-    void close() {
+    synchronized void close() {
+        closed = true;
         workers.shutdownNow();
-        if (!policyKnown || required) for (Player player : BukkitCompatibility.players()) player.kickPlayer("游戏认证插件已停止，请稍后重新连接。");
+        // Folia rejects tasks submitted by a disabled plugin, and onDisable does
+        // not own player regions. Use a server restart when changing login plugins.
+        Policy current = policy;
+        if (!BridgeScheduler.isFolia() && (!current.known || current.required))
+            for (Player player : BukkitCompatibility.players()) player.kickPlayer("游戏认证插件已停止，请稍后重新连接。");
         connections.clear(); restoreCommandLogs();
     }
 }
