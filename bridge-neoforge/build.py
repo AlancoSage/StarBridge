@@ -1,4 +1,4 @@
-"""Build six server-only NeoForge adapters with pinned native declarations."""
+"""Build server-only NeoForge adapters with pinned native declarations."""
 from __future__ import annotations
 
 import argparse
@@ -19,6 +19,7 @@ FABRIC_ROOT = ROOT.parent / 'bridge-fabric'
 VERSION = '0.1.0'
 VERSIONS = {
     '1.20.4': ('20.4.251', 17),
+    '1.20.6': ('20.6.141', 21),
     '1.21.4': ('21.4.158', 21),
     '1.21.8': ('21.8.54', 21),
     '1.21.11': ('21.11.45', 21),
@@ -27,6 +28,7 @@ VERSIONS = {
 }
 LOADER_API = {
     '1.20.4': ('2.0.17', 'fdb7c4ffd3b03ce5dba32d453a5335630416b4c820ce54eada5cba96e36be625', 'cff49582bb17944fd30b4cd1272578fe2b6c9e7f79fdd92f1ac502b19ca436a3'),
+    '1.20.6': ('3.0.45', '6c65eea2a1ba09266a0b4e25bd2ef34ba11957c564b695022063cd259e00ad1c', '45b37b9f255b02e18c1ef9dc42ae5d4fb2a6a8c2b503b72c8cd1131f0e299143'),
     '1.21.4': ('6.0.18', '572929b4299529a32566071e2c3641cdcef9dcb0644441d58c6ded183276acac', '45b37b9f255b02e18c1ef9dc42ae5d4fb2a6a8c2b503b72c8cd1131f0e299143'),
     '1.21.8': ('9.0.18', '1528c2a0ee90ca236d7810aaa271386498366d8e53555ee0fd4fb259d267c4c8', '45b37b9f255b02e18c1ef9dc42ae5d4fb2a6a8c2b503b72c8cd1131f0e299143'),
     '1.21.11': ('10.0.36', '5711bb95b45b421ada6e5f0f4600ac441c3509446178da5de927135f8bd6b0c9', '285798e18a26bdb04f64c850bc6606a44b65e331fc8f40e5911a608a5470b0f1'),
@@ -77,7 +79,7 @@ def rename(source):
         'starbridge-fabric', 'starbridge-neoforge').replace('Fabric', 'NeoForge')
 
 
-def adapter_sources():
+def adapter_sources(mc=None):
     """Keep the proven packet/session implementation in one reviewed source template."""
     result = {}
     source_root = FABRIC_ROOT / 'common/src/main/java/cn/starbridge/fabric'
@@ -104,6 +106,9 @@ def adapter_sources():
             : "net.neoforged.neoforge.common.NeoForgeVersion";
         return (String)nativeApi.direct(null,owner,"getVersion","()Ljava/lang/String;");
     }''')
+            if mc == '1.20.6':
+                source = replace_once(source, 'version.equals("1.20.4")',
+                    'version.equals("1.20.4")||version.equals("1.20.6")')
         source = rename(source)
         if any(word in source for word in ('net.fabricmc', 'MappingResolver', 'FabricLoader', 'starbridge-fabric')):
             raise ValueError('NeoForge must not link against Fabric Loader')
@@ -212,7 +217,7 @@ def build(mc, jdk, cache):
         output = staging / 'classes'
         output.mkdir()
         sources = []
-        for name, content in {**adapter_sources(), **generated, 'Mod': stub}.items():
+        for name, content in {**adapter_sources(mc), **generated, 'Mod': stub}.items():
             path = staging / (name + '.java')
             path.write_text(content, encoding='utf-8')
             sources.append(path)
@@ -254,7 +259,7 @@ def build(mc, jdk, cache):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--java-home', type=Path, default=Path(os.environ.get('JAVA_HOME', '')))
-    parser.add_argument('--version', choices=VERSIONS, help='Omit to build all six new versions; 1.21.1 keeps its Gradle build.')
+    parser.add_argument('--version', choices=VERSIONS, help='Omit to build all native versions; 1.21.1 keeps its Gradle build.')
     parser.add_argument('--cache', type=Path, default=ROOT / 'build/dependencies')
     args = parser.parse_args()
     for mc in [args.version] if args.version else VERSIONS:

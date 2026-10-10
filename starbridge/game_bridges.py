@@ -9,6 +9,7 @@ GAME_BRIDGES = (
     {"platform": "forge", "version": "1.19.2", "loader_version": "43.5.0", "java": 17, "config": "toml"},
     {"platform": "forge", "version": "1.20.1", "loader_version": "47.4.10", "java": 17, "config": "toml"},
     {"platform": "neoforge", "version": "1.20.4", "loader_version": "20.4.251", "java": 17, "config": "properties"},
+    {"platform": "neoforge", "version": "1.20.6", "loader_version": "20.6.141", "java": 21, "config": "properties"},
     {"platform": "neoforge", "version": "1.21.1", "loader_version": "21.1.256", "java": 21, "config": "toml"},
     {"platform": "neoforge", "version": "1.21.4", "loader_version": "21.4.158", "java": 21, "config": "properties"},
     {"platform": "neoforge", "version": "1.21.8", "loader_version": "21.8.54", "java": 21, "config": "properties"},

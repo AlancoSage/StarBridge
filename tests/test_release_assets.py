@@ -16,7 +16,7 @@ class NativeReleaseAssetTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root/'starbridge').mkdir()
         (self.root/'bridge/target').mkdir(parents=True)
-        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.6"\n__forge_version__="0.1.0"\n', encoding='utf-8')
+        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.7"\n__forge_version__="0.1.0"\n', encoding='utf-8')
 
     def artifact(self, item, *, override=None, binding_override=None, missing_core=False, missing_resource=False,
                  missing_mixin=False, mixin_override=None, metadata_transform=None, major=None):
@@ -75,17 +75,17 @@ class NativeReleaseAssetTests(unittest.TestCase):
     def catalog(self, items):
         (self.root/'starbridge/game_bridges.py').write_text('GAME_BRIDGES = '+repr(tuple(items)), encoding='utf-8')
 
-    def test_all_twenty_three_native_assets_are_required_with_distinct_loader_names(self):
+    def test_all_twenty_four_native_assets_are_required_with_distinct_loader_names(self):
         self.catalog(GAME_BRIDGES)
         for item in GAME_BRIDGES:
             self.artifact(item)
         assets = native_assets(self.root)
-        self.assertEqual(len(assets), 23)
-        self.assertEqual(len(set(path.name for path in assets)), 23)
+        self.assertEqual(len(assets), 24)
+        self.assertEqual(len(set(path.name for path in assets)), 24)
         self.assertEqual({path.name for path in assets if path.name.startswith('StarBridge-Fabric-')}, {
             f'StarBridge-Fabric-{version}-0.1.0.jar' for version in ('1.16.5', '1.18.2', '1.19.2', '1.20.1', '1.21.1', '1.21.8', '1.21.11', '26.1', '26.2', '26.3')})
         self.assertEqual({path.name for path in assets if path.name.startswith('StarBridge-NeoForge-')}, {
-            f'StarBridge-NeoForge-{version}-0.1.0.jar' for version in ('1.20.4', '1.21.1', '1.21.4', '1.21.8', '1.21.11', '26.1.2', '26.2')})
+            f'StarBridge-NeoForge-{version}-0.1.0.jar' for version in ('1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.8', '1.21.11', '26.1.2', '26.2')})
         (self.root/'bridge/target/StarBridge-Fabric-26.3-0.1.0.jar').unlink()
         with self.assertRaisesRegex(ValueError, '缺少游戏端构建'):
             native_assets(self.root)
@@ -133,7 +133,7 @@ class NativeReleaseAssetTests(unittest.TestCase):
                     validate_native_mod(self.artifact(item, override={'depends': dependencies}), item, '0.1.0')
 
     def test_neoforge_requires_exact_game_loader_java_and_server_side_metadata(self):
-        for version in ('1.20.4', '26.2'):
+        for version in ('1.20.4', '1.20.6', '26.2'):
             item = next(item for item in GAME_BRIDGES if item['platform'] == 'neoforge' and item['version'] == version)
             validate_native_mod(self.artifact(item), item, '0.1.0')
             replacements = (
@@ -189,6 +189,16 @@ class NativeReleaseAssetTests(unittest.TestCase):
         for item in historical:
             self.artifact(item)
         self.assertEqual(len(native_assets(self.root)), 17)
+
+    def test_066_source_catalog_keeps_twenty_three_assets_even_with_newer_artifact_present(self):
+        historical = tuple(item for item in GAME_BRIDGES if not (item['platform'] == 'neoforge' and item['version'] == '1.20.6'))
+        self.catalog(historical)
+        (self.root/'starbridge/__init__.py').write_text('__version__="0.6.6"\n__forge_version__="0.1.0"\n', encoding='utf-8')
+        for item in GAME_BRIDGES:
+            self.artifact(item)
+        assets = native_assets(self.root)
+        self.assertEqual(len(assets), 23)
+        self.assertNotIn('StarBridge-NeoForge-1.20.6-0.1.0.jar', [path.name for path in assets])
 
     def test_historical_catalog_and_single_forge_release_do_not_require_fabric(self):
         historical = tuple(item for item in GAME_BRIDGES if item['platform'] != 'fabric'

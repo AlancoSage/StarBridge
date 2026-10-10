@@ -1,6 +1,6 @@
 # Forge 与 NeoForge 游戏端
 
-**适用：星桥 Bot 0.6.6+ · 游戏端模组 0.1.0。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入星桥。Paper / Spigot 继续使用原来的 Bukkit 插件；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供。
+**适用：星桥 Bot 0.6.7+ · 游戏端模组 0.1.0。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入星桥。Paper / Spigot 继续使用原来的 Bukkit 插件；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
 
 Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 26.2 / 26.3** 使用另一套独立 JAR 与配置，安装步骤见 [Fabric 游戏端](fabric-game-ends.md)。下文专门说明 Forge 与 NeoForge。
 
@@ -17,6 +17,7 @@ Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 
 | 1.19.2 | Forge 43.5.0 | 17 | `config/starbridge-common.toml` |
 | 1.20.1 | Forge 47.4.10 | 17 | `config/starbridge-common.toml` |
 | 1.20.4 | NeoForge 20.4.251 | 17 | `config/starbridge-bridge.properties` |
+| 1.20.6 | NeoForge 20.6.141 | 21 | `config/starbridge-bridge.properties` |
 | 1.21.1 | NeoForge 21.1.256 | 21 | `config/starbridge-common.toml` |
 | 1.21.4 | NeoForge 21.4.158 | 21 | `config/starbridge-bridge.properties` |
 | 1.21.8 | NeoForge 21.8.54 | 21 | `config/starbridge-bridge.properties` |
@@ -26,7 +27,7 @@ Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 
 
 NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 26.1 不是同一个 Minecraft 版本**，下载、安装器和世界备份都按 26.1.2 准备。文件名为 `StarBridge-NeoForge-<Minecraft>-0.1.0.jar`，例如 `StarBridge-NeoForge-26.1.2-0.1.0.jar`；Forge 的文件名对应 `StarBridge-Forge-<Minecraft>-0.1.0.jar`。
 
-这些是已验证的具体组合；整合包的其他模组可能有额外 Java 或加载器要求。安装器可从 [Forge 官方下载页](https://files.minecraftforge.net/) 或 [NeoForge 官方下载页](https://neoforged.net/) 获取。Java 环境说明见 [Forge 文档](https://docs.minecraftforge.net/en/1.20.1/gettingstarted/) 与 [NeoForge 1.21.1 文档](https://docs.neoforged.net/docs/1.21.1/gettingstarted/)。
+安装时按表中指定组合选择版本，已完成的实服验证范围见下文；整合包的其他模组可能有额外 Java 或加载器要求。安装器可从 [Forge 官方下载页](https://files.minecraftforge.net/) 或 [NeoForge 官方下载页](https://neoforged.net/) 获取。Java 环境说明见 [Forge 文档](https://docs.minecraftforge.net/en/1.20.1/gettingstarted/) 与 [NeoForge 1.21.1 文档](https://docs.neoforged.net/docs/1.21.1/gettingstarted/)。
 
 ## 安装：先接 Bot，再启动游戏服
 
@@ -41,7 +42,7 @@ NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 
 
 ### Properties 配置
 
-适用 Forge **1.7.10 / 1.12.2 / 1.16.5**，以及新增 NeoForge **1.20.4 / 1.21.4 / 1.21.8 / 1.21.11 / 26.1.2 / 26.2**。原 NeoForge 1.21.1 仍使用下面的 TOML 配置。
+适用 Forge **1.7.10 / 1.12.2 / 1.16.5**，以及 NeoForge 原生构建 **1.20.4 / 1.20.6 / 1.21.4 / 1.21.8 / 1.21.11 / 26.1.2 / 26.2**。原 NeoForge 1.21.1 仍使用下面的 TOML 配置。
 
 文件使用 UTF-8：`config/starbridge-bridge.properties`。
 
@@ -97,11 +98,11 @@ allowed-commands = ["list"]
 
 ## 开发与构建
 
-源码目录按原生 API 分开，最终成品均输出到 `bridge/target/`。旧版 Forge 与新增六版 NeoForge 使用 JDK 17 的 `--release 8`；这只表示星桥公共引擎的字节码要求，游戏服仍须使用表中对应的 Java。编译依赖从官方仓库下载并核对固定 SHA-256，不打包 Minecraft 或加载器本体。
+源码目录按原生 API 分开，最终成品均输出到 `bridge/target/`。旧版 Forge 与 NeoForge 原生构建使用 JDK 17 的 `--release 8`；这只表示星桥公共引擎的字节码要求，游戏服仍须使用表中对应的 Java。编译依赖从官方仓库下载并核对固定 SHA-256，不打包 Minecraft 或加载器本体。
 
 **部署 ZIP 提供运行文件、文档与现成 JAR。** 如果要自行编译，请取得 GitHub 私有仓库的完整源码；部署 ZIP 不含游戏端构建工具、原生绑定规格或构建缓存。
 
-新增六版 NeoForge 构建共享项目内的模板和公共引擎。完整源码须同时包含 `bridge-neoforge/build.py`、`bridge-neoforge/bindings/`、`bridge-fabric/build.py`、`bridge-fabric/bindings.py`、`bridge-fabric/classfile.py`、`bridge-fabric/common/` 与 `bridge-mods/common/`；只复制 `bridge-neoforge/` 无法构建。这是源码复用，成品使用 NeoForge 原生加载器，不需要在游戏服安装 Fabric Loader 或 Fabric API。
+NeoForge 原生构建共享项目内的模板和公共引擎。完整源码须同时包含 `bridge-neoforge/build.py`、`bridge-neoforge/bindings/`、`bridge-fabric/build.py`、`bridge-fabric/bindings.py`、`bridge-fabric/classfile.py`、`bridge-fabric/common/` 与 `bridge-mods/common/`；只复制 `bridge-neoforge/` 无法构建。这是源码复用，成品使用 NeoForge 原生加载器，不需要在游戏服安装 Fabric Loader 或 Fabric API。
 
 | 目标 | 源码目录 | 构建 JDK |
 | --- | --- | --- |
@@ -110,7 +111,7 @@ allowed-commands = ["list"]
 | Forge 1.19.2 | `bridge-forge-1.19.2/` | 17 |
 | Forge 1.20.1 | `bridge-forge/` | 17 |
 | NeoForge 1.21.1 | `bridge-neoforge/`，原 Gradle 构建 | 21 |
-| NeoForge 1.20.4 / 1.21.4 / 1.21.8 / 1.21.11 / 26.1.2 / 26.2 | `bridge-neoforge/`，`build.py` | 17，输出 Java 8 |
+| NeoForge 1.20.4 / 1.20.6 / 1.21.4 / 1.21.8 / 1.21.11 / 26.1.2 / 26.2 | `bridge-neoforge/`，`build.py` | 17，输出 Java 8 |
 
 Windows，在项目根目录运行：
 
@@ -123,11 +124,11 @@ python bridge-mods/build.py --java-home 'C:\Java\jdk-17'
 python bridge-neoforge/build.py --java-home 'C:\Java\jdk-17'
 ```
 
-Linux，旧版 Forge 使用 `python3 bridge-mods/build.py --java-home /path/to/jdk17`，新增六版 NeoForge 使用 `python3 bridge-neoforge/build.py --java-home /path/to/jdk17`；原 Gradle 项目在对应源码目录设置正确的 `JAVA_HOME` 并运行 `sh ./gradlew copyBridge`。Forge 成品经过生产映射转换，NeoForge 使用该版本的原生映射；不要使用开发目录的中间 JAR。
+Linux，旧版 Forge 使用 `python3 bridge-mods/build.py --java-home /path/to/jdk17`，NeoForge 原生构建使用 `python3 bridge-neoforge/build.py --java-home /path/to/jdk17`；原 Gradle 项目在对应源码目录设置正确的 `JAVA_HOME` 并运行 `sh ./gradlew copyBridge`。Forge 成品经过生产映射转换，NeoForge 使用该版本的原生映射；不要使用开发目录的中间 JAR。
 
 仅构建某个新增 NeoForge 版本时，可加 `--version 1.21.8` 等版本参数。例如 Linux 使用 `python3 bridge-neoforge/build.py --version 26.1.2 --java-home /path/to/jdk17`；运行该成品的 26.1.2 服务端仍使用 Java 25。`--version` 不包含原来的 1.21.1 Gradle 构建。
 
-新增六版 NeoForge 在构建时核对实际 Minecraft 类、成员与签名，并生成各自的强制保护 Mixin。1.20.4 使用 `META-INF/mods.toml`，其余版本使用 `META-INF/neoforge.mods.toml`；这些是 JAR 内部的加载器元数据，与用户放在 `config/` 下的连接配置不同。
+NeoForge 原生构建在构建时核对实际 Minecraft 类、成员与签名，并生成各自的强制保护 Mixin。1.20.4 使用 `META-INF/mods.toml`，其余版本使用 `META-INF/neoforge.mods.toml`；这些是 JAR 内部的加载器元数据，与用户放在 `config/` 下的连接配置不同。
 
 GitHub 私有发布流程构建全部游戏端、运行单元测试，并附带独立 JAR 与 `SHA256SUMS.txt`。Bot 部署包同时携带这些游戏端，面板即可按版本下载。
 
@@ -146,6 +147,8 @@ Bot 0.6.6 新增的六个 NeoForge 游戏端均在各自实际加载器与 Java 
 | 26.1.2 | 实际服务端的 `ProtocolInfo` / `StreamCodec`，真实 TCP 编解码 | 23 项 |
 | 26.2 | 实际服务端的 `ProtocolInfo` / `StreamCodec`，真实 TCP 编解码 | 23 项 |
 
-26.1.2 与 26.2 没有套用旧版协议格式。测试探针仅用于隔离验证，在服务端类加载器内使用该版本的原生数据包与注册表，最终成品不包含探针或测试 HTTP 接口。登录测试覆盖对应版本的离线 signed 命令包、ACK，以及协议存在时的 checksum；这不等于已验证正版账号的密码学签名链。
+Bot 0.6.7 新增的 **NeoForge 1.20.6 / 20.6.141 / Java 21** 使用实际服务端的 `ProtocolInfo` / `StreamCodec` 建立真实 TCP 连接，**23 项检查通过，协议解码错误为 0**。验证覆盖上面的登录、QQ 确认、白名单、聊天与处罚回执流程，同时完整解码注册表、配方和背包同步数据包。登录测试使用 1.20.6 原生离线 signed 命令包与 ACK；该版本协议没有 checksum 字段。
+
+1.20.6、26.1.2 与 26.2 的测试探针在服务端类加载器内使用本版本的原生数据包与注册表。探针仅用于隔离验证，最终成品不包含探针或测试 HTTP 接口。登录测试覆盖对应版本的离线 signed 命令包、ACK，以及协议存在时的 checksum；这不等于已验证正版账号的密码学签名链。
 
 验证使用隔离 Bot、离线模式和模拟 QQ 私聊，不代表已测试所有构建号、正版账号登录、真实 QQ 服务或全部整合包组合。正式部署请在自己的整合包中复查登录和管理流程。
