@@ -1,8 +1,16 @@
 # Windows 安装与运行
 
+适用版本：Bot **0.6.9**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
+
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 
 Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。本指南中的 `星桥.bat` 仅用于 Windows。
+
+## 准备
+
+- 完整部署包和可写目录，例如 `D:\StarBridge`；不要在 ZIP 预览窗口中启动。
+- 双击安装会寻找或准备 Python；手动安装先准备 Python **3.11+**。
+- 保留已有 `config.toml` 和整个 `data/`。QQ 实现端和 Minecraft 游戏服务器分别安装，本页不需要先装游戏端的 Java。
 
 可以选择双击自动部署，也可以按步骤手动安装：
 
@@ -11,7 +19,7 @@ Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。本指南
 | 双击安装 | 希望自动准备环境并后台运行 | [方式一：双击安装](#方式一-双击安装) |
 | 手动安装 | 希望自己安装 Python、依赖并通过终端运行 | [方式二：Windows 手动安装](#方式二-windows-手动安装) |
 
-## 方式一：双击安装
+## 方式一 双击安装
 
 1. 下载星桥 Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
 2. 双击根目录唯一的 **星桥.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
@@ -33,7 +41,7 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 
 请保留完整项目目录。虚拟环境与项目专用 Python 使用绝对路径，安装后移动目录可能需要将 `.venv` 改名后重新安装。不要删除配置和数据目录。
 
-## 方式二：Windows 手动安装
+## 方式二 Windows 手动安装
 
 以下步骤使用 **Windows PowerShell**，每一步成功后再执行下一步。可以直接选择此方式完成部署。
 
@@ -115,7 +123,13 @@ Set-Location -LiteralPath 'D:\StarBridge'
 
 BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；前台实例在其终端按 Ctrl+C 停止，避免同时启动两个实例。希望改用后台运行时，先停止前台实例，再双击 `星桥.bat`，它会检查并复用现有环境与配置。
 
-### 手动安装常见问题
+## 预期结果
+
+浏览器能打开 [本机管理面板](http://127.0.0.1:8088/) 并使用 `app.admin_token` 登录。此时总览中的 QQ 或游戏端可以仍未连接，按 [快速开始](quick-start.md) 继续配置；QQ 单独接入见 [OneBot 11 连接](onebot-connection.md)。
+
+自动安装的 Bot 在后台运行，使用 `星桥.bat` 菜单管理；手动运行的 Bot 保持终端打开，按 Ctrl+C 停止。已修改监听端口时，按实际端口访问面板。
+
+## 常见故障
 
 | 提示或现象 | 处理方法 |
 | --- | --- |
@@ -125,6 +139,11 @@ BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；
 | 依赖下载失败或缺少对应二进制包 | 检查网络、Python 版本与 CPU 架构，再重新安装依赖 |
 | `No module named starbridge` | 在项目根目录执行，并使用本项目 `.venv` 中的 Python |
 | 8088 端口被占用 | 检查是否已有 Bot 或其他程序运行；停止自己的旧实例后再启动 |
+| 双击后 Bot 未就绪 | 查看安装窗口提示和 `data/server-error.log`；不要仅凭窗口已打开判断成功 |
+| 面板令牌不正确 | 使用当前目录 `config.toml` 的 `app.admin_token`，不要使用 OneBot 或游戏服务器连接令牌 |
+| 移动目录后环境不可用 | 将 `.venv` 改名保留后在新目录重新安装；保留 `config.toml` 和 `data/` |
+
+Bot 已启动后的连接问题见 [故障排查](troubleshooting.md)。
 
 ## 可选命令行操作
 

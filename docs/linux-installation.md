@@ -1,8 +1,16 @@
 # Linux 安装与运行
 
+适用版本：Bot **0.6.9**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
+
 适用于具有 Python 3.11+ 的 Linux 环境。下面的系统依赖命令面向 Ubuntu 24.04 和 Debian 12；其他发行版需使用对应的包管理器。Bot 不需要图形桌面、Java 或显卡，QQ 实现端和 Minecraft 游戏服务器需另外接入。
 
 Windows 用户请阅读 [Windows 双击部署](windows-installation.md)。`星桥.bat` 仅用于 Windows；Linux 使用虚拟环境中的 Python 启动。
+
+## 准备
+
+- 完整项目包、可读写的部署目录，以及能访问 Python 包索引的网络。
+- Python **3.11+** 与对应的 venv 包；下面以 `/opt/starbridge` 为部署目录。
+- 保留已有 `config.toml` 和整个 `data/`。可选 systemd 托管需要相应管理权限。
 
 ## 1. 准备 Python 与项目目录
 
@@ -63,7 +71,7 @@ ssh -N -L 8088:127.0.0.1:8088 deploy@example.com
 
 将 `deploy@example.com` 替换为实际 SSH 用户和服务器地址；保持隧道窗口运行，再访问自己电脑的 `http://127.0.0.1:8088/`。如果本机 8088 已被占用，可以将 `-L` 中第一个端口改为 18088，并访问 `http://127.0.0.1:18088/`。
 
-QQ 实现端或游戏服务器分开部署时，在面板「软件设置」中调整监听地址与端口，并使用各端可以访问的 Bot 地址。`0.0.0.0` 是监听配置，浏览器使用实际 IP 或域名。面板重启应用配置后，还需按部署网络配置防火墙、反向代理或私有网络的访问规则。
+QQ 实现端或游戏服务器分开部署时，在面板「设置 → 软件设置」中调整监听地址与端口，并使用各端可以访问的 Bot 地址。`0.0.0.0` 是监听配置，浏览器使用实际 IP 或域名。面板重启应用配置后，还需按部署网络配置防火墙、反向代理或私有网络的访问规则。
 
 ## 4. 可选：systemd 后台运行与开机启动
 
@@ -117,6 +125,12 @@ sudo systemctl disable starbridge
 
 systemd 托管的日志通过 `journalctl` 查看，Windows BAT 的 `data/server.pid` 与启动日志文件不用于管理 Linux 服务。`Type=exec` 和自动重启行为参见 [systemd 服务配置说明](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html)。
 
+## 预期结果
+
+前台终端或 `journalctl` 显示管理面板已启动；浏览器能打开面板，并使用 `config.toml` 的 `app.admin_token` 登录。systemd 托管时，`systemctl status starbridge` 应显示服务正在运行。
+
+此时 QQ 与游戏端可以仍未连接。按 [快速开始](quick-start.md) 配置服务器、安装游戏端，再按 [OneBot 11 连接](onebot-connection.md) 连接 QQ。使用 SSH 隧道登录面板时，游戏端与 QQ 实现端仍需各自能访问 Bot。
+
 ## 5. 升级与常见问题
 
 升级前在面板创建备份，再停止 Bot，更新项目代码并保留 `config.toml` 与整个 `data/`。重新安装锁定依赖后启动服务，不要覆盖现有配置或重复初始化。
@@ -130,5 +144,6 @@ systemd 托管的日志通过 `journalctl` 查看，Windows BAT 的 `data/server
 | `Address already in use` | 检查是否已有 Bot 或其他服务使用该端口；不要重复启动 |
 | 本机正常、远程浏览器打不开 | 检查监听地址、实际访问地址、SSH 隧道及防火墙规则 |
 | systemd 显示用户或路径错误 | 检查 `User` 是否存在，以及 `WorkingDirectory`、`ExecStart` 和配置路径是否正确 |
+| 面板令牌不正确 | 使用当前实例配置中的 `app.admin_token`，不要使用 OneBot 或游戏连接令牌 |
 
-启动成功后，按 [README 的 QQ 与游戏接入步骤](../README.md#2-连接-qq) 继续配置。
+连接后的问题见 [故障排查](troubleshooting.md)；更新操作见 [更新与回退](updates.md)。

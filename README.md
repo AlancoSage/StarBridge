@@ -4,6 +4,8 @@
 
 在线使用说明、插件开发和 API 文档：[星桥文档中心](https://wiki.rainside.top/starbridge)。
 
+首次部署从 [快速开始](docs/quick-start.md) 按 Bot → 游戏端 → OneBot → 联动验收完成配置；已接入的服务器可直接查阅 [功能文档目录](docs/index.md)。
+
 项目采用独立的星桥桥接协议，游戏服务器需安装配套插件或对应加载器的服务端模组。
 
 ## 已实现
