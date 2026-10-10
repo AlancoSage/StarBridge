@@ -8,7 +8,7 @@
 
 ## 已实现
 
-- Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1 和 NeoForge 1.21.1，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。
+- Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1，以及 NeoForge 1.20.4、1.21.1、1.21.4、1.21.8、1.21.11、26.1.2、26.2，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。NeoForge 仅提供正式构建。
 - Fabric 游戏端：1.16.5、1.18.2、1.19.2、1.20.1、1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3，按游戏版本提供独立 JAR，星桥无需 Fabric API 或客户端模组，详见 [Fabric 安装说明](docs/fabric-game-ends.md)。
 
 - 连接诊断：检查 QQ、游戏桥接、Java、邮件、官网与磁盘，按需检测 SMTP 认证和公开 API，详见 [诊断与模板](docs/diagnostics-and-templates.md)。
@@ -44,7 +44,7 @@
 - Minecraft **Java 版 Paper / Spigot** 使用同一个通用兼容 JAR；插件最低要求 **Java 8**，实际启动 Java 版本仍按服务端要求选择。详见 [Minecraft 版本兼容与 Java 选择](docs/minecraft-compatibility.md)。
 - 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。星桥自身不负责登录 QQ。
 
-已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md) 与 [Fabric 模组](docs/fabric-game-ends.md)：对应 1.16.5 及以前的游戏端使用 Java 8，1.18.2–1.20.1 使用 Java 17，1.21.x 使用 Java 21，Fabric 26.1–26.3 使用 Java 25。当前不支持 Folia、基岩版原生服务端。游戏登录默认关闭；模组服使用内置或自动引擎，Paper / Spigot 可选 AuthMe 兼容模式。
+已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md) 与 [Fabric 模组](docs/fabric-game-ends.md)：对应 1.16.5 及以前的游戏端使用 Java 8，1.18.2–1.20.4 使用 Java 17，1.21.x 使用 Java 21，Fabric 26.1–26.3 与 NeoForge 26.1.2 / 26.2 使用 Java 25。当前不支持 Folia、基岩版原生服务端。游戏登录默认关闭；模组服使用内置或自动引擎，Paper / Spigot 可选 AuthMe 兼容模式。
 
 ## 1. 启动主程序
 
@@ -272,7 +272,7 @@ Windows 构建脚本仅下载 Spigot 官方编译 API，不打包整个服务器
 - 游戏任务使用 15 秒租约重试，插件在本次运行期间防止同一任务重复执行。插件崩溃重启后，极端情况下已执行但未确认的命令可能再次执行，因此仅配置可安全重试的命令。聊天与事件不承诺持久、恰好一次送达。
 - 绑定记录保存在 SQLite 中。启用游戏登录后，绑定 QQ 可确认本次连接；未启用时绑定可靠性依赖服务器自身账号认证。绑定不自动修改白名单或游戏权限。
 - 暂未实现 AI 对话、图片模板、PAPI、背包预览、插件市场、跨平台账号和强制绑定入服。
-- 已验证主程序模拟集成测试和 JAR 编译。真实 QQ 登录、Minecraft 实服运行及其他版本兼容性仍需在你的环境联调。
+- 已验证主程序模拟集成测试与 JAR 编译。游戏端的隔离实服流程、具体版本和验证范围见 [模组安装说明](docs/mod-game-ends.md)、[Fabric 游戏端](docs/fabric-game-ends.md) 与 [Paper / Spigot 兼容说明](docs/minecraft-compatibility.md)；真实 QQ、正版账号、其他构建号与整合包组合仍需在你的环境联调。
 
 ## 目录
 

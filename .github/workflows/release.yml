@@ -64,6 +64,10 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: python bridge-fabric/build.py --java-home "$env:JAVA_HOME"
+      - name: Build six native NeoForge game bridges
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: python bridge-neoforge/build.py --java-home "$env:JAVA_HOME"
       - uses: actions/setup-java@v4
         if: steps.version.outputs.needed == 'true'
         with:

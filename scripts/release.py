@@ -19,6 +19,11 @@ FABRIC_CORE = ('cn/starbridge/fabric/StarBridgeFabric.class', 'cn/starbridge/fab
 FABRIC_RESOURCES = ('starbridge-fabric.mixins.json', 'starbridge-fabric-mappings.json')
 FABRIC_MIXINS = ('ServerMixin', 'ConnectionMixin', 'CommandsMixin', 'CommandsExecuteMixin',
                  'DamageMixin', 'PickupMixin', 'PlayerJoinMixin')
+NEOFORGE_CORE = ('cn/starbridge/neoforge/StarBridgeNeoForge.class', 'cn/starbridge/neoforge/NeoForgeRuntime.class',
+                 'cn/starbridge/neoforge/NeoForgePacketGate.class', 'cn/starbridge/neoforge/NeoForgeHost.class',
+                 'cn/starbridge/neoforge/NeoForgeNative.class', 'cn/starbridge/mods/BridgeEngine.class')
+NEOFORGE_RESOURCES = ('starbridge-neoforge.mixins.json', 'starbridge-neoforge-mappings.json')
+NEOFORGE_MIXINS = (*FABRIC_MIXINS, 'PlayerManagerChatMixin')
 
 
 def gh(*args, check=True):
@@ -111,7 +116,7 @@ def validate_native_mod(path, item, mod_version):
                     raise ValueError(f'游戏端映射命名空间不一致：{path.name}')
             else:
                 metadata_name = 'mcmod.info' if item['version'] in ('1.7.10', '1.12.2') else 'META-INF/' + (
-                    'neoforge.mods.toml' if item['platform'] == 'neoforge' else 'mods.toml')
+                    'neoforge.mods.toml' if item['platform'] == 'neoforge' and item['version'] != '1.20.4' else 'mods.toml')
                 metadata = archive.read(metadata_name).decode('utf-8')
                 if metadata_name == 'mcmod.info':
                     rows = json.loads(metadata)
@@ -120,9 +125,42 @@ def validate_native_mod(path, item, mod_version):
                         raise ValueError(f'游戏端元数据不一致：{path.name}')
                 else:
                     import tomllib
-                    mods = tomllib.loads(metadata).get('mods', [])
+                    document = tomllib.loads(metadata)
+                    mods = document.get('mods', [])
                     if not any(row.get('modId') == 'starbridge' and row.get('version') == mod_version for row in mods) or item['version'] not in metadata:
                         raise ValueError(f'游戏端元数据不一致：{path.name}')
+                    if item['platform'] == 'neoforge' and item.get('config') == 'properties':
+                        core = NEOFORGE_CORE
+                        dependencies = document.get('dependencies', {}).get('starbridge', [])
+                        expected = {'minecraft': '[' + item['version'] + ']',
+                                    'neoforge': '[' + item.get('loader_version', '') + ',)'}
+                        if (document.get('modLoader') != 'javafml' or document.get('loaderVersion') != '[1,)'
+                            or document.get('features', {}).get('starbridge', {}).get('javaVersion') != '[' + str(item['java']) + ',)'
+                            or not isinstance(dependencies, list)
+                            or any(sum(isinstance(row, dict) and row.get('modId') == loader
+                                and row.get('versionRange') == version_range and row.get('side') == 'SERVER'
+                                and (row.get('mandatory') is True if item['version'] == '1.20.4' else row.get('type') == 'required')
+                                for row in dependencies) != 1 for loader, version_range in expected.items())
+                            or document.get('mixins') != [{'config': 'starbridge-neoforge.mixins.json'}]):
+                            raise ValueError(f'游戏端元数据不一致：{path.name}')
+                        if not all(name in names for name in NEOFORGE_RESOURCES):
+                            raise ValueError(f'游戏端缺少必要资源：{path.name}')
+                        config = json.loads(archive.read('starbridge-neoforge.mixins.json'))
+                        if (not isinstance(config, dict) or config.get('required') is not True
+                            or config.get('package') != 'cn.starbridge.neoforge.mixin'
+                            or not isinstance(config.get('mixins'), list)
+                            or not all(isinstance(name, str) for name in config['mixins'])
+                            or not set(NEOFORGE_MIXINS).issubset(config['mixins'])
+                            or not isinstance(config.get('injectors'), dict)
+                            or config['injectors'].get('defaultRequire') != 1
+                            or not all('cn/starbridge/neoforge/mixin/' + name + '.class' in names for name in config['mixins'])):
+                            raise ValueError(f'游戏端登录保护注入不完整：{path.name}')
+                        bindings = json.loads(archive.read('starbridge-neoforge-mappings.json'))
+                        if (not isinstance(bindings, dict) or bindings.get('mcVersion') != item['version']
+                            or bindings.get('neoForgeVersion') != item.get('loader_version')):
+                            raise ValueError(f'游戏端映射版本不一致：{path.name}')
+                        if bindings.get('namespace') != 'official':
+                            raise ValueError(f'游戏端映射命名空间不一致：{path.name}')
             if not all(name in names for name in core):
                 raise ValueError(f'游戏端缺少核心类：{path.name}')
             for name in names:
