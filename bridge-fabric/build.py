@@ -43,6 +43,13 @@ DEPENDENCIES = {
 SHARED_SOURCES = ('BridgeEngine', 'GameHost', 'BridgeConfig', 'BridgeHttp', 'Protocol', 'Jsons')
 
 
+def license_entries(root):
+    """Keep release notices in new JARs; older source trees may omit them."""
+    return {'META-INF/licenses/StarBridge/' + name: (root / name).read_bytes()
+            for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md')
+            if (root / name).is_file()}
+
+
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -217,7 +224,7 @@ def build(mc, jdk, cache):
             sources.append(path)
         subprocess.run([str(javac), '-J-Duser.language=en', '--release', '8', '-proc:none', '-encoding', 'UTF-8',
                         '-cp', os.pathsep.join(map(str, libraries)), '-d', str(output), *map(str, sources)], check=True)
-        metadata = {'schemaVersion': 1, 'id': 'starbridge', 'version': VERSION, 'name': 'StarBridge',
+        metadata = {'schemaVersion': 1, 'id': 'starbridge', 'version': VERSION, 'name': 'StarBridge', 'license': 'AGPL-3.0-or-later',
                     'description': 'Server-side StarBridge QQ and account integration.', 'environment': 'server',
                     'entrypoints': {'main': ['cn.starbridge.fabric.StarBridgeFabric']}, 'mixins': ['starbridge-fabric.mixins.json'],
                     'depends': {'fabricloader': '>=' + (LOADER if mc in ('1.16.5','1.18.2','1.19.2','1.20.1','1.21.1') else NEW_LOADER),
@@ -233,6 +240,7 @@ def build(mc, jdk, cache):
             if data[:4] != b'\xca\xfe\xba\xbe' or int.from_bytes(data[6:8], 'big') != 52:
                 raise ValueError(f'Fabric adapter must target Java 8: {name}')
         files.update({name: json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8') for name, data in resources.items()})
+        files.update(license_entries(ROOT.parent))
         temporary_jar = target.with_suffix('.jar.building')
         with zipfile.ZipFile(temporary_jar, 'w', zipfile.ZIP_DEFLATED) as archive:
             for name, data in sorted(files.items()):

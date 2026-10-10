@@ -25,8 +25,9 @@ class IndependentWebsiteTests(unittest.TestCase):
             self.assertEqual(result.returncode,0,result.stderr)
             with zipfile.ZipFile(project/'dist/StarBridge-website.zip') as archive:
                 self.assertEqual(json.loads(archive.read('config.json')),{'apiBase':'https://bridge.example.com/api/v1'})
-                for name in ('serve.py','build.py','start.ps1','docs/account-api.md','sdk/starbridge.js'):
+                for name in ('serve.py','build.py','start.ps1','LICENSE','docs/account-api.md','sdk/starbridge.js'):
                     self.assertIn(name,archive.namelist())
+                self.assertEqual(archive.read('LICENSE'), (source.parent/'LICENSE').read_bytes())
                 self.assertFalse(any(name.endswith(('.db','.toml','.log')) or '__pycache__' in name for name in archive.namelist()))
             self.assertEqual((project/'config.json').read_bytes(),original)
             spec=importlib.util.spec_from_file_location('independent_site',project/'serve.py')

@@ -8,7 +8,7 @@ Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。本指南
 
 ## 准备
 
-- 完整部署包和可写目录，例如 `D:\StarBridge`；不要在 ZIP 预览窗口中启动。
+- 从 [公开 Release](https://github.com/AlancoSage/StarBridge/releases) 下载的完整 Bot 部署包和可写目录，例如 `D:\StarBridge`；无需仓库访问授权，不要在 ZIP 预览窗口中启动。也可克隆 [公开源码](https://github.com/AlancoSage/StarBridge) 后使用相同启动流程，游戏 JAR 另行下载或构建。
 - 双击安装会寻找或准备 Python；手动安装先准备 Python **3.11+**。
 - 保留已有 `config.toml` 和整个 `data/`。QQ 实现端和 Minecraft 游戏服务器分别安装，本页不需要先装游戏端的 Java。
 

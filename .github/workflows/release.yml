@@ -1,4 +1,4 @@
-name: Publish private version
+name: Publish version
 on:
   push:
     branches: [main]
@@ -82,7 +82,7 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: ./bridge-neoforge/build.ps1 -JavaHome $env:JAVA_HOME
-      - name: Build and publish complete private release
+      - name: Build and publish complete release
         if: steps.version.outputs.needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}

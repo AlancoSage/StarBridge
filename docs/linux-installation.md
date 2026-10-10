@@ -8,7 +8,7 @@ Windows 用户请阅读 [Windows 双击部署](windows-installation.md)。`星�
 
 ## 准备
 
-- 完整项目包、可读写的部署目录，以及能访问 Python 包索引的网络。
+- 从 [公开 Release](https://github.com/AlancoSage/StarBridge/releases) 下载的完整 Bot 部署包，或完整源码检出；可读写的部署目录，以及能访问 Python 包索引的网络。
 - Python **3.11+** 与对应的 venv 包；下面以 `/opt/starbridge` 为部署目录。
 - 保留已有 `config.toml` 和整个 `data/`。可选 systemd 托管需要相应管理权限。
 
@@ -25,7 +25,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 11), "需要 Python 3.11 
 
 如果版本检查失败，先安装发行版支持的 Python 3.11+ 及其对应的 venv 包，再继续。创建虚拟环境时使用该版本的解释器，例如 `python3.12 -m venv .venv`。
 
-取得授权的星桥项目包，完整解压到部署目录。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
+完整解压星桥 Bot 部署包到部署目录，或从 [公开仓库](https://github.com/AlancoSage/StarBridge) 克隆源码；无需额外仓库授权。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
 
 不要将 Windows 的 `.venv` 或 `.runtime` 复制到 Linux；应在 Linux 上创建运行环境。
 

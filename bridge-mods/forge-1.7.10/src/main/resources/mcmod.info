@@ -1,1 +1,1 @@
-[{"modid": "starbridge", "name": "星桥 · Forge 游戏桥接", "version": "0.1.0", "mcversion": "1.7.10", "description": "服务端 QQ 联动、玩家管理、白名单与账号认证。", "authorList": ["AlancoSage"]}]
+[{"modid": "starbridge", "name": "星桥 · Forge 游戏桥接", "version": "0.1.0", "mcversion": "1.7.10", "description": "服务端 QQ 联动、玩家管理、白名单与账号认证。", "authorList": ["AlancoSage"], "license": "AGPL-3.0-or-later"}]

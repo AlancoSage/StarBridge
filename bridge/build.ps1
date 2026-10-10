@@ -33,6 +33,6 @@ $toolClasses = Join-Path $target 'build-tools'
 New-Item -ItemType Directory -Force -Path $toolClasses | Out-Null
 & "$JavaHome\bin\javac.exe" --release 8 -encoding UTF-8 -cp "$asm;$asmCommons" -d $toolClasses (Join-Path $project 'tools\ShadeJar.java')
 if ($LASTEXITCODE -ne 0) { throw 'Dependency relocation tool compilation failed' }
-& "$JavaHome\bin\java.exe" -cp "$toolClasses;$asm;$asmCommons" ShadeJar $classes (Join-Path $project 'src\main\resources') $gson $jar
+& "$JavaHome\bin\java.exe" -cp "$toolClasses;$asm;$asmCommons" ShadeJar $classes (Join-Path $project 'src\main\resources') $gson $jar (Split-Path $project -Parent)
 if ($LASTEXITCODE -ne 0) { throw 'JAR 打包失败' }
 Write-Output "插件已生成：$jar"

@@ -46,6 +46,10 @@ def build(mc: str,jdk: Path,cache: Path)->Path:
                     data=path.read_bytes()
                     if path.suffix=='.class' and int.from_bytes(data[6:8],'big')!=52: raise ValueError('Legacy adapter must target Java 8')
                     entry=zipfile.ZipInfo(path.relative_to(directory).as_posix(),(2026,1,1,0,0,0));entry.compress_type=zipfile.ZIP_DEFLATED;archive.writestr(entry,data)
+        for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'):
+            path=ROOT.parent/name
+            if path.is_file():
+                entry=zipfile.ZipInfo('META-INF/licenses/StarBridge/'+name,(2026,1,1,0,0,0));entry.compress_type=zipfile.ZIP_DEFLATED;archive.writestr(entry,path.read_bytes())
     print(f'Built Forge {mc}: {target.name}',flush=True)
     return target
 

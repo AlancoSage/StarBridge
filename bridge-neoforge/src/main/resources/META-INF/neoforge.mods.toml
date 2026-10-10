@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="[4,)"
-license="All Rights Reserved"
+license="AGPL-3.0-or-later"
 [[mods]]
 modId="starbridge"
 version="${version}"

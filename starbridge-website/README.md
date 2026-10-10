@@ -2,6 +2,8 @@
 
 本目录可单独复制到自己的仓库、电脑或服务器开发、部署。网站由纯 HTML/CSS/JavaScript 构成，不导入 Bot 代码，不需要 Bot 数据库、Node.js 或运行时框架。账号、邮件验证和服务器状态通过 HTTP API 接入星桥。
 
+官网源码随 [StarBridge 公开仓库](https://github.com/AlancoSage/StarBridge/tree/main/starbridge-website) 发布，采用 **AGPL-3.0-or-later**，完整许可证见 [LICENSE](LICENSE)。可从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载 `StarBridge-website.zip`，或克隆仓库后进入 `starbridge-website` 目录。贡献与问题反馈见 [贡献指南](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，第三方信息见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。
+
 ## 本地启动
 
 安装 Python 3.11 或更新版本，在本目录运行：

@@ -46,6 +46,16 @@ public final class ShadeJar {
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(temporary))) {
             tree(output, names, Paths.get(args[0]));
             tree(output, names, Paths.get(args[1]));
+            if (args.length > 4) {
+                Path root = Paths.get(args[4]);
+                for (String name : new String[]{"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"}) {
+                    Path path = root.resolve(name);
+                    if (Files.isRegularFile(path)) {
+                        if (Files.isSymbolicLink(path)) throw new IOException("Symlink in license input");
+                        entry(output, names, "META-INF/licenses/StarBridge/" + name, Files.readAllBytes(path));
+                    }
+                }
+            }
             try (JarFile library = new JarFile(args[2])) {
                 Enumeration<JarEntry> entries = library.entries();
                 while (entries.hasMoreElements()) {

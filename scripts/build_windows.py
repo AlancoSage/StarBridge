@@ -27,17 +27,22 @@ def build(output):
                  *(f'bridge/target/{item["filename"]}' for item in bridge_catalog()), 'dist/StarBridge-website.zip'):
         if (ROOT / name).is_file():
             names.append(name)
+    files = {name: ROOT / name for name in names}
+    # Keep legal documents in the docs directory accepted by existing update runtimes.
+    for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md'):
+        path = ROOT / name
+        if path.is_file():
+            files['docs/' + (name if path.suffix == '.md' else name + '.md')] = path
     manifest = {'format': 'starbridge-update-v1', 'protocol': 1, 'version': __version__,
-                'files': {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in sorted(set(names)) if managed(name)}}
+                'files': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in sorted(files.items()) if managed(name)}}
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-        for name in sorted(set(names)):
-            path = ROOT / name
+        for name, path in sorted(files.items()):
             if path.is_symlink() or not path.is_file():
                 raise ValueError(f'Invalid deployment file: {name}')
             archive.write(path, f'StarBridge/{name}')
         archive.writestr('StarBridge/update.json', json.dumps(manifest, ensure_ascii=False, sort_keys=True))
-    return len(set(names))
+    return len(files)
 
 
 if __name__ == '__main__':

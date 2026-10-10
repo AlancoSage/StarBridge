@@ -44,4 +44,4 @@ Bot 使用 Python 3.11+。Bukkit 通用插件最低 Java 8，实际 Java 版本�
 
 服主按操作教程在面板保存设置；开发者先确认 API 的凭据类型和权限，再使用接口参考中的示例。网站 API 密钥、玩家短期令牌、服主管理令牌与游戏服务器令牌用途不同，不能相互替代。
 
-部署包和版本说明位于 [私有 Release](https://github.com/AlancoSage/StarBridge/releases)，需要该仓库访问权限。原有文档地址继续可用，长篇接口和兼容资料也继续保留。
+部署包和版本说明位于 [公开 Release](https://github.com/AlancoSage/StarBridge/releases)，无需仓库访问授权。完整源码位于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)；开发与贡献见 [贡献指南](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)。原有文档地址继续可用，长篇接口和兼容资料也继续保留。

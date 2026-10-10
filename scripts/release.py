@@ -1,4 +1,4 @@
-"""Build and publish complete private Releases; never replace published versions."""
+"""Build and publish complete Releases; never replace published versions."""
 import argparse
 import ast
 import base64
@@ -243,7 +243,10 @@ def build(root=ROOT):
 def publish(version,assets,repo,commit,notes,latest=True):
     if not re.fullmatch(r'[A-Za-z0-9-]+/[A-Za-z0-9_.-]+',repo) or not re.fullmatch(r'[0-9a-f]{40}',commit): raise ValueError('仓库名或提交 SHA 错误')
     metadata = json.loads(gh('api','repos/'+repo).stdout)
-    if not metadata.get('private'): raise ValueError('发布目标必须保持为私有仓库')
+    if (metadata.get('full_name', '').casefold() != repo.casefold()
+        or type(metadata.get('private')) is not bool
+        or metadata.get('archived') or metadata.get('disabled')):
+        raise ValueError('发布目标仓库不匹配或不可写')
     source = json.loads(gh('api',f'repos/{repo}/contents/starbridge/__init__.py?ref={commit}').stdout)
     if code_version(base64.b64decode(source['content']).decode('utf-8-sig')) != version: raise ValueError('远程提交版本与发布包不一致')
     tag = 'v'+version
@@ -269,7 +272,7 @@ def publish(version,assets,repo,commit,notes,latest=True):
                 gh('release','download',tag,'--repo',repo,'--pattern',path.name,'--dir',tmp)
                 if digest(Path(tmp)/path.name)!=digest(path): raise ValueError('发布附件下载校验失败，保持草稿')
     gh('release','edit',tag,'--repo',repo,'--draft=false','--latest='+str(latest).lower())
-    print(json.dumps({'version':version,'private':True,'url':f'https://github.com/{repo}/releases/tag/{tag}','assets':[p.name for p in assets]}))
+    print(json.dumps({'version':version,'private':metadata['private'],'url':f'https://github.com/{repo}/releases/tag/{tag}','assets':[p.name for p in assets]}))
 
 
 def main():

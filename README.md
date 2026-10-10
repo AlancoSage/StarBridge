@@ -1,6 +1,8 @@
 # 星桥 StarBridge
 
-面向 Minecraft 社区的 QQ 联动与管理工具。包含 Python 主程序、OneBot 11 接入、Minecraft 插件和中文配置管理面板。
+面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；通过 OneBot 11 接入 QQ。
+
+源码公开于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 **AGPL-3.0-or-later**，完整条款见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。开发与贡献请阅读 [CONTRIBUTING.md](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，安全问题见 [SECURITY.md](https://github.com/AlancoSage/StarBridge/blob/main/SECURITY.md)，第三方依赖与许可证见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。从开源后的源码构建部署 ZIP 时，`docs/` 目录也会附带这些文件。
 
 在线使用说明、插件开发和 API 文档：[星桥文档中心](https://wiki.rainside.top/starbridge)。
 
@@ -15,7 +17,7 @@
 - Fabric 游戏端：1.16.5、1.18.2、1.19.2、1.20.1、1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3，按游戏版本提供独立 JAR，星桥无需 Fabric API 或客户端模组，详见 [Fabric 安装说明](docs/fabric-game-ends.md)。
 
 - 连接诊断：检查 QQ、游戏桥接、Java、邮件、官网与磁盘，按需检测 SMTP 认证和公开 API，详见 [诊断与模板](docs/diagnostics-and-templates.md)。
-- Bot 更新与回退：通过 GitHub 私有 Release、上传部署 ZIP 或自定义 HTTPS 更新源获取版本，隔离验证、升级前备份、失败恢复和代码与数据回退；版本号变更时自动打包发布，详见 [更新说明](docs/updates.md)。
+- Bot 更新与回退：通过 GitHub 公开 Release、上传部署 ZIP 或自定义 HTTPS 更新源获取版本，隔离验证、升级前备份、失败恢复和代码与数据回退；版本号变更时自动打包发布，详见 [更新说明](docs/updates.md)。
 - 玩家工单与处罚申诉：官网本人提交与查看，管理回复、内部备注和状态处理；跨服封禁/踢出按 UUID 匹配并逐服确认，保护独立处罚，详见 [社区管理](docs/community-operations.md)。
 - 配置导入与部署模板：单服、多服、QQ 登录、聊天联动四种模板，导入 TOML/JSON 前先预览，保留本机令牌。
 
@@ -54,6 +56,17 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 另提供 [Forge / NeoForge 模组](docs/mod-game-ends.md) 与 [Fabric 模组](docs/fabric-game-ends.md)：对应 1.16.5 及以前的游戏端使用 Java 8，1.18.2–1.20.4 使用 Java 17，NeoForge 1.20.6 与各加载器的 1.21.x 使用 Java 21，Fabric 26.1–26.3 与 NeoForge 26.1.2 / 26.2 使用 Java 25。当前不支持基岩版原生服务端。游戏登录默认关闭；模组服和 Folia 使用内置或自动引擎，普通 Paper / Spigot 可选 AuthMe、nLogin、LoginSecurity 兼容，LibreLogin 需要普通 Paper；详见 [登录插件接入范围](docs/game-login.md#可选登录插件)。
 
 ## 1. 启动主程序
+
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。`StarBridge-website.zip` 为独立官网包，游戏 JAR 也可单独下载。
+
+希望从源码部署或参与开发时，安装 Git 后执行：
+
+```sh
+git clone https://github.com/AlancoSage/StarBridge.git
+cd StarBridge
+```
+
+源码部署使用下面相同的 Python 环境与启动命令，Windows 也可双击 `星桥.bat`。配套游戏 JAR 从对应版本的 Release 下载，或按 [测试与构建](#测试与构建) 和游戏端文档自行编译；需要复现已发布版本时，检出该版本的 `v版本号` 标签。
 
 按部署系统选择安装方式：
 
@@ -257,7 +270,19 @@ Python 测试会在本地启动临时 HTTP / WebSocket 服务，模拟 OneBot �
 
 `requirements.lock.txt` 记录了本次验证的完整依赖版本，复现环境时可用它替代 `requirements.txt` 安装。
 
-Windows 构建脚本仅下载 Spigot 官方编译 API，不打包整个服务器。安装了 Maven 时也可以在 `bridge` 中运行 `mvn package`。
+Windows 构建脚本下载并校验 Spigot 编译 API、Gson 和 ASM 构建依赖，不打包整个服务器。安装了 Maven 时也可以在 `bridge` 中运行 `mvn package`。各加载器的构建命令见 [Forge / NeoForge](docs/mod-game-ends.md#开发与构建) 与 [Fabric](docs/fabric-game-ends.md) 文档。
+
+Linux 上运行 Bot 测试：
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+独立官网无需前端编译，在仓库根目录执行以下命令生成部署 ZIP；更多预览和部署方法见 [官网项目说明](starbridge-website/README.md)。
+
+```sh
+python starbridge-website/build.py --api-base https://bridge.example.com/api/v1
+```
 
 ## 定时任务、插件权限与白名单申请
 
@@ -287,8 +312,10 @@ Windows 构建脚本仅下载 Spigot 官方编译 API，不打包整个服务器
 
 ```text
 starbridge/                 Python 主程序与管理面板
-bridge/src/main/            Minecraft 插件源码与配置
+bridge/src/main/            Java Minecraft 插件源码与配置
 bridge/target/              编译出的插件 JAR
+bridge-*/                   Forge / NeoForge / Fabric Java 游戏端与构建工具
+starbridge-website/         独立 HTML / CSS / JavaScript 官网与 SDK
 tests/                      HTTP / WebSocket / SQLite 测试
 config.example.toml         示例配置
 config.toml                 本机配置与随机令牌（不提交）

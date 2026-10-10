@@ -1,0 +1,14 @@
+StarBridge / 星桥
+Copyright (C) 2026 AlancoSage and contributors
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+The original code in this repository, including the Bot, management panel,
+standalone website and Minecraft bridges, is licensed under the GNU Affero
+General Public License, version 3 or (at your option) any later version.
+See LICENSE for the full license text (docs/LICENSE.md in Bot deployment ZIPs).
+
+Third-party components retain their own copyright and license terms.
+See THIRD_PARTY_NOTICES.md and the notices included with those components.
+
+Source code: https://github.com/AlancoSage/StarBridge

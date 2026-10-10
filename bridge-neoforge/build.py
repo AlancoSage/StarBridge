@@ -165,7 +165,7 @@ def mod_metadata(mc):
     dependency_flag = 'mandatory=true' if mc == '1.20.4' else 'type="required"'
     return f'''modLoader="javafml"
 loaderVersion="[1,)"
-license="All Rights Reserved"
+license="AGPL-3.0-or-later"
 [[mods]]
 modId="starbridge"
 version="{VERSION}"
@@ -241,6 +241,7 @@ def build(mc, jdk, cache):
                          'mixins': list(generated), 'injectors': {'defaultRequire': 1}}}
         files.update({name: json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
                       for name, data in resources.items()})
+        files.update(helper.license_entries(ROOT.parent))
         target = ROOT.parent / 'bridge/target' / f'StarBridge-NeoForge-{mc}-{VERSION}.jar'
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary_jar = target.with_suffix('.jar.building')

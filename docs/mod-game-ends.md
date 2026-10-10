@@ -100,7 +100,7 @@ allowed-commands = ["list"]
 
 源码目录按原生 API 分开，最终成品均输出到 `bridge/target/`。旧版 Forge 与 NeoForge 原生构建使用 JDK 17 的 `--release 8`；这只表示星桥公共引擎的字节码要求，游戏服仍须使用表中对应的 Java。编译依赖从官方仓库下载并核对固定 SHA-256，不打包 Minecraft 或加载器本体。
 
-**部署 ZIP 提供运行文件、文档与现成 JAR。** 如果要自行编译，请取得 GitHub 私有仓库的完整源码；部署 ZIP 不含游戏端构建工具、原生绑定规格或构建缓存。
+**部署 ZIP 提供运行文件、文档与现成 JAR。** 如果要自行编译，请克隆 [StarBridge 公开源码仓库](https://github.com/AlancoSage/StarBridge)，按目标版本检出对应标签；部署 ZIP 不含游戏端构建工具、原生绑定规格或构建缓存。
 
 NeoForge 原生构建共享项目内的模板和公共引擎。完整源码须同时包含 `bridge-neoforge/build.py`、`bridge-neoforge/bindings/`、`bridge-fabric/build.py`、`bridge-fabric/bindings.py`、`bridge-fabric/classfile.py`、`bridge-fabric/common/` 与 `bridge-mods/common/`；只复制 `bridge-neoforge/` 无法构建。这是源码复用，成品使用 NeoForge 原生加载器，不需要在游戏服安装 Fabric Loader 或 Fabric API。
 
@@ -130,7 +130,7 @@ Linux，旧版 Forge 使用 `python3 bridge-mods/build.py --java-home /path/to/j
 
 NeoForge 原生构建在构建时核对实际 Minecraft 类、成员与签名，并生成各自的强制保护 Mixin。1.20.4 使用 `META-INF/mods.toml`，其余版本使用 `META-INF/neoforge.mods.toml`；这些是 JAR 内部的加载器元数据，与用户放在 `config/` 下的连接配置不同。
 
-GitHub 私有发布流程构建全部游戏端、运行单元测试，并附带独立 JAR 与 `SHA256SUMS.txt`。Bot 部署包同时携带这些游戏端，面板即可按版本下载。
+GitHub 发布流程构建全部游戏端、运行单元测试，并在 [公开 Release](https://github.com/AlancoSage/StarBridge/releases) 附带独立 JAR 与 `SHA256SUMS.txt`。Bot 部署包同时携带这些游戏端，面板即可按版本下载。
 
 ## 验证范围
 

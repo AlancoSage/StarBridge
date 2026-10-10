@@ -18,7 +18,7 @@ if ($sourceRoot -match '[^\x00-\x7F]') {
 Push-Location $(if ($stagingRoot) { $stagingRoot } else { $sourceRoot })
 try {
     $task = if ($stagingRoot) { 'build' } else { 'copyBridge' }
-    & ./gradlew.bat $task --console=plain
+    & ./gradlew.bat $task --console=plain "-PstarbridgeLicenseRoot=$(Split-Path $sourceRoot -Parent)"
     if ($LASTEXITCODE -ne 0) { throw 'Forge build failed' }
     if ($stagingRoot) {
         $output = Join-Path (Split-Path $sourceRoot -Parent) 'bridge/target'

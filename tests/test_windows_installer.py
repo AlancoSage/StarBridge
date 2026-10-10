@@ -75,6 +75,34 @@ class WindowsInstallerTests(unittest.TestCase):
                     self.assertIn('StarBridge/'+name,names)
                 self.assertFalse(any(b'PRIVATE' in archive.read(name) for name in names))
 
+    def test_licenses_survive_the_existing_update_protocol(self):
+        from starbridge.updates import extract_package
+        from scripts.update_runtime import manifest_check
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ('README.md', 'config.example.toml', 'requirements.txt',
+                         'requirements.lock.txt', '星桥.bat'):
+                (root / name).write_text('deployment', encoding='utf-8')
+            (root / 'starbridge').mkdir()
+            for name in ('app.py', '__main__.py'):
+                (root / 'starbridge' / name).write_text('pass\n', encoding='utf-8')
+            (root / 'starbridge/__init__.py').write_text(
+                f'__version__ = {builder.__version__!r}\n', encoding='utf-8')
+            legal = {'LICENSE': 'AGPL text', 'NOTICE': 'project copyright',
+                     'THIRD_PARTY_NOTICES.md': 'third party licenses',
+                     'CONTRIBUTING.md': 'contributions', 'SECURITY.md': 'private reports'}
+            for name, content in legal.items():
+                (root / name).write_text(content, encoding='utf-8')
+            output = root / 'package.zip'
+            with patch.object(builder, 'ROOT', root):
+                builder.build(output)
+            stage = root / 'extracted'
+            manifest = extract_package(output, stage)
+            manifest_check(manifest, stage)
+            for name, content in legal.items():
+                target = stage / 'docs' / (name if name.endswith('.md') else name + '.md')
+                self.assertEqual(target.read_text('utf-8'), content)
+
 
 if __name__ == '__main__':
     unittest.main()

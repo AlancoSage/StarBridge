@@ -21,6 +21,10 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
 }
 tasks.named('processResources') {
+    from(project.file(project.findProperty('starbridgeLicenseRoot') ?: '..')) {
+        include 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'
+        into 'META-INF/licenses/StarBridge'
+    }
     inputs.property 'version', project.version
     filesMatching('META-INF/mods.toml') { expand 'version': project.version }
 }

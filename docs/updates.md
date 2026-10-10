@@ -1,17 +1,17 @@
 # Bot 更新与回退
 
-适用版本：Bot 0.6.1 起。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。仓库保持私有。
+适用版本：Bot 0.6.1 起。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。StarBridge 源码与正式 Release 已公开，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。
 
-## GitHub 私有仓库更新
+## GitHub 正式版本更新
 
 1. 更新来源选择「GitHub 正式版本」，仓库填写 `AlancoSage/StarBridge`，或自己发布星桥部署包的仓库。
-2. 为有该仓库访问权的 GitHub 账号创建 fine-grained personal access token，仅选择这个仓库，授予 **Contents: Read-only**。在面板的「GitHub 读取令牌」中填写并保存。只有令牌并不会自动获得私有仓库权限。
+2. 官方公开仓库无需配置 GitHub 读取令牌即可检查和下载。GitHub 提示请求额度不足时，可为自己的账号配置读取令牌；如果使用自己维护的私有仓库，则需有该仓库访问权，并为 fine-grained personal access token 仅选择该仓库、授予 **Contents: Read-only**，在面板填写并保存。
 3. 点击「检查更新」获取最新可升级正式版，或点击「读取 GitHub 版本」查看发布历史。
 4. 点击「下载并校验」，通过大小、SHA256、清单及隔离启动检查后，再点击「备份并升级」。读取和下载不会自动安装。
 
 GitHub 令牌只保存在 Bot 的数据库中，接口仅返回「是否已配置」，不会返回令牌。输入框留空表示保留，勾选清除可删除；更换仓库时不沿用原令牌。令牌不发送给 GitHub 附件存储的跳转地址。备份包含更新源设置和读取令牌，只有服主可下载恢复包，请按其他运行凭据保管。
 
-私有发布只有获得仓库权限的用户才能访问，不会公开源码。不要把个人管理令牌写入安装脚本或发给所有用户。没有仓库权限时，可以由服主下载部署 ZIP 后上传面板。
+源码、部署 ZIP 和版本说明均可在 [公开仓库](https://github.com/AlancoSage/StarBridge) 与 [Releases](https://github.com/AlancoSage/StarBridge/releases) 获取，无需申请仓库访问权限。已有读取令牌可在面板勾选清除。不要把个人管理令牌写入安装脚本或发给其他用户；无法使用 GitHub 更新时，也可下载部署 ZIP 后上传面板。
 
 版本列表只展示正式发布，排除草稿和预发布，按数值版本号排序。0.5.0 为历史手动安装包，0.6.0 起具有面板更新协议。版本号相同或更旧不会被提示为新版本；历史版本仍可单独下载校验，安装前核对版本和发布说明。
 
@@ -46,7 +46,7 @@ Windows 使用 `星桥.bat` 启动或重启；Linux 使用原有 `python -m star
 }
 ```
 
-保存地址后，点击「检查更新」，再点击「下载并校验」。未配置更新源时直接上传 ZIP。自定义 HTTPS 请求不携带 GitHub 令牌；私有仓库请选择 GitHub 来源，或先下载部署包再上传。
+保存地址后，点击「检查更新」，再点击「下载并校验」。未配置更新源时直接上传 ZIP。自定义 HTTPS 请求不携带 GitHub 令牌；需要 GitHub 仓库认证的自建更新源请选择 GitHub 来源，或先下载部署包再上传。
 
 ## 每个版本发布到 GitHub
 
@@ -54,14 +54,14 @@ Windows 使用 `星桥.bat` 启动或重启；Linux 使用原有 `python -m star
 
 发布附件为完整 Bot ZIP、`StarBridge-website.zip`、Minecraft JAR 和 `SHA256SUMS.txt`。先创建草稿，上传并核对附件，再正式发布；失败不会把不完整草稿当作可升级版本。Bot、官网和 Minecraft 插件共用本次发布说明，插件自身版本可以与 Bot 不同。
 
-本机也可在完成构建后发布：
+本机也可先按 [模组构建说明](mod-game-ends.md#开发与构建) 与 [Fabric 构建说明](fabric-game-ends.md) 构建该版本全部游戏端，再构建通用插件并发布；发布脚本会检查配套 JAR，并生成官网包、Bot 包及校验文件：
 
 ```powershell
 .\bridge\build.ps1
 python scripts/release.py --publish
 ```
 
-需要先用 `gh auth login` 登录有写入权限的 GitHub 账号。创建或修改自动发布工作流需要额外的 `workflow` 权限；普通 Bot 用户只需要读取权限。发布脚本只接受私有仓库，源码提交中的版本必须与部署包一致。
+需要先用 `gh auth login` 登录有写入权限的 GitHub 账号。创建或修改自动发布工作流需要额外的 `workflow` 权限。普通 Bot 用户可直接读取官方公开 Release；发布脚本支持公开仓库及自己维护的私有仓库，源码提交中的版本必须与部署包一致。
 
 ## 回退与保留
 
