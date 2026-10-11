@@ -10,7 +10,9 @@
     const id='service-'+crypto.randomUUID();input.id=id;
     if(options)for(const [v,t] of options) { const o=node('option',t);o.value=v;input.append(o); }
     else if(type!=='textarea')input.type=type;
-    input.value=value;const l=node('label',title);l.htmlFor=id;wrap.append(l,input);parent.append(wrap);return input;
+    input.value=value;const l=node('label',title);l.htmlFor=id;
+    if(type==='checkbox'&&!options){l.prepend(input);wrap.append(l);}else wrap.append(l,input);
+    parent.append(wrap);return input;
   }
   function actions(parent,...controls) { const c=node('div','','service-actions');c.append(...controls);parent.append(c);return c; }
   function row(parent,title,description='',controls=[]) {const r=node('article','','service-row'),text=node('div');text.append(node('strong',title));if(description)text.append(node('p',description,'hint'));r.append(text);if(controls.length)actions(r,...controls);parent.append(r);return r;}

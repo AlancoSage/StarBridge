@@ -1,6 +1,6 @@
 # 部署与快速入门
 
-第一次部署请使用 [完整快速开始](quick-start.md)。该教程按 Bot、Minecraft、OneBot、联动验收说明每一步的设置和成功标志，适用于 Bot 0.6.11 / Bukkit 游戏插件 0.5.3。
+第一次部署请使用 [完整快速开始](quick-start.md)。该教程按 Bot、Minecraft、OneBot、联动验收说明每一步的设置和成功标志，适用于 Bot 0.6.12 / Bukkit 游戏插件 0.5.3。
 
 ## 选择安装方式
 

@@ -98,7 +98,7 @@
 <div class="panel"><div class="section-head"><div><h2>注册与邮件验证</h2><p class="muted">群聊和网页共用账号库，验证邮箱后完成注册。</p></div><a href="/register" target="_blank" rel="noopener" class="link">打开注册网页 ↗</a></div>
 <div id="registration-error" class="notice error" role="status"></div><div id="registration-notice" class="notice" role="status"></div>
 <form id="registration-settings-form"><div class="grid">
-<div class="field registration-check"><label for="registration-enabled">开放账号注册</label><input id="registration-enabled" type="checkbox"><p class="hint">填写邮件设置后启用，支持群命令 /申请 和 /注册。</p></div>
+<div class="field registration-check"><label for="registration-enabled"><input id="registration-enabled" type="checkbox">开放账号注册</label><p class="hint">填写邮件设置后启用，支持群命令 /申请 和 /注册。</p></div>
 <div class="field"><label for="registration-site_name">社区名称</label><input id="registration-site_name" maxlength="80" required></div>
 <div class="field full"><label for="registration-website_url">对外注册网页地址（可选）</label><input id="registration-website_url" type="url" placeholder="https://你的域名/register"><p class="hint">填写你的网站注册页或本项目 /register 地址，显示在邮件和接入说明中。</p></div>
 <div class="field"><label for="registration-code_minutes">验证码有效期（分钟）</label><input id="registration-code_minutes" type="number" min="1" max="15" required></div>
@@ -129,9 +129,9 @@
 <div id="authentication-error" class="notice error" role="status"></div><div id="authentication-notice" class="notice" role="status"></div>
 <form id="authentication-form"><h3>需要登录的服务器</h3><div id="authentication-servers" class="authentication-servers"></div><p class="hint">默认全部关闭。先安装对应加载器与版本的Myrinbot游戏端，再勾选服务器；保存后在线玩家也需要重新登录。Folia 使用内置或自动引擎，不安装第三方登录插件；更换认证插件时完整重启游戏服。</p>
 <div class="grid">
-<div class="field registration-check"><label for="authentication-password_login">注册密码登录</label><input id="authentication-password_login" type="checkbox"><p class="hint">进服输入 /login &lt;密码&gt; 或 /l &lt;密码&gt;，使用网页注册时设置的密码。</p></div>
+<div class="field registration-check"><label for="authentication-password_login"><input id="authentication-password_login" type="checkbox">注册密码登录</label><p class="hint">进服输入 /login &lt;密码&gt; 或 /l &lt;密码&gt;，使用网页注册时设置的密码。</p></div>
 <div class="field"><label for="authentication-login_engine">游戏登录引擎</label><select id="authentication-login_engine"><option value="auto">自动：识别已安装登录插件</option><option value="builtin">Myrinbot内置（无第三方登录插件）</option><option value="authme">AuthMe 兼容</option><option value="nlogin">nLogin 兼容</option><option value="loginsecurity">LoginSecurity 兼容</option><option value="librelogin">LibreLogin 兼容（Paper）</option></select><p class="hint">需要自行安装对应插件，同一服务器只启用一个；LibreLogin 仅普通 Paper。已有原账号首次关联需验证原身份；nLogin 每次核对原生认证，先用 /starbridge:login 或 /starbridge:ql；需要配置原插件命令白名单。LibreLogin 首次原生注册登录。LibreLogin 没有可用的 TOTP 实现时拒绝对应账号。具体步骤见游戏登录文档。模组服和 Folia 选内置或自动，混合部署选自动。</p></div>
-<div class="field registration-check"><label for="authentication-qq_login">绑定 QQ 确认登录</label><input id="authentication-qq_login" type="checkbox"><p class="hint">进服输入 /qqlogin 或 /ql，机器人私聊已绑定 QQ；好友私聊可用时才能发送。</p></div>
+<div class="field registration-check"><label for="authentication-qq_login"><input id="authentication-qq_login" type="checkbox">绑定 QQ 确认登录</label><p class="hint">进服输入 /qqlogin 或 /ql，机器人私聊已绑定 QQ；好友私聊可用时才能发送。</p></div>
 <div class="field"><label for="authentication-login_seconds">进服登录时限（秒）</label><input id="authentication-login_seconds" type="number" min="30" max="600" required></div>
 <div class="field"><label for="authentication-qq_seconds">QQ 确认有效期（秒）</label><input id="authentication-qq_seconds" type="number" min="30" max="300" required></div>
 <div class="field"><label for="authentication-max_attempts">密码尝试次数上限</label><input id="authentication-max_attempts" type="number" min="1" max="10" required><p class="hint">同服务器、同玩家 5 分钟内的限制，重连不会重置。</p></div>

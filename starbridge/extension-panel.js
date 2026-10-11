@@ -115,7 +115,9 @@ function openExtensionSettings(plugin, permissions = false) {
       input.value = plugin.settings[key];
     }
     input.id = id; input.dataset.extensionSetting = key; label.htmlFor = id;
-    wrap.append(label, input); if (spec.description) wrap.append(node('p', spec.description, 'hint'));
+    if (spec.type === 'boolean') { label.prepend(input); wrap.append(label); }
+    else wrap.append(label, input);
+    if (spec.description) wrap.append(node('p', spec.description, 'hint'));
     $('extension-settings').append(wrap);
   }
   if (!Object.keys(plugin.schema).length) $('extension-settings').append(node('p', '这个插件没有可调整的设置。', 'muted'));
