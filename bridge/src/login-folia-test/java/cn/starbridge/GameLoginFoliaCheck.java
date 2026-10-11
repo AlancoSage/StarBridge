@@ -22,7 +22,7 @@ public final class GameLoginFoliaCheck {
     private static final List<Runnable> timers = new CopyOnWriteArrayList<>();
     private static final Queue<Runnable> globals = new ConcurrentLinkedQueue<>();
     private static final List<JsonObject> requests = new CopyOnWriteArrayList<>();
-    private static final Logger logger = Logger.getLogger("StarBridge-Folia-login-test");
+    private static final Logger logger = Logger.getLogger("Myrinbot-Folia-login-test");
     private static final AtomicInteger queued = new AtomicInteger(), checks = new AtomicInteger(), authMeAccess = new AtomicInteger();
     private static volatile boolean enabled = true;
     private static Plugin authMe;

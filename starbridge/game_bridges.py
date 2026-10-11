@@ -1,5 +1,6 @@
 """Fixed native game-end catalog; query values never become arbitrary filesystem paths."""
 from . import __forge_version__
+from .branding import ARTIFACT_PREFIX
 
 GAME_BRIDGES = (
     {"platform": "forge", "version": "1.7.10", "loader_version": "10.13.4.1614", "java": 8, "config": "properties"},
@@ -34,7 +35,7 @@ def bridge_filename(platform: str, version: str) -> str:
     if not any(item["platform"] == platform and item["version"] == version for item in GAME_BRIDGES):
         raise ValueError("不支持的游戏端版本")
     loader = LOADER_LABELS[platform]
-    return f"StarBridge-{loader}-{version}-{__forge_version__}.jar"
+    return f"{ARTIFACT_PREFIX}-{loader}-{version}-{__forge_version__}.jar"
 
 def bridge_catalog() -> list[dict]:
     return [{**item, "label": f'{LOADER_LABELS[item["platform"]]} {item["version"]}',

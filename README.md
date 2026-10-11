@@ -1,20 +1,24 @@
-# 星桥 StarBridge
+# Myrinbot
+
+项目名称为 **Myrinbot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
+
+当前正式版本为 **v0.6.10**，配套 Bukkit 游戏插件 **0.5.3** 与 Forge / NeoForge / Fabric 模组 **0.1.1**。本版以 Myrinbot 名称分发，面板和官网使用新的黑白 M 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；通过 OneBot 11 接入 QQ。
 
 源码公开于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 **AGPL-3.0-or-later**，完整条款见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。开发与贡献请阅读 [CONTRIBUTING.md](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，安全问题见 [SECURITY.md](https://github.com/AlancoSage/StarBridge/blob/main/SECURITY.md)，第三方依赖与许可证见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。从开源后的源码构建部署 ZIP 时，`docs/` 目录也会附带这些文件。
 
-在线使用说明、插件开发和 API 文档：[星桥文档中心](https://wiki.rainside.top/starbridge)。
+在线使用说明、插件开发和 API 文档：[Myrinbot 文档中心](https://wiki.rainside.top/starbridge)。
 
 首次部署从 [快速开始](docs/quick-start.md) 按 Bot → 游戏端 → OneBot → 联动验收完成配置；已接入的服务器可直接查阅 [功能文档目录](docs/index.md)。
 
-项目采用独立的星桥桥接协议，游戏服务器需安装配套插件或对应加载器的服务端模组。
+项目采用独立的 Myrinbot 桥接协议，游戏服务器需安装配套插件或对应加载器的服务端模组。
 
 ## 已实现
 
-- Folia 游戏端：与 Paper / Spigot 共用 `StarBridge-0.5.2.jar`，自动选择全局与玩家实体调度，支持聊天、档案、绑定、白名单、处罚回执和内置密码 / QQ 登录；接入方式与验证范围见 [Minecraft 兼容说明](docs/minecraft-compatibility.md#folia-接入)。
+- Folia 游戏端：与 Paper / Spigot 共用 `Myrinbot-0.5.3.jar`，自动选择全局与玩家实体调度，支持聊天、档案、绑定、白名单、处罚回执和内置密码 / QQ 登录；接入方式与验证范围见 [Minecraft 兼容说明](docs/minecraft-compatibility.md#folia-接入)。
 - Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1，以及 NeoForge 1.20.4、1.20.6、1.21.1、1.21.4、1.21.8、1.21.11、26.1.2、26.2，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。NeoForge 仅提供正式构建。
-- Fabric 游戏端：1.16.5、1.18.2、1.19.2、1.20.1、1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3，按游戏版本提供独立 JAR，星桥无需 Fabric API 或客户端模组，详见 [Fabric 安装说明](docs/fabric-game-ends.md)。
+- Fabric 游戏端：1.16.5、1.18.2、1.19.2、1.20.1、1.21.1、1.21.8、1.21.11、26.1、26.2 与 26.3，按游戏版本提供独立 JAR，Myrinbot 无需 Fabric API 或客户端模组，详见 [Fabric 安装说明](docs/fabric-game-ends.md)。
 
 - 连接诊断：检查 QQ、游戏桥接、Java、邮件、官网与磁盘，按需检测 SMTP 认证和公开 API，详见 [诊断与模板](docs/diagnostics-and-templates.md)。
 - Bot 更新与回退：通过 GitHub 公开 Release、上传部署 ZIP 或自定义 HTTPS 更新源获取版本，隔离验证、升级前备份、失败恢复和代码与数据回退；版本号变更时自动打包发布，详见 [更新说明](docs/updates.md)。
@@ -34,7 +38,7 @@
 - 管理面板显示真实连接状态、绑定记录和最近活动，并支持所有现有主程序设置的可视化编辑、保存与应用。
 - 玩家管理：持久化玩家档案，按 UUID 汇总 IP、手动归属地、QQ 绑定与到访服务器；支持筛选分页、新增、详情修改、绑定、解绑和批量删除，以及踢出、封禁 / 解封、白名单操作与插件执行结果。
 - 邮箱验证注册：QQ群 `/申请 玩家名 QQ号` → `/注册 验证码`；轻量 `/register` 网页与公开网站 API，独立后端密钥用于只读账号查询。注册、SMTP、邮件额度和允许来源均可在面板调整。
-- 社区官网：可选择不接入、使用星桥提供的官网或接入自己的官网。独立项目 [starbridge-website](starbridge-website/README.md) 拥有自己的启动、打包与部署流程，支持网页注册、密码登录、找回密码、所有服务器在线情况和本人档案。Bot「接入空间 → 网站绑定」可选择接入方式、自动授权来源、下载配置并调整公开内容；自建网站使用同一套 API/SDK，详见 [部署与信息接口文档](docs/website-deployment.md)。
+- 社区官网：可选择不接入、使用 Myrinbot 提供的官网或接入自己的官网。独立项目 [starbridge-website](starbridge-website/README.md) 拥有自己的启动、打包与部署流程，支持网页注册、密码登录、找回密码、所有服务器在线情况和本人档案。Bot「接入空间 → 网站绑定」可选择接入方式、自动授权来源、下载配置并调整公开内容；自建网站使用同一套 API/SDK，详见 [部署与信息接口文档](docs/website-deployment.md)。
 - 事件去重、频率限制、有过期时间的任务队列、任务确认与重试。
 - 多管理员：独立账号登录，按玩家管理、白名单审核、插件、定时任务、备份和统计等范围授权；停用账号或修改权限立即撤销旧会话。
 - 故障监控：连接中断、服务器心跳失联和实际邮件发送失败记录，支持知晓标记与恢复状态；可选 QQ 群提醒，默认关闭。
@@ -47,7 +51,7 @@
 
 - Python **3.11+**。本机已使用 Python 3.14 验证。
 - Minecraft **Java 版 Paper / Spigot / Folia** 使用同一个通用兼容 JAR；插件最低要求 **Java 8**，实际启动 Java 版本仍按服务端要求选择。Folia 1.21.8 使用 Java 21。详见 [Minecraft 版本兼容与 Java 选择](docs/minecraft-compatibility.md)。
-- 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。星桥自身不负责登录 QQ。
+- 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。Myrinbot 自身不负责登录 QQ。
 
 已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。
 
@@ -57,7 +61,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。`StarBridge-website.zip` 为独立官网包，游戏 JAR 也可单独下载。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.10 的完整部署包为 `Myrinbot-Windows-0.6.10.zip`，独立官网包为 `Myrinbot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.10.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -66,18 +70,18 @@ git clone https://github.com/AlancoSage/StarBridge.git
 cd StarBridge
 ```
 
-源码部署使用下面相同的 Python 环境与启动命令，Windows 也可双击 `星桥.bat`。配套游戏 JAR 从对应版本的 Release 下载，或按 [测试与构建](#测试与构建) 和游戏端文档自行编译；需要复现已发布版本时，检出该版本的 `v版本号` 标签。
+源码部署使用下面相同的 Python 环境与启动命令，Windows 推荐双击 `Myrinbot.bat`，原来的 `星桥.bat` 仍可使用。配套游戏 JAR 从对应版本的 Release 下载，或按 [测试与构建](#测试与构建) 和游戏端文档自行编译；需要复现已发布版本时，检出该版本的 `v版本号` 标签。
 
 按部署系统选择安装方式：
 
 | 系统 | 安装入口 | 启动与停止 |
 | --- | --- | --- |
-| [Windows](docs/windows-installation.md) | 双击 `星桥.bat` 自动部署，或按教程手动安装 | BAT 菜单管理后台实例；手动前台运行按 Ctrl+C 停止 |
+| [Windows](docs/windows-installation.md) | 源码双击 `Myrinbot.bat`，部署 ZIP 双击 `星桥.bat`；也可手动安装 | BAT 菜单管理后台实例；手动前台运行按 Ctrl+C 停止 |
 | [Linux](docs/linux-installation.md) | 安装 Python 3.11+，创建虚拟环境并安装锁定依赖 | 前台命令运行，或可选使用 systemd 后台托管 |
 
 ### Windows
 
-Windows 用户可完整解压部署包后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；管理面板就绪后自动打开。后续仍双击同一个脚本，停止、重启也在脚本菜单内操作。已有配置与数据会保留，详见 [Windows 安装与运行](docs/windows-installation.md)。
+Windows 用户完整解压部署 ZIP 后，双击 **星桥.bat** 自动准备 Python、安装依赖、生成配置并后台启动 Bot；这个文件保留旧名以兼容已有升级器，可以自行重命名为 **Myrinbot.bat**。源码检出提供 `Myrinbot.bat` 入口。管理面板就绪后自动打开，后续停止、重启仍在同一个脚本菜单内操作。已有配置与数据会保留，详见 [Windows 安装与运行](docs/windows-installation.md)。
 
 Windows 也支持 [完整手动安装教程](docs/windows-installation.md#方式二-windows-手动安装)，包含 Python 安装、目录检查、依赖、配置、面板登录与故障处理。已经准备好 Python 3.11+ 时，在项目根目录执行 Windows PowerShell 命令：
 
@@ -126,13 +130,13 @@ groups = ["你的QQ群号"]
 
 这段仅说明需要修改的字段，完整格式以生成的文件为准。请不要把示例中文文字直接作为令牌。每类令牌必须不同。
 
-打开 [管理面板](http://127.0.0.1:8088)，输入 `app.admin_token`。运行概览每 5 秒刷新，令牌仅保存在当前页面内存中，自动刷新不会覆盖正在编辑的内容。
+打开 [管理面板](http://127.0.0.1:5800)，输入 `app.admin_token`。运行概览每 5 秒刷新，令牌仅保存在当前页面内存中，自动刷新不会覆盖正在编辑的内容。
 
 ### 面板中调整设置
 
-面板使用顶部导航，按总览、接入空间、自动化、成员、活动与设置划分。首页以群聊与游戏的连接图展示真实状态；配置页采用说明与编辑区分栏，回复和指令采用横向编辑列表。总览中的功能搜索支持直接跳转。
+面板使用左侧分组导航，按总览、接入空间、自动化、成员、扩展、活动与设置划分。运行概览显示真实的机器人连接、服务器、绑定与活动记录。顶部「查找功能」和 Ctrl+K 可以搜索并跳转，导航与结果按管理员权限显示。
 
-页面会随窗口宽度自动调整：桌面保留说明与编辑分栏，平板改为上下排列，手机表单按单列显示。大屏增加内容宽度，窄屏表格在表格区域内滚动；保存条兼容底部安全区域。调整窗口大小即可生效。
+页面会随窗口宽度自动调整：桌面可收起侧栏，手机从顶部菜单打开导航，表单按单列显示。窄屏表格在表格区域内滚动；保存条兼容底部安全区域。背景采用纯白或纯黑，可切换明暗主题；主题与侧栏偏好只保存在当前浏览器。
 
 | 页面 | 可调整内容 |
 | --- | --- |
@@ -153,7 +157,7 @@ groups = ["你的QQ群号"]
 | 运行统计 | 按服务器和时间查看在线趋势、每日活跃与进退服记录，调整采集和保留天数 |
 | 备份与恢复 | 空间占用、手动备份、恢复差异预览、保留策略和清理 |
 
-点击说明区的「保存设置」统一保存；有未保存更改时，也可使用底部保存条。业务设置立即生效；监听地址、端口和数据库路径将在「软件设置 → 重启主程序」后生效。更换数据库不会搬迁原数据，原文件保留；修改端口后面板会给出新访问链接。启动新设置失败时，进程会恢复原运行地址和数据库，并显示错误。手机上使用顶部导航，接入空间和自动化包含页面内的二级导航。
+点击「保存全部设置」统一保存；有未保存更改时，也可使用底部保存条。切换页面会保留配置草稿，保存时会提交各页的更改。业务设置立即生效；监听地址、端口和数据库路径将在「软件设置 → 重启主程序」后生效。更换数据库不会搬迁原数据，原文件保留；修改端口后面板会给出新访问链接。启动新设置失败时，进程会恢复原运行地址和数据库，并显示错误。
 
 保存会校验重复群号、服务器 ID、令牌及字段格式，原子替换配置文件，并将上一版存为 `config.toml.bak`。多个页面编辑产生冲突时会拒绝覆盖，可点击「重新载入」。数据库、令牌和备份文件均保存在本机，请勿公开。
 
@@ -167,7 +171,7 @@ groups = ["你的QQ群号"]
 
 | 配置 | 值 |
 | --- | --- |
-| URL | `ws://127.0.0.1:8088/onebot/ws` |
+| URL | `ws://127.0.0.1:5800/onebot/ws` |
 | Token | `config.toml` 的 `onebot.token` |
 | 连接模式 | Universal / 通用，API 和事件使用同一条连接 |
 | 消息格式 | 推荐消息段数组；也支持 CQ 码字符串 |
@@ -179,14 +183,14 @@ groups = ["你的QQ群号"]
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.9 配套通用插件：`bridge/target/StarBridge-0.5.2.jar`，也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.10 配套通用插件：当前源码构建输出 `bridge/target/Myrinbot-0.5.3.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.3.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。
 3. 设置插件配置：
 
 ```yaml
-endpoint: "http://127.0.0.1:8088"
+endpoint: "http://127.0.0.1:5800"
 server-id: "survival"
 token: "主程序中 survival 对应的 servers.token"
 allowed-commands:
@@ -196,7 +200,7 @@ allowed-commands:
 
 4. 重启游戏服务器。管理面板应显示游戏服务器在线。
 
-Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版本或手动开启调度开关。游戏登录选择「星桥内置」或「自动」，不要安装第三方登录插件。安装、升级或移除登录插件时完整停止并重启游戏服，不使用插件热卸载；详见 [Folia 接入](docs/minecraft-compatibility.md#folia-接入)。
+Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版本或手动开启调度开关。游戏登录选择「Myrinbot 内置」或「自动」，不要安装第三方登录插件。安装、升级或移除登录插件时完整停止并重启游戏服，不使用插件热卸载；详见 [Folia 接入](docs/minecraft-compatibility.md#folia-接入)。
 
 完整的档案记录需要 0.3.0 游戏插件。升级时替换旧 JAR，保留原 `plugins/StarBridge/config.yml`，然后重启游戏服务器。0.2.0 仍可执行游戏管理操作，但不会上报 IP 和带 UUID 的入服事件；更早版本会提示升级。
 
@@ -247,7 +251,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 ### 游戏登录
 
-「成员 → 游戏登录」可按服务器启用，选择注册密码与绑定 QQ 私聊确认，调整时限和尝试次数。没有第三方登录插件时提供内置限制；普通 Paper / Spigot 可选 AuthMe、nLogin、LoginSecurity，LibreLogin 仅普通 Paper。Folia 仅使用内置或自动引擎，不接入第三方登录 API。使用 0.5.2 游戏插件，进服 `/login <密码>`（简写 `/l <密码>`）或 `/qqlogin`（简写 `/ql`）；旧账号通过 `/account-password` 验证注册邮箱设置密码。默认不开启，未登录限制操作、超时断开，重连需重新验证。已有原账号首次关联核实原身份，不覆盖旧密码；nLogin 每连接仍需原生认证，使用 /starbridge:login 或 /starbridge:ql 避免命令冲突，LibreLogin 没有可用 TOTP 实现时拒绝带密钥账号。需要可信关联的插件各自保存记录。同一游戏服只启用一个认证插件；混合加载器部署选自动。具体原生命令与验证范围见 [游戏登录文档](docs/game-login.md#可选登录插件)。
+「成员 → 游戏登录」可按服务器启用，选择注册密码与绑定 QQ 私聊确认，调整时限和尝试次数。没有第三方登录插件时提供内置限制；普通 Paper / Spigot 可选 AuthMe、nLogin、LoginSecurity，LibreLogin 仅普通 Paper。Folia 仅使用内置或自动引擎，不接入第三方登录 API。使用 0.5.3 游戏插件，进服 `/login <密码>`（简写 `/l <密码>`）或 `/qqlogin`（简写 `/ql`）；旧账号通过 `/account-password` 验证注册邮箱设置密码。默认不开启，未登录限制操作、超时断开，重连需重新验证。已有原账号首次关联核实原身份，不覆盖旧密码；nLogin 每连接仍需原生认证，使用 /starbridge:login 或 /starbridge:ql 避免命令冲突，LibreLogin 没有可用 TOTP 实现时拒绝带密钥账号。需要可信关联的插件各自保存记录。同一游戏服只启用一个认证插件；混合加载器部署选自动。具体原生命令与验证范围见 [游戏登录文档](docs/game-login.md#可选登录插件)。
 
 接入、已有账号迁移、命令日志保护与 API 详见 [游戏登录文档](docs/game-login.md)，面板可直接下载。插件运行时关闭 Spigot 原生玩家命令回显，避免 `/login` 密码写入服务器日志，卸载恢复原值；第三方日志插件需配置登录指令脱敏。
 
@@ -288,7 +292,7 @@ python starbridge-website/build.py --api-base https://bridge.example.com/api/v1
 
 - 「扩展 → 定时任务插件 → 管理任务」支持间隔、指定星期与北京时间执行，动作包括群 / 游戏公告、预设命令和备份。插件可统一启停，并按动作、服务器和群授权；停用后自动与立即执行均暂停，重新启用不补发错过的任务。已有任务和执行记录保留。
 - 「扩展 → 插件 → 权限」控制群消息、群命令、游戏通知与模板读取能力，限制服务器、群、使用者和 QQ 允许 / 拒绝名单，保存立即生效。
-- 「成员 → 白名单申请」开放 `/白名单 玩家名 [理由]` 和 `/白名单状态`，支持资格限制、面板人工审核、离线待下发和游戏端确认。Paper / Spigot / Folia 使用 0.5.2 游戏插件；默认关闭申请。
+- 「成员 → 白名单申请」开放 `/白名单 玩家名 [理由]` 和 `/白名单状态`，支持资格限制、面板人工审核、离线待下发和游戏端确认。Paper / Spigot / Folia 使用 0.5.3 游戏插件；默认关闭申请。
 
 这些数据随备份保存，恢复后定时任务自动停用。操作说明和 API 见 [定时任务与白名单申请](docs/automation-and-whitelist.md)。
 
@@ -320,7 +324,8 @@ tests/                      HTTP / WebSocket / SQLite 测试
 config.example.toml         示例配置
 config.toml                 本机配置与随机令牌（不提交）
 data/starbridge.db           运行时数据库（不提交）
-星桥.bat                    Windows 一键安装、启动、停止与重启
+Myrinbot.bat                 源码部署的 Windows 一键安装与运行入口
+星桥.bat                    旧入口兼容；部署 ZIP 仍使用此文件名
 ```
 
 通信标准：[OneBot 11](https://github.com/botuniverse/onebot-11)。

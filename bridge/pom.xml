@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>cn.starbridge</groupId><artifactId>StarBridge</artifactId><version>0.5.2</version>
+  <groupId>cn.starbridge</groupId><artifactId>StarBridge</artifactId><version>0.5.3</version>
+  <name>Myrinbot Game Bridge</name>
   <licenses><license><name>AGPL-3.0-or-later</name><url>https://www.gnu.org/licenses/agpl-3.0.html</url><distribution>repo</distribution></license></licenses>
   <properties><maven.compiler.release>8</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
   <repositories><repository><id>spigot</id><url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url></repository></repositories>
@@ -9,11 +10,12 @@
     <dependency><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId><version>2.13.2</version></dependency>
   </dependencies>
   <build>
+    <finalName>Myrinbot-${project.version}</finalName>
     <resources>
       <resource><directory>src/main/resources</directory></resource>
       <resource>
         <directory>${project.basedir}/..</directory>
-        <targetPath>META-INF/licenses/StarBridge</targetPath>
+        <targetPath>META-INF/licenses/Myrinbot</targetPath>
         <includes><include>LICENSE</include><include>NOTICE</include><include>THIRD_PARTY_NOTICES.md</include></includes>
       </resource>
     </resources>
@@ -24,6 +26,11 @@
         <createDependencyReducedPom>false</createDependencyReducedPom>
         <artifactSet><includes><include>com.google.code.gson:gson</include></includes></artifactSet>
         <relocations><relocation><pattern>com.google.gson</pattern><shadedPattern>cn.starbridge.lib.gson</shadedPattern></relocation></relocations>
+      </configuration></execution></executions>
+    </plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
+      <executions><execution><id>legacy-updater-artifact</id><phase>package</phase><goals><goal>run</goal></goals><configuration>
+        <target><copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/StarBridge-${project.version}.jar" overwrite="true" /></target>
       </configuration></execution></executions>
     </plugin>
   </plugins></build>

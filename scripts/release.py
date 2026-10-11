@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -54,7 +55,18 @@ def source_literal(path, name):
     raise ValueError(f'发布源码缺少 {name}')
 
 
-def native_filename(item, mod_version):
+def artifact_prefix(root):
+    """Use this checkout's brand while retaining historical release filenames."""
+    branding = root / 'starbridge/branding.py'
+    prefix = source_literal(branding, 'ARTIFACT_PREFIX') if branding.is_file() else 'StarBridge'
+    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot'):
+        raise ValueError('发布产物名称错误')
+    return prefix
+
+
+def native_filename(item, mod_version, prefix='StarBridge'):
+    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot'):
+        raise ValueError('发布产物名称错误')
     loader = GAME_LOADERS.get(item.get('platform'))
     version = item.get('version')
     if not loader or not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+(?:\.\d+)?', version):
@@ -63,11 +75,11 @@ def native_filename(item, mod_version):
         raise ValueError('游戏端发布版本错误')
     if type(item.get('java')) is not int or item['java'] not in (8, 17, 21, 25):
         raise ValueError('游戏端 Java 要求错误')
-    return f'StarBridge-{loader}-{version}-{mod_version}.jar'
+    return f'{prefix}-{loader}-{version}-{mod_version}.jar'
 
 
-def validate_native_mod(path, item, mod_version):
-    expected_name = native_filename(item, mod_version)
+def validate_native_mod(path, item, mod_version, prefix='StarBridge'):
+    expected_name = native_filename(item, mod_version, prefix)
     if path.name != expected_name:
         raise ValueError(f'游戏端文件名不一致：{path.name}')
     if not path.is_file():
@@ -177,15 +189,16 @@ def validate_native_mod(path, item, mod_version):
 def native_assets(root):
     """Return exactly the native assets declared by this release's source catalog."""
     catalog_file = root/'starbridge/game_bridges.py'
+    prefix = artifact_prefix(root)
     if catalog_file.is_file():
         catalog = source_literal(catalog_file, 'GAME_BRIDGES')
         mod_version = source_literal(root/'starbridge/__init__.py', '__forge_version__')
         assets = []
         for item in catalog:
-            mod = root/'bridge/target'/native_filename(item, mod_version)
+            mod = root/'bridge/target'/native_filename(item, mod_version, prefix)
             if mod in assets:
                 raise ValueError('游戏端发布目录包含重复版本')
-            validate_native_mod(mod, item, mod_version)
+            validate_native_mod(mod, item, mod_version, prefix)
             assets.append(mod)
         return assets
     # Forge became available in 0.6.2; keep historical standalone assets intact.
@@ -196,28 +209,29 @@ def native_assets(root):
             raise ValueError('Forge 版本缺失')
         mod_version = match.group(1)
         item = {'platform': 'forge', 'version': '1.20.1', 'java': 17}
-        mod = root/'bridge/target'/native_filename(item, mod_version)
-        validate_native_mod(mod, item, mod_version)
+        mod = root/'bridge/target'/native_filename(item, mod_version, prefix)
+        validate_native_mod(mod, item, mod_version, prefix)
         return [mod]
     return []
 
 
 def build(root=ROOT):
     version = code_version((root/'starbridge/__init__.py').read_text(encoding='utf-8-sig'))
+    prefix = artifact_prefix(root)
     dist = root/'dist'; dist.mkdir(exist_ok=True)
     # Require the matching bridge build, instead of silently publishing an incomplete ZIP.
     import xml.etree.ElementTree as ET
     bridge_version = ET.parse(root/'bridge/pom.xml').getroot().find('{http://maven.apache.org/POM/4.0.0}version').text
-    bridge = root/f'bridge/target/StarBridge-{bridge_version}.jar'
+    bridge = root/f'bridge/target/{prefix}-{bridge_version}.jar'
     if not bridge.is_file(): raise ValueError('请先构建 Minecraft 端 JAR：bridge/build.ps1 或 mvn package')
     with zipfile.ZipFile(bridge) as archive:
         if not re.search(r'^version:\s*[\'"]?' + re.escape(bridge_version) + r'[\'"]?\s*$', archive.read('plugin.yml').decode('utf-8'), re.M):
             raise ValueError('游戏 JAR 版本与源码不一致')
-    website = dist/'StarBridge-website.zip'
+    website = dist/f'{prefix}-website.zip'
     subprocess.run([sys.executable,str(root/'starbridge-website/build.py'),'--output',str(website)],check=True,cwd=root)
     # 0.5.x predates the supervised update protocol and is deliberately marked manual.
     automatic = (root/'scripts/update_runtime.py').is_file()
-    bot = dist/f'StarBridge-{"Windows" if automatic else "Bot"}-{version}.zip'
+    bot = dist/f'{prefix}-{"Windows" if automatic else "Bot"}-{version}.zip'
     if automatic:
         subprocess.run([sys.executable,str(root/'scripts/build_windows.py'),'--output',str(bot)],check=True,cwd=root)
     else:
@@ -235,6 +249,17 @@ def build(root=ROOT):
     assets = [bot,website,bridge]
     # Read only this release's source catalog; historical checkouts stay complete.
     assets.extend(native_assets(root))
+    # Existing GitHub clients look for the old Windows asset name. Keep identical
+    # aliases for every download so installed integrations can still find them.
+    if prefix != 'StarBridge':
+        aliases = []
+        for path in assets:
+            alias = path.with_name('StarBridge-' + path.name.removeprefix(prefix + '-'))
+            if path.is_symlink() or alias.is_symlink():
+                raise ValueError('发布附件不能为符号链接')
+            shutil.copyfile(path, alias)
+            aliases.append(alias)
+        assets.extend(aliases)
     checksums = dist/'SHA256SUMS.txt'
     checksums.write_text(''.join(f'{digest(p)}  {p.name}\n' for p in assets),encoding='utf-8')
     return version,[*assets,checksums]
@@ -255,7 +280,9 @@ def publish(version,assets,repo,commit,notes,latest=True):
         release = json.loads(existing.stdout)
         if not release.get('draft'): raise ValueError('该版本已正式发布，不能覆盖；请增加版本号')
     else:
-        payload = {'tag_name':tag,'target_commitish':commit,'name':'StarBridge '+version,'body':notes,'draft':True,'prerelease':False,'make_latest':'false'}
+        title = next((name for name in ('Myrinbot', 'AetherBot')
+                      if any(path.name.startswith(name + '-') for path in assets)), 'StarBridge')
+        payload = {'tag_name':tag,'target_commitish':commit,'name':title+' '+version,'body':notes,'draft':True,'prerelease':False,'make_latest':'false'}
         with tempfile.TemporaryDirectory() as tmp:
             file = Path(tmp)/'release.json';file.write_text(json.dumps(payload,ensure_ascii=False),encoding='utf-8')
             release = json.loads(gh('api',f'repos/{repo}/releases','--method','POST','--input',str(file)).stdout)

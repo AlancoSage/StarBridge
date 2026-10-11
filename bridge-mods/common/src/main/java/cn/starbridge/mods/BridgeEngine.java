@@ -10,8 +10,8 @@ import java.util.concurrent.*;
 public final class BridgeEngine implements AutoCloseable {
     private final GameHost host;
     private final String base,token;
-    private final ScheduledExecutorService io=Executors.newSingleThreadScheduledExecutor(r->daemon(r,"StarBridge-Tick"));
-    private final ThreadPoolExecutor workers=new ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(64),r->daemon(r,"StarBridge-Worker"));
+    private final ScheduledExecutorService io=Executors.newSingleThreadScheduledExecutor(r->daemon(r,"Myrinbot-Tick"));
+    private final ThreadPoolExecutor workers=new ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(64),r->daemon(r,"Myrinbot-Worker"));
     private final LinkedBlockingDeque<JsonObject> events=new LinkedBlockingDeque<JsonObject>(500),results=new LinkedBlockingDeque<JsonObject>(500);
     private final Set<String> inFlight=ConcurrentHashMap.newKeySet();
     private final LinkedHashMap<String,JsonObject> completed=new LinkedHashMap<String,JsonObject>();
@@ -50,7 +50,7 @@ public final class BridgeEngine implements AutoCloseable {
     private Login begin(GameHost.Player player) {
         Login login=new Login(player,seconds);logins.put(player.id(),login);
         if(known&&!required)login.authenticated=true;
-        else { player.message("星桥正在检查本次游戏登录……");submit(login,login.request("join"),true); }
+        else { player.message("Myrinbot正在检查本次游戏登录……");submit(login,login.request("join"),true); }
         return login;
     }
     public void leave(GameHost.Player player) {
@@ -71,7 +71,7 @@ public final class BridgeEngine implements AutoCloseable {
         int split=raw.indexOf(' ');String root=split<0?raw:raw.substring(0,split),argument=split<0?"":raw.substring(split+1);
         if(!known) { player.message("正在同步认证设置，请稍后重试。");return; }
         if(root.equals("qbind")) { bind(player);return; }
-        if(!required) { player.message("此服务器没有启用星桥游戏登录。");return; }
+        if(!required) { player.message("此服务器没有启用Myrinbot游戏登录。");return; }
         if(root.equals("logout")) { begin(player);return; }
         if(!Protocol.loginCommand(raw))return;
         Login login=logins.get(player.id());if(login==null) { join(player);return; }
@@ -105,7 +105,7 @@ public final class BridgeEngine implements AutoCloseable {
         seconds=Math.max(30,Math.min(600,policy.get("login_seconds").getAsInt()));revision=policy.get("revision").getAsString();known=true;
         String engine=Protocol.text(policy,"login_engine","auto");
         if(required&&(!policy.get("available").getAsBoolean()||!(engine.equals("auto")||engine.equals("builtin")))) {
-            known=false;for(Login login:logins.values())login.player.kick("模组游戏端请使用星桥内置或自动登录引擎。");return;
+            known=false;for(Login login:logins.values())login.player.kick("模组游戏端请使用Myrinbot内置或自动登录引擎。");return;
         }
         if(!required) { for(Login login:logins.values())login.authenticated=true;return; }
         if(oldKnown&&(!oldRequired||!oldRevision.equals(revision)))for(GameHost.Player player:host.players())begin(player);
@@ -137,7 +137,7 @@ public final class BridgeEngine implements AutoCloseable {
         try { workers.execute(()->{
             String message;
             try { message="请在服务器 QQ 群发送：绑定 "+post("/bind-code",request).get("code").getAsString()+"（5 分钟有效，请勿转发）"; }
-            catch(Exception error) { message="获取验证码失败，请联系管理员检查星桥连接。"; }
+            catch(Exception error) { message="获取验证码失败，请联系管理员检查Myrinbot连接。"; }
             final String answer=message;callback(()->{if(logins.get(player.id())==login&&current(player)&&!locked(player.id()))player.message(answer);});
         }); } catch(RejectedExecutionException error) { player.message("请求繁忙，请稍后重试。"); }
     }
@@ -164,7 +164,7 @@ public final class BridgeEngine implements AutoCloseable {
                     JsonObject job=value.getAsJsonObject();String id=job.get("id").getAsString();if(inFlight.add(id))run(job);
                 }
             });
-        } catch(Exception error) { if(System.currentTimeMillis()-warning>30000) { host.log("星桥桥接暂不可用；错误类型："+error.getClass().getSimpleName(),null);warning=System.currentTimeMillis(); } }
+        } catch(Exception error) { if(System.currentTimeMillis()-warning>30000) { host.log("Myrinbot桥接暂不可用；错误类型："+error.getClass().getSimpleName(),null);warning=System.currentTimeMillis(); } }
     }
     private void event(String kind,GameHost.Player player,String text) {
         JsonObject event=new JsonObject();event.addProperty("id",UUID.randomUUID().toString());event.addProperty("kind",kind);event.addProperty("player",player.name());event.addProperty("text",Protocol.clip(text,500));event.addProperty("queued_at",System.currentTimeMillis());
@@ -180,7 +180,7 @@ public final class BridgeEngine implements AutoCloseable {
             for(JsonElement item:Jsons.parse(new String(Files.readAllBytes(file),StandardCharsets.UTF_8)).getAsJsonArray()) {
                 if(catalog.size()>=10000)break;JsonObject value=item.getAsJsonObject();Protocol.player(value.get("name").getAsString());catalog.put(UUID.fromString(value.get("uuid").getAsString()),value);
             }
-        } catch(Exception error) { host.log("星桥玩家档案读取失败；错误类型："+error.getClass().getSimpleName(),null); }
+        } catch(Exception error) { host.log("Myrinbot玩家档案读取失败；错误类型："+error.getClass().getSimpleName(),null); }
     }
     private void saveCatalog() {
         final byte[] data=Jsons.GSON.toJson(catalog.values()).getBytes(StandardCharsets.UTF_8);
@@ -188,7 +188,7 @@ public final class BridgeEngine implements AutoCloseable {
             try { Path file=host.catalogFile(),temp=file.resolveSibling("starbridge-players.json.tmp");Files.write(temp,data);
                 try { Files.move(temp,file,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
                 catch(AtomicMoveNotSupportedException ignored) { Files.move(temp,file,StandardCopyOption.REPLACE_EXISTING); }
-            } catch(Exception error) { host.log("星桥玩家档案保存失败",null); }
+            } catch(Exception error) { host.log("Myrinbot玩家档案保存失败",null); }
         }); } catch(RejectedExecutionException ignored){}
     }
     private void updateSnapshot() {

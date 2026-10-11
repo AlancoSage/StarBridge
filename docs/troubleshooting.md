@@ -2,7 +2,7 @@
 
 先进入 **接入空间 → 连接诊断** 查看当前状态，再进入 **活动 → 运行日志** 对照最近一次操作。记录错误时间、服务器 ID、Bot 和游戏端版本；分享日志时隐藏令牌、邮箱授权码和个人信息。
 
-完整诊断操作见 [连接诊断](diagnostics-and-templates.md)。本页对应 Bot 0.6.9 / Bukkit 游戏插件 0.5.2。
+完整诊断操作见 [连接诊断](diagnostics-and-templates.md)。本页对应 Bot 0.6.10 / Bukkit 游戏插件 0.5.3。
 
 ## 按现象检查
 
@@ -25,7 +25,7 @@
 
 `127.0.0.1` 指发起访问的机器自身。在另一台电脑或手机打开面板，需要使用 Bot 主机的可达地址；游戏服、QQ 实现端在别的机器上时，同样不能把 endpoint 或 WebSocket 地址写成它们自己的 `127.0.0.1`。
 
-监听端口占用时先确认有没有已运行的星桥实例。一个安装目录只运行一个 Bot；Windows 用 BAT 菜单管理，Linux 使用部署时的命令或服务管理方式。修改监听地址和端口后，保存并重启，再更新外部组件的连接地址。
+监听端口占用时先确认有没有已运行的 Myrinbot 实例。一个安装目录只运行一个 Bot；Windows 用 BAT 菜单管理，Linux 使用部署时的命令或服务管理方式。修改监听地址和端口后，保存并重启，再更新外部组件的连接地址。
 
 ## QQ 已连接，群里仍没反应
 
@@ -53,9 +53,9 @@ SMTP 检测只检查连接与认证，不证明真实收件成功；邮件到达
 
 社区账号、QQ 绑定、Minecraft UUID 是不同关系。只注册同名账号不会覆盖原有游戏身份；只有 QQ 登录且玩家尚未绑定时，待登录状态不能运行 `/qbind`。由管理员核实身份后绑定，或先开放密码登录，见 [绑定前提](account-binding.md)。
 
-nLogin 先用 `/starbridge:login` 或 `/starbridge:ql`，再完成原生 `/login` 或 `/register`；按文档合并其命令白名单并开放星桥提示。普通 `/login`、`/l` 会与 nLogin 冲突。已有原生账号需要原密码或有效原生认证，不能拿网站密码覆盖。
+nLogin 先用 `/starbridge:login` 或 `/starbridge:ql`，再完成原生 `/login` 或 `/register`；按文档合并其命令白名单并开放 Myrinbot 提示。普通 `/login`、`/l` 会与 nLogin 冲突。已有原生账号需要原密码或有效原生认证，不能拿网站密码覆盖。
 
-LibreLogin 0.24.0 Paper 缺少可用 TOTP 校验器，带 TOTP 密钥的账号会被星桥拒绝。Folia 不接入这些外部登录 API。完整规则和实服范围见 [登录插件接入](game-login.md#可选登录插件)。
+LibreLogin 0.24.0 Paper 缺少可用 TOTP 校验器，带 TOTP 密钥的账号会被 Myrinbot 拒绝。Folia 不接入这些外部登录 API。完整规则和实服范围见 [登录插件接入](game-login.md#可选登录插件)。
 
 ## 任务已提交但未成功
 

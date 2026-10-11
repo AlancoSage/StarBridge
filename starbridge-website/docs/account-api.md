@@ -1,14 +1,54 @@
-# 星桥账号注册与网站 API
+# Myrinbot 账号注册与网站 API
 
-版本：`v1`。星桥负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
+版本：`v1`。Myrinbot 负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
+
+## 用途与准备
+
+这篇文档用于开放社区账号注册、让旧账号通过邮箱设置密码，以及把账号功能接入自己的网页。首次使用先通过内置 `/register` 页面注册一个测试账号，成功后再阅读 API；不需要先部署独立官网。完整官网部署见 [官网接入](website-deployment.md)，Bot 尚未启动时先完成 [快速开始](https://github.com/AlancoSage/StarBridge/blob/main/docs/quick-start.md)。
+
+准备能登录管理面板的服主账号、支持 SSL 或 STARTTLS 的 SMTP 服务、发件邮箱及服务商要求的授权码，以及一个可收信的测试邮箱。测试群流程还需要 [OneBot 接入](https://github.com/AlancoSage/StarBridge/blob/main/docs/onebot-connection.md) 和已关联服务器的 QQ 群；纯网页注册不依赖 QQ 或游戏桥接在线。
+
+| 名称 | 建立方式 | 用途 |
+| --- | --- | --- |
+| 社区账号 `account.id` | 邮件验证注册 | 官网登录、本人资料和注册密码 |
+| 游戏 UUID | 游戏服提供的真实身份 | 存档、游戏档案及每服身份关联；不是社区账号 ID |
+| QQ 绑定 | 游戏 `/qbind` 后在群或本人官网确认 | 将本服游戏身份与 QQ 对应；不由注册玩家名自动生成 |
+| 白名单 | 管理员添加或审核申请 | 控制入服资格；注册成功不会自动加入 |
+
+绑定与玩家档案的后续操作见 [账号绑定](https://github.com/AlancoSage/StarBridge/blob/main/docs/account-binding.md) 和 [玩家管理](https://github.com/AlancoSage/StarBridge/blob/main/docs/player-management.md)。
 
 ## 配置注册
 
-管理面板「成员 → 注册账号」中填写 SMTP 主机、端口、加密方式、发件邮箱、登录账号和授权码，打开注册开关并单独保存。默认关闭，保存不会发信，用户申请后才发送验证码。配置保存在配置目录下 `data/registration-settings.json`，立即生效。
+1. 在管理面板「成员 → 注册账号」填写社区名称和 SMTP 设置。
+2. 按邮件服务商提供的组合填写主机、端口和加密方式，填写发件邮箱、登录账号及授权码。
+3. 先使用默认的验证码有效期、重发间隔和额度，打开注册开关并单独保存。
+4. 打开同一 Bot 地址的 `/register` 页面，完成下面的测试注册；仅保存设置不会发信。
+5. 如需接入其他网站，再按 [网站来源设置](#注册网页与网站接入) 配置精确来源。内置同源注册页无需添加来源。
+
+| 面板项 | 填写说明 |
+| --- | --- |
+| SMTP 主机 | 邮件服务商提供的域名或 IP，不含 `https://`、路径和空格 |
+| 端口 / 加密方式 | 必须匹配服务商的 SSL 或 STARTTLS 服务；Myrinbot 不接受明文 SMTP |
+| 发件邮箱 | 验证邮件的 From 地址，需符合服务商发信要求 |
+| 登录账号 / 授权码 | SMTP 认证凭据；授权码不是网站 API 密钥，也不是玩家密码 |
+| 注册网页地址 | 可选，写入网页注册邮件的入口；不自动部署网页或授权跨域来源 |
+| 网站后端 API 密钥 | 仅在自有网站服务端查询账号时配置，浏览器注册无需此密钥 |
+
+注册默认关闭，用户申请后才发送验证码。配置保存在配置目录下 `data/registration-settings.json`，立即生效。
 
 支持 SSL / TLS 和 STARTTLS，校验证书，不使用明文 SMTP。[Python SMTP 接口说明](https://docs.python.org/3/library/smtplib.html)。请按邮件服务商要求填写端口与授权码。
 
 默认验证码有效 5 分钟、错误最多 5 次、重发间隔 60 秒、每小时最多 60 封，可在面板调整时间和邮件额度。每个来源 IP／QQ 用户 10 分钟最多申请 5 次。限流与验证码摘要保存在 SQLite，重启不清空。保存注册设置会使旧验证码失效。
+
+## 第一次注册与验收
+
+1. 在部署 Bot 的同一台电脑打开 `http://127.0.0.1:5800/register`；修改过面板端口时使用实际端口，远程玩家使用可访问的 Bot 地址。
+2. 填写尚未注册的测试玩家名和测试邮箱，点击发送验证码。玩家名使用 3–16 位英文字母、数字或下划线。
+3. 检查收件箱及垃圾邮件，在页面填入六位邮件验证码，设置并确认 8–128 字符密码，然后完成注册。
+4. 在面板「成员 → 注册账号」搜索测试玩家名，确认邮箱、账号和密码列的“已设置”状态；同一玩家名或邮箱再次注册应被拒绝。
+5. 若计划开放群注册，用另一个尚未注册的玩家名和自己的 QQ 完成下面的群流程，确认机器人只发送简短文字反馈。
+
+保存设置本身不是邮件验收。关闭新注册后，已有账号仍可通过原邮箱在 `/account-password` 设置或重置密码；官网登录还需官网设置中的登录开关，详见 [登录与本人信息](website-deployment.md#用户登录和本人信息)。
 
 ## 群命令
 
@@ -17,15 +57,15 @@
 /注册 012345
 ```
 
-QQ 号必须与申请人一致，验证码发到 `QQ号@qq.com`。只支持已关联的群；必须由原申请人，在原服务器关联的原群确认验证码。参数缺失、验证码错误／过期、邮件失败会显示具体文字提示。验证码、访问令牌和 SMTP 授权码不发到群里。
+示例中的 `Steve` 换成玩家名，`123456789` 换成发送消息的本人 QQ，`012345` 换成邮件收到的六位验证码，保留前导零。QQ 号必须与申请人一致，验证码发到 `QQ号@qq.com`。只支持已关联的群；必须由原申请人，在原服务器关联的原群确认验证码。参数缺失、验证码错误／过期、邮件失败会显示具体文字提示。机器人不会把邮件验证码、访问令牌或 SMTP 授权码回显到群；玩家按上述格式提交一次性验证码。
 
-注册创建的是社区账号。游戏绑定仍使用游戏 `/qbind` 和群 `绑定 验证码`，不根据玩家名猜测 UUID。游戏登录默认关闭；启用后可使用注册密码或绑定 QQ 确认，参见 [游戏登录接入](game-login.md)。注册本身不修改存档或白名单。
+注册创建的是社区账号。游戏绑定仍使用游戏 `/qbind` 和群 `绑定 验证码`，不根据玩家名猜测 UUID。游戏登录默认关闭；启用后可使用注册密码或绑定 QQ 确认，参见 [游戏登录接入](https://github.com/AlancoSage/StarBridge/blob/main/docs/game-login.md)。注册本身不修改存档或白名单。
 
 ## 注册网页与网站接入
 
-内置页面为 `/register`，例如 `http://127.0.0.1:8088/register`。填写玩家名、邮箱后验证，网页自动保存本次申请编号。页面关闭后，可从验证码邮件中复制申请编号继续验证。
+内置页面为 `/register`，例如 `http://127.0.0.1:5800/register`。填写玩家名、邮箱后验证，网页自动保存本次申请编号。页面关闭后，可从验证码邮件中复制申请编号继续验证。
 
-API 根地址：`https://你的星桥域名/api/v1`。浏览器跨站接入需在面板「允许接入的网站来源」填写精确来源，例如 `https://community.example.com`，只包含协议、域名、可选端口。不能使用路径或通配符；同源页面默认可用。支持 CORS 预检；CORS 不替代邮件验证，也不能阻止非浏览器客户端调用公开注册接口。
+API 根地址：`https://你的Bot域名/api/v1`。浏览器跨站接入需在面板「允许接入的网站来源」填写精确来源，例如 `https://community.example.com`，只包含协议、域名、可选端口。不能使用路径或通配符；同源页面默认可用。支持 CORS 预检；CORS 不替代邮件验证，也不能阻止非浏览器客户端调用公开注册接口。
 
 上线使用 HTTPS。反向代理下默认按实际连接来源 IP 限流，不信任客户端自填的 X-Forwarded-For，需按部署规模调整邮件总额度。网站后端 API 密钥不要放在浏览器代码中。
 
@@ -40,7 +80,7 @@ API 根地址：`https://你的星桥域名/api/v1`。浏览器跨站接入需�
 `GET /registration/info` 返回：
 
 ```json
-{"enabled":true,"site_name":"星桥社区","code_minutes":5,"website_url":"https://community.example.com/register"}
+{"enabled":true,"site_name":"Myrinbot社区","code_minutes":5,"website_url":"https://community.example.com/register"}
 ```
 
 不返回邮件配置或密钥。
@@ -94,7 +134,7 @@ SMTP 接受邮件后返回 HTTP 202：
 
 创建账号、消费验证码和生成令牌在同一事务完成。验证码只用一次。`account.id` 是社区账号 ID，不是 Minecraft UUID。
 
-用户令牌只用于读取本人信息，有效一小时，数据库仅保存摘要。它不授予游戏登录权限；网站后端可验证短期令牌后建立自己的会话，不要直接相信浏览器提交的账号 ID／邮箱。当前没有网站密码登录或令牌续期接口；游戏密码验证由可信游戏插件调用。群注册不会把令牌发到群中。所有公开账号响应只显示 has_password，不返回密码或其哈希。
+用户令牌用于本人账号、档案和本人自助服务，有效一小时，数据库仅保存摘要。它不授予管理权限或游戏桥接权限；游戏密码验证由可信游戏插件调用。网站后端可验证短期令牌后建立自己的会话，不要直接相信浏览器提交的账号 ID／邮箱。现有网站密码登录接口为 `POST /api/v1/account/login`，退出为 `POST /api/v1/account/logout`，没有令牌续期接口；详见 [官网部署与信息接口](website-deployment.md)。群注册不会把令牌发到群中。所有公开账号响应只显示 has_password，不返回密码或其哈希。
 
 ### 设置 / 重置游戏密码
 
@@ -111,6 +151,27 @@ SMTP 接受邮件后返回 HTTP 202：
 ### 本人账号
 
 `GET /account`，请求头 `Authorization: Bearer <access_token>`，返回 `{ "account": { ... } }`。
+
+### 最小 API 调用示例
+
+以下 PowerShell 示例用于已配置 SMTP 的本机 Bot，按顺序申请邮件、输入验证码、注册并查询本人账号。替换测试邮箱和未注册玩家名；密码通过凭据输入窗口填写，不放入命令历史。网页开发也可以直接使用面板下载的 `examples/website-registration.js`，其 `apply`、`verify`、`account` 方法调用相同接口。
+
+```powershell
+$apiBase = 'http://127.0.0.1:5800/api/v1'
+$testPlayer = 'TestPlayer'
+$testEmail = '替换为可收信的测试邮箱'
+Invoke-RestMethod -Uri "$apiBase/registration/info"
+$requestBody = @{ player = $testPlayer; email = $testEmail } | ConvertTo-Json
+$challenge = Invoke-RestMethod -Method Post -Uri "$apiBase/registration/request" -ContentType 'application/json' -Body $requestBody -TimeoutSec 45
+$mailCode = Read-Host '输入邮件中的六位验证码，保留前导零'
+$passwordInput = Get-Credential -UserName $testPlayer -Message '为测试账号设置 8–128 字符密码'
+$verifyBody = @{ challenge_id = $challenge.challenge_id; code = $mailCode; password = $passwordInput.GetNetworkCredential().Password } | ConvertTo-Json
+$registered = Invoke-RestMethod -Method Post -Uri "$apiBase/registration/verify" -ContentType 'application/json' -Body $verifyBody -TimeoutSec 45
+$userHeaders = @{ Authorization = 'Bearer ' + $registered.access_token }
+Invoke-RestMethod -Uri "$apiBase/account" -Headers $userHeaders
+```
+
+收到邮件后不要重新申请编号再提交旧验证码；重发时更新 `challenge_id`。命令行客户端没有浏览器 CORS 限制，这个示例通过后仍需在实际网站来源上测试浏览器接入。公网地址使用 HTTPS。
 
 ## 网站后端只读接口
 
@@ -153,11 +214,23 @@ revision 防止旧页面覆盖新设置。只有管理员配置接口返回 SMTP
 
 邮件超过 30 秒未完成时申请失败；即使稍后收到邮件，该次验证码也不生效。API 客户端可使用 45 秒请求超时。关闭注册不删除已有账号，网站后端查询与未过期的本人访问令牌仍有效。
 
+## 常见问题
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| 保存成功但没有邮件 | 保存不发信；在 `/register` 或原群实际申请后，按返回提示检查 SMTP 主机、端口、加密、授权码和垃圾邮件 |
+| 稍后收到验证码但验证失败 | 只使用当前未过期申请对应的邮件；保存注册设置、重发、超时失败或成功消费都会使旧验证码失效 |
+| 群里提示没有申请或渠道不符 | 由原申请人回到原服务器关联的原群确认；网页申请在网页验证，两种渠道不混用 |
+| 网页提示跨域拒绝，命令行请求正常 | 检查浏览器地址的协议、域名和端口是否与允许来源完全一致；子目录不是来源的一部分，绑定后选择“不接入官网”的来源会被拒绝 |
+| 提示申请频繁、邮箱或玩家名被占用 | 等待冷却或当前申请过期，检查是否已有申请/账号；重启不会清空限流或重复注册限制 |
+| 群注册成功但不能用密码登录 | 群注册没有设置密码；用原注册邮箱在 `/account-password` 设置，然后检查目标服游戏登录开关 |
+| 注册成功却没有游戏档案或白名单 | 注册与游戏 UUID 关联、QQ 绑定、白名单分别处理；继续按 [账号绑定](https://github.com/AlancoSage/StarBridge/blob/main/docs/account-binding.md) 与 [玩家管理](https://github.com/AlancoSage/StarBridge/blob/main/docs/player-management.md) 完成 |
+
 ## 验证与性能
 
 自动测试使用模拟 SMTP、模拟 OneBot，不向真实用户发邮件或群消息。真实验证需要填写自己的 SMTP 配置，QQ 流程还需要已连接的 OneBot 与已关联群。
 
 注册使用现有 aiohttp、SQLite 和 Python 标准库，无新增依赖。发信在后台线程执行，同一实例最多同时发两封，避免阻塞网页事件循环。网页没有持续动画或 GPU 渲染。
-# 社区官网与玩家信息
+## 社区官网与玩家信息
 
-星桥社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。
+Myrinbot 社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。

@@ -1,4 +1,4 @@
-"""Build an independent website archive without reading any Bot files."""
+"""Build the independent Myrinbot website without reading any Bot files."""
 import argparse
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ import zipfile
 from serve import api_base
 
 ROOT = Path(__file__).resolve().parent
-FILES = ('index.html', 'site.css', 'site.js', 'config.json', 'mark.svg',
+FILES = ('index.html', 'site.css', 'site.js', 'config.json', 'mark.png', 'mark.svg',
          'README.md', 'LICENSE', 'nginx.example.conf', 'serve.py', 'build.py', 'start.ps1', '.gitignore',
          'sdk/starbridge.js', 'docs/website-deployment.md', 'docs/account-api.md', 'docs/community-operations.md')
 
@@ -15,7 +15,7 @@ FILES = ('index.html', 'site.css', 'site.js', 'config.json', 'mark.svg',
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--api-base', help='API address for config.json in the archive only')
-    parser.add_argument('--output', type=Path, default=ROOT/'dist/StarBridge-website.zip')
+    parser.add_argument('--output', type=Path, default=ROOT/'dist/Myrinbot-website.zip')
     args = parser.parse_args()
     try:
         address = api_base(args.api_base if args.api_base is not None else json.loads((ROOT/'config.json').read_text(encoding='utf-8'))['apiBase'])

@@ -16,7 +16,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent
 FABRIC_ROOT = ROOT.parent / 'bridge-fabric'
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 VERSIONS = {
     '1.20.4': ('20.4.251', 17),
     '1.20.6': ('20.6.141', 21),
@@ -169,10 +169,10 @@ license="AGPL-3.0-or-later"
 [[mods]]
 modId="starbridge"
 version="{VERSION}"
-displayName="星桥 · NeoForge 游戏桥接"
+displayName="Myrinbot · NeoForge 游戏桥接"
 authors="AlancoSage"
 displayTest="IGNORE_SERVER_VERSION"
-description=''' + "'''星桥服务端桥接：QQ 联动、玩家管理、白名单、密码登录及 QQ 确认。'''\n" + f'''[[dependencies.starbridge]]
+description=''' + "'''Myrinbot服务端桥接：QQ 联动、玩家管理、白名单、密码登录及 QQ 确认。'''\n" + f'''[[dependencies.starbridge]]
 modId="neoforge"
 {dependency_flag}
 versionRange="[{loader},)"
@@ -242,7 +242,7 @@ def build(mc, jdk, cache):
         files.update({name: json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
                       for name, data in resources.items()})
         files.update(helper.license_entries(ROOT.parent))
-        target = ROOT.parent / 'bridge/target' / f'StarBridge-NeoForge-{mc}-{VERSION}.jar'
+        target = ROOT.parent / 'bridge/target' / f'Myrinbot-NeoForge-{mc}-{VERSION}.jar'
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary_jar = target.with_suffix('.jar.building')
         with zipfile.ZipFile(temporary_jar, 'w', zipfile.ZIP_DEFLATED) as archive:
@@ -253,6 +253,7 @@ def build(mc, jdk, cache):
                 entry.external_attr = 0o100644 << 16
                 archive.writestr(entry, data)
         temporary_jar.replace(target)
+        shutil.copyfile(target, target.with_name(target.name.replace('Myrinbot-', 'StarBridge-', 1)))
     print('Built NeoForge ' + mc + ': ' + target.name, flush=True)
     return target
 

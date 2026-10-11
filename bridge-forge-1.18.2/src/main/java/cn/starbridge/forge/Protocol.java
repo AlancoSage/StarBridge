@@ -24,10 +24,10 @@ final class Protocol {
         if (!name.matches("[A-Za-z0-9_]{1,16}")) throw new IllegalArgumentException("Invalid player name");
     }
     static String reason(JsonObject job) {
-        String reason = text(job, "reason", "服务器管理员通过星桥执行操作");
+        String reason = text(job, "reason", "服务器管理员通过Myrinbot执行操作");
         if (reason.length() > 340 || reason.chars().anyMatch(c -> c < 32 || c == 127))
             throw new IllegalArgumentException("Invalid reason");
-        return reason.isBlank() ? "服务器管理员通过星桥执行操作" : reason;
+        return reason.isBlank() ? "服务器管理员通过Myrinbot执行操作" : reason;
     }
     static UUID offlineId(String name) { return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)); }
     static boolean loginCommand(String command) {

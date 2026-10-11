@@ -3,7 +3,7 @@
   "id": "community_helper",
   "name": "社群小助手",
   "version": "1.0.0",
-  "author": "StarBridge",
+  "author": "Myrinbot",
   "description": "提供服讯、问候和可选的入服欢迎通知。所有内容可在面板调整。",
   "settings": {
     "greeting": {

@@ -1,6 +1,6 @@
 @echo off
 setlocal DisableDelayedExpansion
-title StarBridge
+title Myrinbot
 chcp 65001 >nul
 set "STARBRIDGE_SELF=%~f0"
 set "STARBRIDGE_ACTION=%~1"
@@ -16,6 +16,7 @@ exit /b %STARBRIDGE_EXIT%
 # STARBRIDGE_POWERSHELL
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+$entrypoint = Split-Path -Leaf $env:STARBRIDGE_SELF
 try {
     [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
     $OutputEncoding = [Console]::OutputEncoding
@@ -121,7 +122,7 @@ function Start-StarBridgeWindows {
     param([string]$Root, [string]$RequestedPython = '', [switch]$InstallOnly, [switch]$WithoutBrowser)
     Set-Location -LiteralPath $Root
     foreach ($name in @('config.example.toml', 'requirements.lock.txt', 'starbridge\__main__.py', 'scripts\windows_runtime.py')) {
-        if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { throw '安装文件不完整。请先完整解压星桥部署包，再双击 星桥.bat。' }
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { throw "安装文件不完整。请先完整解压 Myrinbot 部署包，再双击 $entrypoint。" }
     }
     $data = Join-Path $Root 'data'
     New-Item -ItemType Directory -Force -Path $data | Out-Null
@@ -142,7 +143,7 @@ function Start-StarBridgeWindows {
         & $venv scripts\windows_runtime.py dependencies-ready
         $dependenciesReady = $LASTEXITCODE -eq 0
         if (-not $dependenciesReady) {
-            if ($existing) { throw 'Bot 正在运行，依赖需要更新。请在星桥.bat 菜单中停止 Bot，再重新安装，避免修改运行中的环境。' }
+            if ($existing) { throw "Bot 正在运行，依赖需要更新。请在 $entrypoint 菜单中停止 Bot，再重新安装，避免修改运行中的环境。" }
             Write-Host '[2/4] 正在安装锁定版本的依赖，首次安装需要联网……'
             & $venv -m ensurepip --upgrade
             if ($LASTEXITCODE -ne 0) { throw 'pip 初始化失败。' }
@@ -164,7 +165,7 @@ function Start-StarBridgeWindows {
         $info = $infoJson | ConvertFrom-Json
         Write-Host "管理面板：$($info.panel_url)"
         Write-Host '首次登录使用 config.toml 中的 app.admin_token，其余设置均可在面板内调整。'
-        if ($InstallOnly) { Write-Host '[4/4] 部署完成，尚未启动。双击星桥.bat 可运行。'; return }
+        if ($InstallOnly) { Write-Host "[4/4] 部署完成，尚未启动。双击 $entrypoint 可运行。"; return }
         if (-not $existing) {
             & $venv scripts\windows_runtime.py check-port
             if ($LASTEXITCODE -ne 0) { throw '监听地址或端口不可用。请关闭占用端口的程序，或在 config.toml 修改 app.port 后重试。' }
@@ -182,7 +183,7 @@ function Start-StarBridgeWindows {
             if ($service.HasExited) { break }
             try {
                 $response = Invoke-WebRequest -UseBasicParsing -Uri $info.panel_url -TimeoutSec 2
-                if ($response.StatusCode -eq 200 -and $response.Content -match 'StarBridge') { $ready = $true; break }
+                if ($response.StatusCode -eq 200 -and $response.Content -match 'id="panel-login-kind"') { $ready = $true; break }
             } catch {}
             Start-Sleep -Milliseconds 500
         }
@@ -192,7 +193,7 @@ function Start-StarBridgeWindows {
             }
             throw 'Bot 没有正常就绪。请查看 data\server-error.log；已有配置和数据未被覆盖。'
         }
-        Write-Host '部署完成！Bot 在后台运行，可以关闭此窗口。停止可在此窗口菜单中选择，或重新打开星桥.bat。' -ForegroundColor Green
+        Write-Host "部署完成！Bot 在后台运行，可以关闭此窗口。停止可在此窗口菜单中选择，或重新打开 $entrypoint。" -ForegroundColor Green
         if (-not $WithoutBrowser) {
             try { Start-Process -FilePath $info.panel_url }
             catch { Write-Host '无法自动打开浏览器，请复制上方管理面板地址访问。' }
@@ -218,7 +219,7 @@ function Stop-StarBridgeWindows {
         # Windows venv launches a child Python process; stop the verified process tree.
         & "$env:SystemRoot\System32\taskkill.exe" /PID $serviceId /T /F | Out-Null
         if ($LASTEXITCODE -ne 0) { throw '停止失败，请查看进程状态后重试。' }
-        Write-Host '星桥后台服务已停止。' -ForegroundColor Green
+        Write-Host 'Myrinbot后台服务已停止。' -ForegroundColor Green
     } finally { if ($lock) { $lock.Dispose() } }
 }
 
@@ -229,7 +230,7 @@ function Invoke-StarBridgeAction {
         'install' { Start-StarBridgeWindows -Root $root -RequestedPython $env:STARBRIDGE_PYTHON -InstallOnly -WithoutBrowser }
         'stop' { Stop-StarBridgeWindows -Root $root }
         'restart' { Stop-StarBridgeWindows -Root $root; Start-StarBridgeWindows -Root $root -RequestedPython $env:STARBRIDGE_PYTHON -WithoutBrowser:$quiet }
-        default { throw '用法：星桥.bat [start|stop|restart|install] [quiet]' }
+        default { throw "用法：$entrypoint [start|stop|restart|install] [quiet]" }
     }
 }
 
@@ -242,7 +243,7 @@ try {
     if (-not $quiet) {
         while ($true) {
             Write-Host ''
-            Write-Host '星桥  |  1 打开面板  2 启动  3 停止  4 重启  0 关闭窗口'
+            Write-Host 'Myrinbot  |  1 打开面板  2 启动  3 停止  4 重启  0 关闭窗口'
             $choice = Read-Host '请选择'
             switch ($choice) {
                 '0' { exit 0 }

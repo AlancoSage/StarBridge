@@ -227,7 +227,7 @@ async function extensionDownload(document, filename) {
   } catch (error) { notice('extension-notice', error.message, 'error'); }
 }
 $('extension-example').onclick = () => extensionDownload('example', 'community_helper.json');
-$('extension-guide').onclick = () => extensionDownload('guide', 'StarBridge-plugin-development.md');
+$('extension-guide').onclick = () => extensionDownload('guide', 'Myrinbot-plugin-development.md');
 async function openPluginVersions(plugin){
   try{const data=await api('/api/extensions/'+plugin.id+'/versions');$('plugin-version-title').textContent=plugin.name+' · '+plugin.version;$('plugin-version-changelog').textContent=plugin.changelog||'当前版本未填写更新说明。';$('plugin-version-list').replaceChildren(...data.versions.map(version=>{const row=node('article','','operation-history-row'),left=node('div');left.append(node('strong',version.version),node('p',new Date(version.created*1000).toLocaleString()+' · '+(version.note||'保存的旧版本'),'hint'));const rollback=button('回退到此版本',async()=>{if(!confirm('回退到 '+version.version+'？回退后插件保持停用，请确认设置后启用。'))return;if(await extensionMutation('/api/extensions/'+plugin.id+'/rollback','POST',{version_id:version.id}))$('plugin-version-dialog').close();});rollback.disabled=version.version===plugin.version;row.append(left,rollback);return row;}));if(!data.versions.length)$('plugin-version-list').append(node('p','更新插件时会自动保存旧版本，最多保留 5 个。','hint'));$('plugin-version-dialog').showModal();}catch(error){notice('extension-notice',error.message,'error');}
 }

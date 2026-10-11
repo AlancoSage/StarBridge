@@ -163,7 +163,7 @@ $('whitelist-form').onsubmit=async event=>{
 $('whitelist-add').onclick=()=>openWhitelist();$('whitelist-refresh').onclick=()=>loadWhitelist();$('whitelist-filter').onchange=()=>{whitelistPage=1;loadWhitelist();};$('whitelist-prev').onclick=()=>{whitelistPage--;loadWhitelist();};$('whitelist-next').onclick=()=>{whitelistPage++;loadWhitelist();};
 for(const name of ['schedule','whitelist']){for(const suffix of ['close','cancel'])$(name+'-'+suffix).onclick=()=>closeOperationDialog(name);$(name+'-dialog').addEventListener('cancel',event=>{event.preventDefault();closeOperationDialog(name);});}
 async function operationsGuide(){
-  try{const response=await fetch('/api/operations/guide',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('文档下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-automation-and-whitelist.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  try{const response=await fetch('/api/operations/guide',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('文档下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-automation-and-whitelist.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   catch(error){notice(document.body.dataset.view==='schedules'?'schedule-notice':'whitelist-notice',error.message,'error');}
 }
 $('schedule-guide').onclick=operationsGuide;$('whitelist-guide').onclick=operationsGuide;

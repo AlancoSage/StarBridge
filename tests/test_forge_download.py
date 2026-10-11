@@ -5,7 +5,7 @@ from unittest.mock import patch
 from aiohttp.test_utils import TestClient, TestServer
 from starbridge.app import create_app
 from starbridge.game_bridges import bridge_catalog, bridge_filename
-from starbridge import __bridge_version__
+from starbridge import __bridge_version__, __forge_version__
 from test_starbridge import config
 
 
@@ -28,15 +28,16 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_platform_selection_authentication_and_unknown_platform(self):
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
-            for platform, expected in (('bukkit', b'bukkit-fixture'), ('forge', b'StarBridge-Forge-1.20.1-0.1.0.jar'),
-                                      ('fabric', b'StarBridge-Fabric-1.20.1-0.1.0.jar')):
+            for platform, expected in (('bukkit', b'bukkit-fixture'),
+                                      ('forge', f'Myrinbot-Forge-1.20.1-{__forge_version__}.jar'.encode()),
+                                      ('fabric', f'Myrinbot-Fabric-1.20.1-{__forge_version__}.jar'.encode())):
                 response = await self.client.get('/api/plugin?platform=' + platform, headers=self.headers)
                 self.assertEqual(response.status, 200)
                 self.assertEqual(await response.read(), expected)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
                 self.assertIn('attachment;', response.headers['Content-Disposition'])
                 if platform == 'bukkit':
-                    self.assertIn(f'StarBridge-{__bridge_version__}.jar', response.headers['Content-Disposition'])
+                    self.assertIn(f'Myrinbot-{__bridge_version__}.jar', response.headers['Content-Disposition'])
             for platform in ('forge', 'fabric'):
                 response = await self.client.get('/api/plugin?platform='+platform)
                 self.assertEqual(response.status, 401)
@@ -86,12 +87,32 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError):
                 bridge_filename(platform, version)
 
+    async def test_existing_deployment_artifact_is_downloadable_and_new_build_takes_precedence(self):
+        directory = self.root / 'bridge/target'
+        filename = bridge_filename('fabric', '1.20.1')
+        (directory / filename).unlink()
+        (directory / filename.replace('Myrinbot-', 'StarBridge-', 1)).write_bytes(b'legacy-build')
+        with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
+            catalog = await (await self.client.get('/api/plugin/catalog', headers=self.headers)).json()
+            self.assertTrue(next(row for row in catalog['bridges'] if row['filename'] == filename)['available'])
+            response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(await response.read(), b'legacy-build')
+            self.assertIn(filename, response.headers['Content-Disposition'])
+            (directory / filename.replace('Myrinbot-', 'AetherBot-', 1)).write_bytes(b'aetherbot-build')
+            response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(await response.read(), b'aetherbot-build')
+            (directory / filename).write_bytes(b'current-build')
+            response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
+            self.assertEqual(await response.read(), b'current-build')
+
     async def test_native_guide_platforms_and_panel_module(self):
         for platform in ('forge', 'neoforge', 'fabric'):
             response = await self.client.get('/api/authentication/guide?platform='+platform, headers=self.headers)
             self.assertEqual(response.status, 200)
             self.assertIn(b'1.16.5' if platform == 'fabric' else b'1.7.10', await response.read())
-            self.assertIn('StarBridge-fabric-game-ends.md' if platform == 'fabric' else 'StarBridge-mod-game-ends.md', response.headers['Content-Disposition'])
+            self.assertIn('Myrinbot-fabric-game-ends.md' if platform == 'fabric' else 'Myrinbot-mod-game-ends.md', response.headers['Content-Disposition'])
         response = await self.client.get('/api/authentication/guide?platform=quilt', headers=self.headers)
         self.assertEqual(response.status, 400)
         response = await self.client.get('/mod-bridge-panel.js')

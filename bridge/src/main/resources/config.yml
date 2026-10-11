@@ -1,5 +1,5 @@
 # 主程序地址；跨机器部署时改为主程序的地址。
-endpoint: "http://127.0.0.1:8088"
+endpoint: "http://127.0.0.1:5800"
 server-id: "survival"
 # 填写主程序 config.toml 中对应 servers 项目的 token。
 token: "CHANGE-ME"

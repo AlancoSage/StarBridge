@@ -42,16 +42,16 @@ final class LoginLinks {
     LoginLink select(String engine) {
         boolean explicit = Arrays.asList(IDS).contains(engine);
         if (!"auto".equals(engine) && !"builtin".equals(engine) && !explicit)
-            throw reject("未知游戏登录引擎，星桥未放行游戏登录。请检查认证设置。");
+            throw reject("未知游戏登录引擎，Myrinbot未放行游戏登录。请检查认证设置。");
         Map<String, Plugin> found = enabled();
         if (found.size() > 1)
-            throw reject("检测到多个已启用的登录插件，星桥未放行游戏登录。请只保留一个登录插件并完整重启游戏服。");
+            throw reject("检测到多个已启用的登录插件，Myrinbot未放行游戏登录。请只保留一个登录插件并完整重启游戏服。");
         if (BridgeScheduler.isFolia() && !found.isEmpty())
-            throw reject("Folia 游戏登录仅支持星桥内置引擎，请移除第三方登录插件并完整重启；不能安全调用未经区域线程验证的登录 API。");
+            throw reject("Folia 游戏登录仅支持Myrinbot内置引擎，请移除第三方登录插件并完整重启；不能安全调用未经区域线程验证的登录 API。");
         if ("builtin".equals(engine) && !found.isEmpty())
-            throw reject("星桥内置引擎与已启用的登录插件冲突。请选择自动或匹配的兼容引擎并完整重启游戏服。");
+            throw reject("Myrinbot内置引擎与已启用的登录插件冲突。请选择自动或匹配的兼容引擎并完整重启游戏服。");
         if (explicit && !found.containsKey(engine))
-            throw reject("所选游戏登录插件未启用或与已安装插件不匹配，星桥未放行游戏登录。");
+            throw reject("所选游戏登录插件未启用或与已安装插件不匹配，Myrinbot未放行游戏登录。");
         if (found.isEmpty()) {
             close(); warning = "";
             return null;
@@ -68,7 +68,7 @@ final class LoginLinks {
             cachedPlugin = installed; warning = "";
             return cached;
         } catch (ReflectiveOperationException | IOException | RuntimeException | LinkageError error) {
-            throw reject("" + installed.getName() + " 公开登录 API 无法接入，星桥未放行游戏登录。请检查插件版本与启动日志。");
+            throw reject("" + installed.getName() + " 公开登录 API 无法接入，Myrinbot未放行游戏登录。请检查插件版本与启动日志。");
         }
     }
 }

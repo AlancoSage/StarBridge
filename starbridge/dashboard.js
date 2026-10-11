@@ -13,19 +13,36 @@ const noticeTimers = new Map();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const activeMotion = new Map();
 function stopMotion() { for (const animation of activeMotion.values()) animation.cancel(); activeMotion.clear(); }
-function enterMotion(element, distance = 4) {
+function enterMotion(element, distance = 4, delay = 0) {
   activeMotion.get(element)?.cancel();
   if (reducedMotion.matches || document.hidden || !element.animate) return;
   const animation = element.animate([
     {opacity: .55, transform: `translateY(${distance}px)`},
     {opacity: 1, transform: 'none'},
-  ], {duration: 160, easing: 'cubic-bezier(.2,.7,.2,1)'});
+  ], {duration: 160, delay, fill: 'backwards', easing: 'cubic-bezier(.2,.7,.2,1)'});
   activeMotion.set(element, animation);
   const release = () => { if (activeMotion.get(element) === animation) activeMotion.delete(element); };
   animation.addEventListener('finish', release, {once:true});
   animation.addEventListener('cancel', release, {once:true});
 }
 reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) stopMotion(); });
+function enterPageMotion(name) {
+  stopMotion();
+  if (reducedMotion.matches || document.hidden) return;
+  const view = $('view-' + name);
+  const candidates = name === 'overview'
+    ? [...view.querySelectorAll('.overview-stats > .stat-card')]
+    : [document.querySelector('.page-head'), ...view.querySelectorAll(':scope > .toolbar, :scope > .section-head, :scope > .panel > h2, .section-head, .connection-layout > .bot-card, .connection-layout > .connection-guide')];
+  const targets = [];
+  for (const element of candidates) {
+    if (!element || !element.getClientRects().length || targets.some(target => target.contains(element) || element.contains(target))) continue;
+    const bounds = element.getBoundingClientRect();
+    if (bounds.bottom <= 0 || bounds.top >= innerHeight || bounds.height > innerHeight * .8 || bounds.width * bounds.height > innerWidth * innerHeight * .65) continue;
+    targets.push(element);
+    if (targets.length === 4) break;
+  }
+  targets.forEach((element, index) => enterMotion(element, 6, index * 20));
+}
 function renderChanged(key, data, render) {
   const signature = JSON.stringify(data);
   if (renderedData.get(key) === signature) return;
@@ -33,7 +50,7 @@ function renderChanged(key, data, render) {
 }
 function setText(id, value) { if ($(id).textContent !== String(value)) $(id).textContent = value; }
 const pages = {
-  overview: ['星桥', '运行概览', '查看机器人、游戏服务器与社群的运行状态。'],
+  overview: ['Myrinbot', '运行概览', '查看机器人、游戏服务器与社群的运行状态。'],
   connection: ['接入空间', '机器人连接', '配置 QQ 账号、管理权限与 OneBot 连接。'],
   servers: ['接入空间', '服务器列表', '管理游戏服务器、关联群聊与插件连接。'],
   bindings: ['成员', '账号绑定', '查询游戏玩家与 QQ 账号的绑定关系。'],
@@ -46,7 +63,7 @@ const pages = {
   extensions: ['扩展', '插件管理', '导入插件、管理运行状态和调整插件设置。'],
   app: ['系统', '软件设置', '管理连接地址、数据存储与控制台访问。'],
   backups: ['系统', '备份与恢复', '保存社区数据，或从已校验的备份恢复。'],
-  website: ['接入空间', '网站绑定', '绑定星桥官网或自己的官网，设置网站地址和公开 API。'],
+  website: ['接入空间', '网站绑定', '绑定Myrinbot官网或自己的官网，设置网站地址和公开 API。'],
   schedules: ['扩展', '定时任务 · 管理任务', '管理内置定时任务插件的公告、预设命令与备份。'],
   whitelist: ['成员', '白名单申请', '审核入服申请，跟进游戏服务器的执行结果。'],
   managers: ['系统', '管理员与权限', '为团队建立独立账号，按职责授权。'],
@@ -89,12 +106,15 @@ function markDirty(value = true) {
   document.body.classList.toggle('has-unsaved', value);
   dirty = value; $('save').disabled = !dirty || saving;
   $('save-top').disabled = !dirty || saving;
+  $('connection-save').disabled = !dirty || saving;
   $('dirty-label').textContent = dirty ? '有尚未保存的更改' : '所有更改已保存';
+  renderConnection();
 }
 function randomToken() { return Array.from(crypto.getRandomValues(new Uint8Array(32)), v => v.toString(16).padStart(2, '0')).join(''); }
 async function copy(value) {
-  try { await navigator.clipboard.writeText(value); notice('save-notice', '已复制到剪贴板。', 'success'); }
-  catch { notice('save-notice', '复制失败，请显示并手动复制。', 'error'); }
+  const target = $('connection-dialog').open ? 'connection-dialog-notice' : 'save-notice';
+  try { await navigator.clipboard.writeText(value); notice(target, '已复制到剪贴板。', 'success'); }
+  catch { notice(target, '复制失败，请显示并手动复制。', 'error'); }
 }
 async function api(url, options = {}) {
   const response = await fetch(url, {signal: AbortSignal.timeout(10000), ...options, headers: {'Authorization': 'Bearer ' + token, ...(options.body ? {'Content-Type': 'application/json'} : {}), ...options.headers}, cache: 'no-store'});
@@ -108,19 +128,101 @@ const areaPages = {
   automation: ['commands', 'features'], community: ['players', 'bindings', 'accounts', 'authentication', 'whitelist', 'tickets', 'sanctions'],
   activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'community-features', 'backups', 'managers', 'updates', 'deployment'], extensions: ['extensions', 'schedules'],
 };
+const navMobile = matchMedia('(max-width: 900px)');
+const expandedAreas = new Set();
+let navCollapsed = false, navOpen = false;
+try { navCollapsed = localStorage.getItem('starbridge.panel.nav-collapsed') === 'true'; } catch {}
+function renderSidebar() {
+  const area = Object.keys(areaPages).find(key => areaPages[key].includes(document.body.dataset.view || 'overview'));
+  const compact = navCollapsed && !navMobile.matches;
+  document.body.classList.toggle('nav-collapsed', navCollapsed);
+  $('sidebar').inert = navMobile.matches && !navOpen;
+  for (const group of $('section-nav').querySelectorAll('[data-group]')) {
+    const name = group.dataset.group, visible = areaPages[name].some(panelAllowed);
+    group.hidden = !visible;
+    const header = group.querySelector('[data-area]'), expanded = visible && !compact && expandedAreas.has(name);
+    header.classList.toggle('active', name === area);
+    header.setAttribute('aria-expanded', String(expanded));
+    group.querySelector('.sidebar-pages').hidden = !expanded;
+  }
+  for (const el of $('section-nav').querySelectorAll('[data-tab]')) {
+    el.hidden = !panelAllowed(el.dataset.tab);
+    const active = el.dataset.tab === document.body.dataset.view;
+    el.classList.toggle('active', active);
+    if (active) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
+  }
+  $('nav-toggle').setAttribute('aria-expanded', String(navMobile.matches ? navOpen : !navCollapsed));
+  $('nav-toggle').setAttribute('aria-label', navMobile.matches ? (navOpen ? '关闭导航' : '打开导航') : (navCollapsed ? '展开导航' : '收起导航'));
+}
+function setNavCollapsed(value) {
+  navCollapsed = value;
+  try { localStorage.setItem('starbridge.panel.nav-collapsed', String(value)); } catch {}
+  renderSidebar();
+}
+function setNavOpen(value) {
+  const wasOpen = navOpen;
+  navOpen = value && navMobile.matches && !document.body.classList.contains('logged-out');
+  document.body.classList.toggle('nav-open', navOpen);
+  $('sidebar-backdrop').hidden = !navOpen;
+  document.querySelector('.workspace').inert = navOpen;
+  $('app-topbar').inert = navOpen;
+  $('save-bar').inert = navOpen;
+  $('sidebar').setAttribute('role', navOpen ? 'dialog' : 'complementary');
+  renderSidebar();
+  if (navOpen) {
+    $('sidebar').setAttribute('aria-modal', 'true');
+    $('nav-close').focus();
+  } else {
+    $('sidebar').removeAttribute('aria-modal');
+    if (wasOpen) $('nav-toggle').focus();
+  }
+}
+function trapFocus(container, event) {
+  if (event.key !== 'Tab') return;
+  const controls = [...container.querySelectorAll('button,input,textarea,select,a[href],[tabindex]')]
+    .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
+  if (!controls.length) { event.preventDefault(); return; }
+  const first = controls[0], last = controls.at(-1);
+  if (!container.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+  else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+function renderTheme() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('theme-toggle').setAttribute('aria-label', dark ? '切换到浅色主题' : '切换到深色主题');
+  $('theme-toggle').setAttribute('aria-pressed', String(dark));
+  $('theme-dark-icon').toggleAttribute('hidden', dark); $('theme-light-icon').toggleAttribute('hidden', !dark);
+}
+$('theme-toggle').onclick = () => {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem('starbridge.panel.theme', theme); } catch {}
+  renderTheme();
+};
+$('nav-toggle').onclick = () => { if (navMobile.matches) setNavOpen(!navOpen); else setNavCollapsed(!navCollapsed); };
+$('nav-close').onclick = $('sidebar-backdrop').onclick = () => setNavOpen(false);
+navMobile.addEventListener('change', () => { if (!navMobile.matches) setNavOpen(false); renderSidebar(); });
+document.addEventListener('keydown', event => {
+  if (navOpen) {
+    if (event.key === 'Escape') { event.preventDefault(); setNavOpen(false); }
+    else trapFocus($('sidebar'), event);
+  } else if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]') && token) {
+    event.preventDefault(); openGlobalSearch();
+  }
+});
 const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
 function panelAllowed(name){return (!(name in communityFeatures)||communityFeatures[name])&&(!panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]));}
+renderSidebar(); renderTheme();
 window.setCommunityFeatures = data => {
   const next=Object.fromEntries(Object.entries(data).map(([key,value])=>[key,typeof value==='boolean'?value:value.settings.enabled]));
   if(JSON.stringify(next)===JSON.stringify(communityFeatures))return;
   communityFeatures=next;panelAccess();
   if(!panelAllowed(document.body.dataset.view))selectTab(panelIdentity?.owner?'community-features':'overview');
-  const area=Object.keys(areaPages).find(key=>areaPages[key].includes(document.body.dataset.view));
-  if(area)$('section-nav').querySelectorAll('[data-tab]').forEach(el=>el.hidden=!areaPages[area].includes(el.dataset.tab)||!panelAllowed(el.dataset.tab));
+  renderSidebar();
   renderPageResults();
 };
 function panelAccess(){
-  for(const el of document.querySelectorAll('[data-area]'))el.hidden=!!panelIdentity&&!areaPages[el.dataset.area].some(panelAllowed);
+  renderSidebar();
   for(const el of document.querySelectorAll('[data-go]'))el.hidden=!!panelIdentity&&!panelAllowed(el.dataset.go);
   $('save-bar').hidden=!panelIdentity?.owner;
   for(const id of ['backup-upload','backup-file','backup-restore'])$(id).hidden=!panelIdentity?.owner;
@@ -133,21 +235,21 @@ function selectTab(name) {
   if (!pages[name]) name = 'overview';
   if (!panelAllowed(name)) name=panelIdentity?.owner&&name in communityFeatures?'community-features':'overview';
   const changed = document.body.dataset.view !== name;
+  if (name !== 'connection' && $('connection-dialog').open) $('connection-dialog').close();
+  const wasNavOpen = navOpen;
+  if (navOpen) setNavOpen(false);
   document.body.dataset.view = name;
   const area = Object.keys(areaPages).find(key => areaPages[key].includes(name));
-  document.querySelectorAll('[data-area]').forEach(el => {
-    el.classList.toggle('active', el.dataset.area === area);
-    if (el.dataset.area === area) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
-  });
-  $('section-nav').hidden = areaPages[area].length === 1;
-  $('section-nav').querySelectorAll('[data-tab]').forEach(el => { el.hidden = !areaPages[area].includes(el.dataset.tab)||!panelAllowed(el.dataset.tab); });
-  document.querySelectorAll('[data-tab]').forEach(el => { el.classList.toggle('active', el.dataset.tab === name); el.setAttribute('aria-selected', String(el.dataset.tab === name)); });
+  expandedAreas.add(area);
+  renderSidebar();
   document.querySelectorAll('.view').forEach(el => { el.hidden = el.id !== 'view-' + name; });
   const [section, title, caption] = pages[name];
   $('breadcrumb').textContent = section + ' / ' + title;
   $('page-title').textContent = title; $('page-caption').textContent = caption;
+  setText('top-current-page', title);
+  if (wasNavOpen) $('page-title').focus();
+  if (changed) window.scrollTo(0, 0);
   history.replaceState(null, '', '#' + name);
-  if (changed && !$('content').hidden && name !== 'overview') enterMotion($('page-title'));
   if (token && latestStatus) renderLiveView();
   if (token && name === 'extensions') window.loadExtensions?.();
   if (token && name === 'accounts') window.loadRegistration?.();
@@ -160,9 +262,15 @@ function selectTab(name) {
   if (token && name === 'backups') window.loadBackupPolicy?.();
   if (token && ['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name)) window.loadServicePage?.(name);
   $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
+  if (changed && !$('content').hidden) enterPageMotion(name);
 }
 document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => selectTab(el.dataset.tab); });
-document.querySelectorAll('[data-area]').forEach(el => { el.onclick = () => selectTab(areaPages[el.dataset.area].find(panelAllowed)||'overview'); });
+document.querySelectorAll('[data-area]').forEach(el => { el.onclick = () => {
+  const area = el.dataset.area;
+  if (area === 'overview') { selectTab('overview'); return; }
+  if (navCollapsed && !navMobile.matches) { expandedAreas.add(area); setNavCollapsed(false); }
+  else { if (expandedAreas.has(area)) expandedAreas.delete(area); else expandedAreas.add(area); renderSidebar(); }
+}; });
 document.querySelectorAll('[data-go]').forEach(el => { el.onclick = () => selectTab(el.dataset.go); });
 const pageKeywords = {
   'community-features':'开关 启用 关闭 白名单 工单 申诉 跨服 处罚 可选',
@@ -181,6 +289,13 @@ const pageKeywords = {
   extensions: '插件 扩展 导入 开发 文档 命令 关键词 自动回复',
   managers:'多管理员 权限 团队 服主 审核员 账号',monitoring:'故障 提醒 QQ SMTP 失联 告警',statistics:'统计 活跃 趋势 曲线 进服 退服',
 };
+function openGlobalSearch() {
+  if (!token || document.querySelector('dialog[open]')) return;
+  selectTab('overview');
+  $('page-search').focus();
+  $('page-search').scrollIntoView({block: 'center'});
+}
+$('global-search').onclick = openGlobalSearch;
 function findPages() {
   const query = $('page-search').value.trim().toLocaleLowerCase();
   return query ? Object.entries(pages).filter(([key, value]) => panelAllowed(key)&&
@@ -278,7 +393,7 @@ function addServer(server) {
   commandHead.append(node('h3', server.name || '新服务器'), button('＋ 添加命令', () => { $('command-search').value = ''; addPair(commands); markDirty(); }));
   commandGroup.append(commandHead, commands);
   $('command-editors').append(commandGroup);
-  card.append(button('管理远程命令 →', () => { selectTab('commands'); commandGroup.scrollIntoView({block: 'center', behavior: 'smooth'}); }));
+  card.append(button('管理远程命令 →', () => { selectTab('commands'); commandGroup.scrollIntoView({block: 'center', behavior: reducedMotion.matches ? 'instant' : 'smooth'}); }));
   for (const [key, value] of Object.entries(server.commands || {})) addPair(commands, key, value);
   const details = document.createElement('details');
   details.append(node('summary', '安装插件 · 下载连接配置'));
@@ -299,7 +414,7 @@ async function downloadPlugin(card, platform = 'bukkit') {
     if (dirty) throw Error('请先保存全部设置，再下载与已生效设置一致的插件配置。');
     const server = readServer(card), endpoint = new URL(card.querySelector('[data-field="endpoint"]').value);
     if (!['http:', 'https:'].includes(endpoint.protocol) || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw Error('主程序访问地址必须是有效的 HTTP / HTTPS 地址，不包含账号、查询参数或片段。');
-    const yaml = '# 从星桥面板导出，包含连接令牌，请妥善保管。\n' +
+    const yaml = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\n' +
       'endpoint: ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id: ' + JSON.stringify(server.id) + '\ntoken: ' + JSON.stringify(server.token) + '\n' +
       '# 新版插件连接后会从主程序自动同步命令白名单。\nallowed-commands: ' + JSON.stringify(Object.values(server.commands)) + '\n';
@@ -307,15 +422,15 @@ async function downloadPlugin(card, platform = 'bukkit') {
     const selected = mod ? (await modBridgeCatalog()).find(row=>row.platform+'/'+row.version===platform) : null;
     if (mod && !selected) throw Error('请选择支持的模组加载器与游戏版本。');
     const usesProperties = selected?.config === 'properties';
-    const toml = '# 从星桥面板导出，包含连接令牌，请妥善保管。\n' +
+    const toml = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\n' +
       'endpoint = ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id = ' + JSON.stringify(server.id) + '\ntoken = ' + JSON.stringify(server.token) + '\n' +
       'allowed-commands = ' + JSON.stringify(Object.values(server.commands)) + '\n';
     const propertiesEscape = value => value.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/^ /, '\\ ');
-    const properties = '# 从星桥面板导出，包含连接令牌，请妥善保管。\nendpoint=' + propertiesEscape(endpoint.href.replace(/\/+$/, '')) + '\nserver-id=' + propertiesEscape(server.id) + '\ntoken=' + propertiesEscape(server.token) + '\nallowed-commands=list\n';
+    const properties = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\nendpoint=' + propertiesEscape(endpoint.href.replace(/\/+$/, '')) + '\nserver-id=' + propertiesEscape(server.id) + '\ntoken=' + propertiesEscape(server.token) + '\nallowed-commands=list\n';
     const configName = usesProperties ? 'starbridge-bridge.properties' : 'starbridge-common.toml';
     const url = URL.createObjectURL(new Blob([usesProperties ? properties : mod ? toml : yaml], {type: 'text/plain;charset=utf-8'}));
-    const a = document.createElement('a'); a.href = url; a.download = mod ? configName : 'StarBridge-' + server.id + '-config.yml'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = mod ? configName : 'Myrinbot-' + server.id + '-config.yml'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notice('save-notice', mod ? '已下载。将 '+configName+' 放入游戏服 config 目录，然后重启游戏服。' : '已下载。将文件重命名为 config.yml，放入游戏服 plugins/StarBridge 后重启游戏服。', 'success');
   } catch (e) { notice('save-notice', e.message, 'error'); }
@@ -350,6 +465,52 @@ function renderConfig(data) {
   markDirty(false);
   filterCommandCards();
 }
+
+function renderConnection() {
+  if (!saved) return;
+  const connection = saved.onebot, online = latestStatus?.onebot === true;
+  const connectedId = online ? latestStatus.self_id : '';
+  setText('connection-status-text', latestStatus ? (online ? '已连接' : '等待连接') : '正在读取');
+  $('connection-status').classList.toggle('is-online', online);
+  $('connection-status').querySelector('.status-dot').classList.toggle('online', online);
+  setText('connection-account', connectedId || connection.self_id || '自动识别');
+  setText('connection-groups', new Set(saved.servers.flatMap(server => server.groups)).size + ' 个');
+  setText('connection-admin-count', connection.admins.length + ' 位');
+  setText('connection-address', $('onebot-url').value);
+  setText('connection-state-hint', online ? '连接正常，可以接收和发送群消息。' : '等待 QQ 协议端连接，请确认地址与令牌一致。');
+  const changed = $('self-id').value.trim() !== connection.self_id || $('onebot-token').value !== connection.token ||
+    JSON.stringify(splitIds($('admins').value)) !== JSON.stringify(connection.admins);
+  $('connection-draft').hidden = !changed;
+  setText('connection-save-hint', dirty ? '保存会同时应用面板中尚未保存的设置。' : '更改会保留为草稿，保存后生效。');
+}
+function openConnectionSettings() {
+  if (!saved || !panelIdentity?.owner || saving || $('connection-dialog').open) return;
+  notice('connection-dialog-notice', '');
+  $('connection-dialog').showModal();
+}
+document.querySelectorAll('[data-open-connection]').forEach(btn => { btn.onclick = openConnectionSettings; });
+for (const id of ['connection-close', 'connection-done']) $(id).onclick = () => {
+  if (!saving) $('connection-dialog').close();
+};
+$('connection-dialog').addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+$('connection-dialog').addEventListener('keydown', event => {
+  trapFocus($('connection-dialog'), event);
+});
+$('connection-dialog').addEventListener('close', () => {
+  $('onebot-token').type = 'password';
+  $('connection-dialog').querySelector('[data-reveal="onebot-token"]').textContent = '显示';
+});
+$('connection-dialog').addEventListener('click', event => {
+  if (event.target !== $('connection-dialog') || saving) return;
+  const bounds = $('connection-dialog').getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) $('connection-dialog').close();
+});
+$('connection-save').onclick = async () => {
+  if (!dirty || saving) return;
+  notice('connection-dialog-notice', '');
+  await $('save').onclick();
+  if (!dirty) $('connection-dialog').close();
+};
 
 function filterCommandCards() {
   for (const [containerId, inputId, counterId] of [['command-editors', 'command-search', 'command-total']]) {
@@ -576,9 +737,9 @@ async function downloadPluginJar() {
     const response = await fetch('/api/plugin', {headers: {Authorization: 'Bearer ' + token}, signal: AbortSignal.timeout(30000), cache: 'no-store'});
     if (!response.ok) throw Error('插件下载失败：' + response.status);
     const url = URL.createObjectURL(await response.blob()), link = node('a');
-    link.href = url; link.download = 'StarBridge-0.5.2.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.href = url; link.download = 'Myrinbot-0.5.3.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     latestPlayerActionId = null;
-    notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版 StarBridge JAR，然后重启游戏服务器。', 'success');
+    notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版游戏端 JAR，然后重启游戏服务器。', 'success');
   } catch (error) { notice('player-notice', error.message, 'error'); selectTab('players'); }
 }
 $('download-player-plugin').onclick = downloadPluginJar;
@@ -638,7 +799,8 @@ function renderLiveView() {
       if (!d.servers.length) $('servers-status').append(node('p', '尚未添加服务器，可在接入空间随时添加。', 'log-empty'));
     });
     renderLogs();
-  } else if (view === 'logs') renderLogs();
+  } else if (view === 'connection') renderConnection();
+  else if (view === 'logs') renderLogs();
   else if (view === 'bindings') renderBindings();
   else if (view === 'players') renderPlayers();
 }
@@ -649,10 +811,13 @@ async function refresh() {
     const d = await api('/api/status');
     latestStatus = d;
     window.setCommunityFeatures(d.community_features);
-    setText('panel-alert-count',d.alerts_open?d.alerts_open+' 项待处理故障':'');
+    const hasAlerts = d.alerts_open > 0;
+    setText('panel-alert-count', hasAlerts ? d.alerts_open + ' 项待处理故障' : '');
+    $('panel-alert-count').hidden = !hasAlerts || !panelAllowed('monitoring');
     notice('notice', d.restart_error || '', d.restart_error ? 'error' : '', {persistent:true});
     setText('bot', d.onebot ? '已连接' : '等待连接'); $('bot').className = 'number ' + (d.onebot ? 'green' : 'dim');
-    setText('self', d.self_id ? 'QQ ' + d.self_id : '尚未连接 QQ 账号');
+    setText('self', d.onebot && d.self_id ? 'QQ ' + d.self_id : '等待机器人连接');
+    setText('overview-refreshed', '最近刷新 ' + new Date().toLocaleTimeString());
     setText('server-count', d.servers.filter(s => s.online).length + ' / ' + d.servers.length);
     setText('binding-count', d.bindings.length); setText('uptime', Math.floor(d.uptime / 60) + ' 分钟');
     setText('group-count', new Set(d.servers.flatMap(s => s.groups)).size);
@@ -699,6 +864,7 @@ $('form').addEventListener('submit', async e => {
     $('token').value = ''; $('login').hidden = true; $('content').hidden = false; $('save-bar').hidden = false; $('logout').hidden = false;
     $('page-actions').hidden = false; document.body.classList.remove('logged-out'); selectTab(location.hash.slice(1) || 'overview');
     $('panel-password').value='';panelAccess();setText('panel-user',panelIdentity.username);
+    setText('panel-avatar', Array.from(panelIdentity.username || 'Myrinbot')[0].toUpperCase());
     await refresh(); startAutoRefresh();
   } catch (error) { notice('notice', error.message, 'error'); }
   finally { submit.disabled = false; }
@@ -722,6 +888,8 @@ $('reload').onclick = async () => {
 $('save').onclick = async () => {
   if (saving) return;
   saving = true; $('save').disabled = true; $('save').textContent = '正在保存…';
+  $('connection-save').textContent = '正在保存…';
+  $('connection-dialog').setAttribute('aria-busy', 'true');
   // Lock editing while sending so a late response cannot overwrite newer input.
   const controls = [...$('content').querySelectorAll('input,textarea,button,select'), $('reload'), $('reload-top'), $('save-top')];
   const disabled = controls.map(el => el.disabled); controls.forEach(el => { el.disabled = true; });
@@ -731,10 +899,11 @@ $('save').onclick = async () => {
     token = data.config.app.admin_token;
     renderConfig(data);
     notice('save-notice', '设置已保存。' + (data.restart_required.length ? '监听地址、端口或数据库更改将在重启后生效。' : '业务设置已立即生效。') + (data.onebot_reconnect ? '请同步 QQ 实现端令牌或账号设置，等待重新连接。' : ''), 'success');
-  } catch (e) { notice('save-notice', e.message, 'error'); }
+  } catch (e) { notice($('connection-dialog').open ? 'connection-dialog-notice' : 'save-notice', e.message, 'error'); }
   finally {
     controls.forEach((el, i) => { el.disabled = disabled[i]; });
-    saving = false; $('save').textContent = '保存全部设置'; markDirty(dirty); await refresh();
+    saving = false; $('save').textContent = '保存全部设置'; $('connection-save').textContent = '保存全部设置';
+    $('connection-dialog').removeAttribute('aria-busy'); markDirty(dirty); await refresh();
   }
 };
 $('restart').onclick = async () => {
@@ -763,4 +932,3 @@ $('restart').onclick = async () => {
   finally { $('restart').disabled = !canRestart; }
 };
 $('logout').onclick = async () => { if (dirty && !confirm('有未保存的更改，确认退出？')) return; try{await api('/api/admin-auth/logout',{method:'POST'});}catch{}dirty = false; token = ''; clearInterval(timer); location.reload(); };
-window.addEventListener('beforeunload', e => { if (dirty || window.extensionHasDraft?.() || window.registrationHasDraft?.() || window.authenticationHasDraft?.() || window.operationHasDraft?.() || window.websiteHasDraft?.() || window.enhancementHasDraft?.()) { e.preventDefault(); e.returnValue = ''; } });

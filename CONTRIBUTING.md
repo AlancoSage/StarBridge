@@ -1,8 +1,10 @@
-# 参与星桥开发
+# 参与 Myrinbot 开发
 
 欢迎提交问题、文档改进和 Pull Request。提交前请先搜索已有 [Issues](https://github.com/AlancoSage/StarBridge/issues)，说明使用的 Bot 版本、服务端类型、Minecraft 和 Java 版本，以及复现步骤。请删除日志中的令牌、邮箱、QQ、IP 和玩家数据。
 
 安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+产品正式名称为 **Myrinbot**。更名保留原有 Python 模块、游戏端标识与更新协议，开发时按 [项目名称与兼容说明](docs/project-name.md) 区分展示名称和兼容标识。
 
 ## 准备开发环境
 

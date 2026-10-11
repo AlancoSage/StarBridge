@@ -44,10 +44,10 @@ public final class StarBridge {
         try {
             Session session = new Session(server);
             active = session; session.start();
-            LOG.info("星桥 Forge 1.20.1 游戏端已启动。");
+            LOG.info("Myrinbot Forge 1.20.1 游戏端已启动。");
         } catch (RuntimeException error) {
             // A configured login service must not silently become unprotected after a bad config.
-            LOG.error("星桥连接配置无效，已停止服务器。请设置 config/starbridge-common.toml 的 endpoint、server-id、token。错误类型：{}", error.getClass().getSimpleName());
+            LOG.error("Myrinbot连接配置无效，已停止服务器。请设置 config/starbridge-common.toml 的 endpoint、server-id、token。错误类型：{}", error.getClass().getSimpleName());
             server.halt(false);
         }
     }
@@ -113,7 +113,7 @@ public final class StarBridge {
     private int login(CommandSourceStack source, String action, String password) {
         Session session = active;
         if (session != null) session.login.command((ServerPlayer) source.getEntity(), action, password);
-        else source.sendFailure(Component.literal("星桥尚未启动，请联系管理员。"));
+        else source.sendFailure(Component.literal("Myrinbot尚未启动，请联系管理员。"));
         return 1;
     }
 
@@ -121,9 +121,9 @@ public final class StarBridge {
         final MinecraftServer server;
         final GameLogin login;
         final String base, token;
-        final ScheduledExecutorService io = Executors.newSingleThreadScheduledExecutor(r -> daemon(r, "StarBridge-Tick"));
+        final ScheduledExecutorService io = Executors.newSingleThreadScheduledExecutor(r -> daemon(r, "Myrinbot-Tick"));
         final ThreadPoolExecutor workers = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(64), r -> daemon(r, "StarBridge-Job"));
+                new ArrayBlockingQueue<>(64), r -> daemon(r, "Myrinbot-Job"));
         final LinkedBlockingDeque<JsonObject> events = new LinkedBlockingDeque<>(500), results = new LinkedBlockingDeque<>(500);
         final Set<String> inFlight = ConcurrentHashMap.newKeySet();
         final LinkedHashMap<String, JsonObject> completed = new LinkedHashMap<>();
@@ -181,7 +181,7 @@ public final class StarBridge {
                     UUID id = UUID.fromString(record.get("uuid").getAsString()); Protocol.player(record.get("name").getAsString());
                     catalog.put(id, record);
                 }
-            } catch (Exception error) { LOG.warn("星桥玩家档案读取失败；错误类型：{}", error.getClass().getSimpleName()); }
+            } catch (Exception error) { LOG.warn("Myrinbot玩家档案读取失败；错误类型：{}", error.getClass().getSimpleName()); }
         }
         void saveCatalog() {
             // Snapshot on the server thread; write disk on the worker with atomic replacement.
@@ -192,7 +192,7 @@ public final class StarBridge {
                     Files.writeString(temporary, content);
                     try { Files.move(temporary, catalogFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
                     catch (AtomicMoveNotSupportedException ignored) { Files.move(temporary, catalogFile, StandardCopyOption.REPLACE_EXISTING); }
-                } catch (Exception error) { LOG.warn("星桥玩家档案保存失败；错误类型：{}", error.getClass().getSimpleName()); }
+                } catch (Exception error) { LOG.warn("Myrinbot玩家档案保存失败；错误类型：{}", error.getClass().getSimpleName()); }
             }); } catch (RejectedExecutionException ignored) { }
         }
         void updateSnapshot() {
@@ -256,7 +256,7 @@ public final class StarBridge {
                 });
             } catch (Exception error) {
                 if (System.currentTimeMillis() - lastWarning > 30000) {
-                    LOG.warn("星桥桥接暂不可用；错误类型：{}", error.getClass().getSimpleName()); lastWarning = System.currentTimeMillis();
+                    LOG.warn("Myrinbot桥接暂不可用；错误类型：{}", error.getClass().getSimpleName()); lastWarning = System.currentTimeMillis();
                 }
             }
         }
@@ -377,7 +377,7 @@ public final class StarBridge {
                 try {
                     JsonObject request = new JsonObject(); request.addProperty("uuid", id.toString()); request.addProperty("player", name); request.addProperty("nonce", nonce);
                     message = "请在服务器 QQ 群发送：绑定 " + post("/bind-code", request).get("code").getAsString() + "（5 分钟有效，请勿转发）";
-                } catch (Exception error) { message = "获取验证码失败，请联系管理员检查星桥连接。"; }
+                } catch (Exception error) { message = "获取验证码失败，请联系管理员检查Myrinbot连接。"; }
                 String answer = message; callback(() -> {
                     ServerPlayer current = server.getPlayerList().getPlayer(id);
                     if (current == player && nonce.equals(login.nonce(id)) && !login.locked(id)) current.sendSystemMessage(Component.literal(answer));

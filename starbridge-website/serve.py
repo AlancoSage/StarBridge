@@ -1,4 +1,4 @@
-"""Standalone development server. Python standard library only."""
+"""Myrinbot standalone website server. Python standard library only."""
 import argparse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, unquote
 
 ROOT = Path(__file__).resolve().parent
-ASSETS = {'index.html', 'site.js', 'site.css', 'config.json', 'mark.svg', 'sdk/starbridge.js'}
+ASSETS = {'index.html', 'site.js', 'site.css', 'config.json', 'mark.png', 'mark.svg', 'sdk/starbridge.js'}
 
 
 def api_base(value):
@@ -62,7 +62,7 @@ def main():
     except (ValueError, KeyError, OSError, TypeError) as exc:
         parser.error(str(exc))
     with ThreadingHTTPServer((args.host, args.port), handler(address)) as server:
-        print(f'Website: http://{args.host}:{server.server_port}/ | Bot API: {address}', flush=True)
+        print(f'Myrinbot website: http://{args.host}:{server.server_port}/ | Bot API: {address}', flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:

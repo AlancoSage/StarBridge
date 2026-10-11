@@ -1,6 +1,6 @@
-# 星桥插件开发文档
+# Myrinbot 插件开发文档
 
-插件接口版本：**1**。本接口用于扩展星桥机器人主程序，与 Minecraft 服务端的 StarBridge JAR 分开管理。
+插件接口版本：**1**。本接口用于扩展 Myrinbot 机器人主程序，与 Minecraft 服务端的 Myrinbot JAR 分开管理。
 
 ## 用途与边界
 
@@ -197,7 +197,7 @@ permissions 省略的子字段使用默认值（能力开关 true，名单空，
 }
 ```
 
-`player_join` 和 `player_quit` 对应桥接的真实入服、退服事件；需要已安装并连接的游戏端 StarBridge 插件。通知仅发送到该服务器已关联的群，不能在插件文件中指定任意收件人。聊天事件和普通心跳不触发这些通知。
+`player_join` 和 `player_quit` 对应桥接的真实入服、退服事件；需要已安装并连接的游戏端 Myrinbot 插件。通知仅发送到该服务器已关联的群，不能在插件文件中指定任意收件人。聊天事件和普通心跳不触发这些通知。
 
 游戏规则不接受 `command`、`match`、QQ 管理员或绑定身份限制。支持 `reply`、`when`、`cooldown`；冷却按服务器和玩家 UUID（旧事件无 UUID 时使用玩家名）分别计算。
 

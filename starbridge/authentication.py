@@ -24,7 +24,7 @@ def validate_settings(value):
         raise RegistrationError("游戏登录设置包含未知字段")
     result = {**deepcopy(DEFAULTS), **value}
     if result["login_engine"] not in ("auto", "builtin", "authme", "nlogin", "loginsecurity", "librelogin"):
-        raise RegistrationError("登录引擎请选择自动、星桥内置、AuthMe、nLogin、LoginSecurity 或 LibreLogin 兼容")
+        raise RegistrationError("登录引擎请选择自动、Myrinbot内置、AuthMe、nLogin、LoginSecurity 或 LibreLogin 兼容")
     ids = result["enabled_servers"]
     if (not isinstance(ids, list) or len(ids) > 100
             or any(not isinstance(sid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", sid) for sid in ids)
@@ -230,7 +230,7 @@ class Authentication:
         challenge = {"hash": hashlib.sha256(token.encode()).hexdigest(), "qq": binding["qq"], "ready": False,
                      "expires": min(session["expires"], time.time() + self.settings["qq_seconds"])}
         session["challenge"] = challenge
-        message = (f"[星桥 · 游戏登录确认]\n服务器：{server['name']}\n玩家：{session['player']}\n连接 IP：{session['ip'] or '未提供'}"
+        message = (f"[Myrinbot · 游戏登录确认]\n服务器：{server['name']}\n玩家：{session['player']}\n连接 IP：{session['ip'] or '未提供'}"
                    f"\n有效期：{max(1, int(challenge['expires'] - time.time()))} 秒"
                    f"\n如果是你本人登录，请回复：\n/确认登录 {token}\n不是本人请回复：\n/拒绝登录 {token}\n请勿转发确认消息。")
         try:

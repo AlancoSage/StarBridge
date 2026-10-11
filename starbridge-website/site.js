@@ -43,7 +43,7 @@
   function clearSession() { accessToken = ''; expires = 0; profileEpoch++; storeSession(); $('account-link').querySelector('span').textContent = '账号'; $('profile-shell').hidden = true; $('login-shell').hidden = false; $('reset-shell').hidden = true; $('account-facts').replaceChildren(); $('own-players').replaceChildren(); $('own-services').replaceChildren(); }
   function session(result) { accessToken = result.access_token; expires = Date.now() + result.expires_in * 1000; storeSession(); $('login-password').value = ''; $('register-password').value = ''; $('register-confirm').value = ''; $('account-link').querySelector('span').textContent = '账号'; }
   async function request(path, body = null, authenticated = false) {
-    if (!base) throw Error('官网还未连接到星桥，请稍后再试。');
+    if (!base) throw Error('官网还未连接到 Myrinbot，请稍后再试。');
     if (authenticated && (!accessToken || expires <= Date.now())) { clearSession(); throw Error('登录已过期，请重新登录。'); }
     const response = await fetch(base + path, {method:body === null ? 'GET' : 'POST', cache:'no-store', credentials:'omit',
       headers:{...(body !== null ? {'Content-Type':'application/json'} : {}), ...(authenticated ? {Authorization:'Bearer ' + accessToken} : {})},

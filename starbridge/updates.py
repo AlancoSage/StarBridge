@@ -58,7 +58,7 @@ def extract_package(archive, destination):
         names = set(); folded = set()
         for entry in entries:
             if entry.is_dir(): continue
-            if not entry.filename.startswith('StarBridge/'): raise ValueError('请上传完整的星桥部署包')
+            if not entry.filename.startswith('StarBridge/'): raise ValueError('请上传完整的Myrinbot部署包')
             name = entry.filename[len('StarBridge/'):]
             target = runtime.safe(destination, name)
             if name.casefold() in folded or stat.S_ISLNK(entry.external_attr >> 16) or entry.flag_bits & 1 or entry.file_size > 32 * 1024 * 1024: raise ValueError('更新包包含重复、加密或不安全文件')
@@ -222,7 +222,7 @@ class Updates:
 
     async def apply(self, data, rollback=False):
         self.require_idle()
-        if os.environ.get('STARBRIDGE_SUPERVISED') != '1' or self.state['restart_event'] is None: raise RegistrationError('请用新版星桥.bat或 python -m starbridge run 启动，才能在线升级', 503)
+        if os.environ.get('STARBRIDGE_SUPERVISED') != '1' or self.state['restart_event'] is None: raise RegistrationError('请用Myrinbot.bat（或旧入口）或 python -m starbridge run 启动，才能在线升级', 503)
         if data.keys() != {'id'} or not isinstance(data['id'], str): raise RegistrationError('请选择已准备的版本')
         if rollback:
             source = runtime.folder(self.root, data['id'])

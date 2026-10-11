@@ -16,16 +16,20 @@ public final class PackagedJarCheck {
                 }
             }
             assert jar.getEntry("META-INF/licenses/Gson-LICENSE.txt") != null;
+            assert jar.getEntry("META-INF/licenses/Myrinbot/LICENSE") != null;
             try (java.io.InputStream descriptor = jar.getInputStream(jar.getEntry("plugin.yml"))) {
                 java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
                 byte[] buffer = new byte[1024]; int length;
                 while ((length = descriptor.read(buffer)) != -1) bytes.write(buffer, 0, length);
-                String yaml = new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
-                assert yaml.contains("version: 0.5.2") && yaml.contains("folia-supported: true");
+                String yaml = new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
+                assert yaml.contains("version: 0.5.3") && yaml.contains("folia-supported: true");
+                assert yaml.contains("name: StarBridge\n") : "Existing plugin identity and data folder must remain compatible";
+                assert yaml.contains("prefix: Myrinbot") : "Logger prefix must display the new brand";
+                assert yaml.contains("main: cn.starbridge.StarBridgePlugin") && yaml.contains("starbridge.bind");
             }
         }
         Object instance = gson.newInstance();
-        assert "\"星桥\"".equals(gson.getMethod("toJson", Object.class).invoke(instance, "星桥"));
+        assert "\"Myrinbot\"".equals(gson.getMethod("toJson", Object.class).invoke(instance, "Myrinbot"));
         // Resolving every declared signature catches hard dependencies on absent event classes.
         Class.forName("cn.starbridge.StarBridgePlugin", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.GameLogin", false, gson.getClassLoader()).getDeclaredMethods();

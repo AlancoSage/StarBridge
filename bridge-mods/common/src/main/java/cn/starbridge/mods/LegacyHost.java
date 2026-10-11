@@ -80,7 +80,7 @@ public final class LegacyHost implements GameHost {
         int count=((Number)(v16?call(manager,"handleCommand|func_197059_a",call(server,"getCommandSource|createCommandSourceStack|func_195573_aM"),command):call(manager,"executeCommand|handleCommand|func_71556_a",server,command))).intValue();
         if(count<=0)throw new IllegalStateException("Command failed");return "命令已执行（"+count+"）";
     }
-    public void log(String message,Throwable error) { System.err.println("[StarBridge] "+message); }
+    public void log(String message,Throwable error) { System.err.println("[Myrinbot] "+message); }
     private Channel channel(Object player) {
         Object handler=field(player,"playerNetServerHandler|connection|field_71135_a");Object manager=byType(handler,"net.minecraft.network.NetworkManager");return (Channel)byType(manager,"io.netty.channel.Channel");
     }

@@ -3,12 +3,12 @@
 # 面板保存业务设置后立即生效；监听地址、端口、数据库路径需要在面板中重启。
 [app]
 host = "127.0.0.1"
-port = 8088
+port = 5800
 database = "data/starbridge.db"
 admin_token = "CHANGE-ME-admin"
 
 [onebot]
-# NapCat 等实现端配置反向 WebSocket：ws://127.0.0.1:8088/onebot/ws
+# NapCat 等实现端配置反向 WebSocket：ws://127.0.0.1:5800/onebot/ws
 token = "CHANGE-ME-onebot"
 # 生产接入建议填写机器人 QQ 号；留空时采用连接头 X-Self-ID。
 self_id = ""

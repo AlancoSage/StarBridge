@@ -74,9 +74,9 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         }
         base = endpoint + "/bridge/" + sid;
         allowedCommands = Collections.unmodifiableSet(new HashSet<>(getConfig().getStringList("allowed-commands")));
-        io = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r, "StarBridge-HTTP"); t.setDaemon(true); return t; });
+        io = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r, "Myrinbot-HTTP"); t.setDaemon(true); return t; });
         identities = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(64),
-            r -> { Thread t = new Thread(r, "StarBridge-Identity"); t.setDaemon(true); return t; });
+            r -> { Thread t = new Thread(r, "Myrinbot-Identity"); t.setDaemon(true); return t; });
         login = new GameLogin(this, this::post);
         Bukkit.getPluginManager().registerEvents(this, this);
         Objects.requireNonNull(getCommand("qbind")).setExecutor(this);
@@ -86,7 +86,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         BukkitCompatibility.runTask(this, this::updateSnapshot);
         BukkitCompatibility.repeat(this, this::updateSnapshot, 20, 20);
         io.scheduleWithFixedDelay(this::tick, 0, 1, TimeUnit.SECONDS);
-        getLogger().info("星桥已启动，将连接 " + endpoint + "，使用 /qbind 获取绑定码。");
+        getLogger().info("Myrinbot已启动，将连接 " + endpoint + "，使用 /qbind 获取绑定码。");
     }
 
     @Override public void onDisable() {
@@ -420,7 +420,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             boolean ban = "ban".equals(job.get("action").getAsString());
             if (player == null) { finishJob(id, ban, ban ? detail : "玩家已离线，请刷新后重试"); return; }
             String configured = job.has("reason") ? job.get("reason").getAsString() : "";
-            String reason = configured.trim().isEmpty() ? "服务器管理员通过星桥执行操作" : configured;
+            String reason = configured.trim().isEmpty() ? "服务器管理员通过Myrinbot执行操作" : configured;
             String kickReason = ban && job.has("kick_reason") ? job.get("kick_reason").getAsString() : reason;
             BukkitCompatibility.runPlayer(this, player, () -> {
                 try {
@@ -454,7 +454,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         OfflinePlayer target = knownPlayers.get(identity);
         if (target == null || !name.equals(target.getName())) throw new IllegalArgumentException("玩家身份已变化，请刷新后重试");
         Player online = BukkitCompatibility.player(identity);
-        if (reason.trim().isEmpty()) reason = "服务器管理员通过星桥执行操作";
+        if (reason.trim().isEmpty()) reason = "服务器管理员通过Myrinbot执行操作";
         switch (action) {
             case "kick":
                 if (online == null || !deferKick && !online.isOnline()) throw new IllegalStateException("玩家已离线，请刷新后重试");
@@ -616,7 +616,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         if (!(sender instanceof Player)) { sender.sendMessage("请在游戏内执行 /qbind。"); return true; }
         Player player = (Player) sender;
         if (!command.getName().equalsIgnoreCase("qbind")) {
-            player.sendMessage("此服务器没有启用星桥游戏登录。"); return true;
+            player.sendMessage("此服务器没有启用Myrinbot游戏登录。"); return true;
         }
         if (login.locked(player)) { player.sendMessage("请先完成游戏登录，再获取绑定码。"); return true; }
         UUID playerId = BukkitCompatibility.identity(player);
@@ -632,7 +632,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                 JsonObject data = new JsonObject(); data.addProperty("uuid", playerId.toString()); data.addProperty("player", name); data.addProperty("nonce", connectionNonce);
                 String code = post("/bind-code", data).get("code").getAsString();
                 message = "请在服务器 QQ 群发送：绑定 " + code + "（5 分钟有效，请勿转发给他人）";
-            } catch (Exception ex) { message = "获取验证码失败，请联系管理员检查星桥连接。"; }
+            } catch (Exception ex) { message = "获取验证码失败，请联系管理员检查Myrinbot连接。"; }
             String result = message;
             if (isEnabled()) BukkitCompatibility.runPlayer(this, player, () -> {
                 if (player.isOnline() && BukkitCompatibility.player(playerId) == player && connectionNonce.equals(login.nonce(player)) && !login.locked(player)) player.sendMessage(result);

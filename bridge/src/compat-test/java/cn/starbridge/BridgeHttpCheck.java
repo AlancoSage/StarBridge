@@ -17,7 +17,7 @@ public final class BridgeHttpCheck {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         ExecutorService executor = Executors.newCachedThreadPool(); server.setExecutor(executor);
         AtomicBoolean correct = new AtomicBoolean(), redirected = new AtomicBoolean();
-        final String payload = "{\"message\":\"你好，星桥\"}";
+        final String payload = "{\"message\":\"你好，Myrinbot\"}";
         server.createContext("/post", exchange -> {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024]; int count;

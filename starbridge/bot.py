@@ -4,7 +4,7 @@ import re
 import time
 
 
-HELP = """星桥 · Minecraft 群助手
+HELP = """Myrinbot · Minecraft 群助手
 帮助 — 查看命令
 状态 / 在线 — 查看服务器状态与玩家
 绑定 验证码 — 先在游戏中输入 /qbind

@@ -1,6 +1,6 @@
 # Forge 与 NeoForge 游戏端
 
-**适用：星桥 Bot 0.6.9 · 游戏端模组 0.1.0。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入星桥。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.2](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
+**适用：Myrinbot Bot 0.6.10 · 游戏端模组 0.1.1。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入 Myrinbot。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.3](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
 
 Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 26.2 / 26.3** 使用另一套独立 JAR 与配置，安装步骤见 [Fabric 游戏端](fabric-game-ends.md)。下文专门说明 Forge 与 NeoForge。
 
@@ -25,7 +25,9 @@ Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 
 | 26.1.2 | NeoForge 26.1.2.114 | 25 | `config/starbridge-bridge.properties` |
 | 26.2 | NeoForge 26.2.0.88 | 25 | `config/starbridge-bridge.properties` |
 
-NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 26.1 不是同一个 Minecraft 版本**，下载、安装器和世界备份都按 26.1.2 准备。文件名为 `StarBridge-NeoForge-<Minecraft>-0.1.0.jar`，例如 `StarBridge-NeoForge-26.1.2-0.1.0.jar`；Forge 的文件名对应 `StarBridge-Forge-<Minecraft>-0.1.0.jar`。
+NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 26.1 不是同一个 Minecraft 版本**，下载、安装器和世界备份都按 26.1.2 准备。文件名为 `Myrinbot-NeoForge-<Minecraft>-0.1.1.jar`，例如 `Myrinbot-NeoForge-26.1.2-0.1.1.jar`；Forge 的文件名对应 `Myrinbot-Forge-<Minecraft>-0.1.1.jar`。
+
+上述名称用于 v0.6.10 正式附件、当前源码构建和面板下载。历史 Release 附件及部署 ZIP 内的兼容文件名仍为 `StarBridge-*`，按实际下载文件安装对应加载器与游戏版本的 JAR；名称关系见 [项目名称与兼容说明](project-name.md)。
 
 安装时按表中指定组合选择版本，已完成的实服验证范围见下文；整合包的其他模组可能有额外 Java 或加载器要求。安装器可从 [Forge 官方下载页](https://files.minecraftforge.net/) 或 [NeoForge 官方下载页](https://neoforged.net/) 获取。Java 环境说明见 [Forge 文档](https://docs.minecraftforge.net/en/1.20.1/gettingstarted/) 与 [NeoForge 1.21.1 文档](https://docs.neoforged.net/docs/1.21.1/gettingstarted/)。
 
@@ -34,11 +36,11 @@ NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 
 1. 在 Bot 面板 **接入空间 → 服务器** 创建服务器，保存 ID、群号、连接令牌和允许的远程命令。
 2. 展开服务器卡片的 **安装插件 · 下载连接配置**，填写游戏服务器能访问的主程序地址。
 3. 在 **模组加载器与游戏版本** 选择对应版本，点击 **下载所选模组 JAR** 和 **下载模组连接配置**。面板会按所选版本导出正确的 `.properties` 或 `.toml` 文件。
-4. 停止游戏服务器，备份世界。将 JAR 放到服务器根目录的 `mods/`，连接配置放到 `config/`，保留下载文件名；每台服务器只装一份星桥模组。
+4. 停止游戏服务器，备份世界。将 JAR 放到服务器根目录的 `mods/`，连接配置放到 `config/`，保留下载文件名；每台服务器只装一份 Myrinbot 模组。
 5. 启动游戏服务器，在 Bot 面板确认桥接在线、版本正确，再检查聊天联动与 `/qbind`。
-6. 需要注册密码或 QQ 登录时，在 **成员 → 游戏登录** 勾选这台服务器，使用 **自动** 或 **星桥内置** 引擎，保存后检查 `/l`、`/ql` 和未登录限制。
+6. 需要注册密码或 QQ 登录时，在 **成员 → 游戏登录** 勾选这台服务器，使用 **自动** 或 **Myrinbot 内置** 引擎，保存后检查 `/l`、`/ql` 和未登录限制。
 
-**不要把模组放到 `plugins/`，也不要把 Bukkit 插件放到 `mods/`。** 不需要给玩家安装星桥客户端模组。Forge 1.7.10 的原生网络握手要求客户端支持 Forge；整合包自身要求的客户端模组仍按整合包说明安装。
+**不要把模组放到 `plugins/`，也不要把 Bukkit 插件放到 `mods/`。** 不需要给玩家安装 Myrinbot 客户端模组。Forge 1.7.10 的原生网络握手要求客户端支持 Forge；整合包自身要求的客户端模组仍按整合包说明安装。
 
 ### Properties 配置
 
@@ -47,7 +49,7 @@ NeoForge 仅提供上表中的正式构建，不包含 26.3 beta。**26.1.2 与 
 文件使用 UTF-8：`config/starbridge-bridge.properties`。
 
 ```properties
-endpoint=http://127.0.0.1:8088
+endpoint=http://127.0.0.1:5800
 server-id=survival
 token=替换为这台服务器的连接令牌
 allowed-commands=list
@@ -62,7 +64,7 @@ allowed-commands=list
 文件使用 UTF-8：`config/starbridge-common.toml`。
 
 ```toml
-endpoint = "http://127.0.0.1:8088"
+endpoint = "http://127.0.0.1:5800"
 server-id = "survival"
 token = "替换为这台服务器的连接令牌"
 allowed-commands = ["list"]
@@ -89,7 +91,7 @@ allowed-commands = ["list"]
 
 ## 升级与排查
 
-- **升级**：停止游戏服，替换对应版本 JAR，保留配置；确认 `mods/` 中没有旧星桥副本。Bot 升级不会自动替换独立游戏服的 JAR。
+- **升级**：停止游戏服，替换对应版本 JAR，保留配置；确认 `mods/` 中没有旧 Myrinbot 副本。Bot 升级不会自动替换独立游戏服的 JAR。
 - **版本不符 / 无法加载**：核对 Minecraft、加载器、JAR 名称和启动脚本实际使用的 `java -version`。
 - **桥接离线**：检查 Bot 地址、服务器 ID、专属令牌、端口和游戏服日志。配置修改后重启游戏服。
 - **无法登录**：确认已勾选该服务器、选择内置或自动引擎、玩家已注册；QQ 登录需先绑定并保证机器人能发私聊。
@@ -98,9 +100,9 @@ allowed-commands = ["list"]
 
 ## 开发与构建
 
-源码目录按原生 API 分开，最终成品均输出到 `bridge/target/`。旧版 Forge 与 NeoForge 原生构建使用 JDK 17 的 `--release 8`；这只表示星桥公共引擎的字节码要求，游戏服仍须使用表中对应的 Java。编译依赖从官方仓库下载并核对固定 SHA-256，不打包 Minecraft 或加载器本体。
+源码目录按原生 API 分开，最终成品均输出到 `bridge/target/`。旧版 Forge 与 NeoForge 原生构建使用 JDK 17 的 `--release 8`；这只表示 Myrinbot 公共引擎的字节码要求，游戏服仍须使用表中对应的 Java。编译依赖从官方仓库下载并核对固定 SHA-256，不打包 Minecraft 或加载器本体。
 
-**部署 ZIP 提供运行文件、文档与现成 JAR。** 如果要自行编译，请克隆 [StarBridge 公开源码仓库](https://github.com/AlancoSage/StarBridge)，按目标版本检出对应标签；部署 ZIP 不含游戏端构建工具、原生绑定规格或构建缓存。
+**部署 ZIP 提供运行文件、文档与现成 JAR。** 如果要自行编译，请克隆 [Myrinbot 公开源码仓库](https://github.com/AlancoSage/StarBridge)，按目标版本检出对应标签；部署 ZIP 不含游戏端构建工具、原生绑定规格或构建缓存。
 
 NeoForge 原生构建共享项目内的模板和公共引擎。完整源码须同时包含 `bridge-neoforge/build.py`、`bridge-neoforge/bindings/`、`bridge-fabric/build.py`、`bridge-fabric/bindings.py`、`bridge-fabric/classfile.py`、`bridge-fabric/common/` 与 `bridge-mods/common/`；只复制 `bridge-neoforge/` 无法构建。这是源码复用，成品使用 NeoForge 原生加载器，不需要在游戏服安装 Fabric Loader 或 Fabric API。
 
@@ -134,7 +136,7 @@ GitHub 发布流程构建全部游戏端、运行单元测试，并在 [公开 R
 
 ## 验证范围
 
-在表中所列加载器和 Java 上启动专用服务端，用未安装星桥的协议客户端验证心跳、玩家档案、登录前移动 / 聊天 / 命令限制、错误密码、含空格密码的 `/l`、绑定码、聊天 / 广播、QQ `/ql` 确认、退出、后端会话重建、白名单增删与申请回执、踢出、封禁 / 解封来源核对，以及关闭认证后的正常命令。
+在表中所列加载器和 Java 上启动专用服务端，用未安装 Myrinbot 的协议客户端验证心跳、玩家档案、登录前移动 / 聊天 / 命令限制、错误密码、含空格密码的 `/l`、绑定码、聊天 / 广播、QQ `/ql` 确认、退出、后端会话重建、白名单增删与申请回执、踢出、封禁 / 解封来源核对，以及关闭认证后的正常命令。
 
 Bot 0.6.6 新增的六个 NeoForge 游戏端均在各自实际加载器与 Java 环境中验证，实测 JAR 与发布成品按 SHA-256 核对：
 

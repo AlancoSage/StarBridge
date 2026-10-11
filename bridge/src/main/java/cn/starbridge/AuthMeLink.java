@@ -36,7 +36,7 @@ final class AuthMeLink implements LoginLink {
     public String displayName() { return "AuthMe"; }
     public Set<String> ownershipCommands() { return OWNERSHIP_COMMANDS; }
     public String ownershipPrompt() {
-        return "这是已有 AuthMe 账号，首次关联请再输入 /authme:login <原 AuthMe 密码> 验证所有权；以后可用星桥密码或 QQ 登录。";
+        return "这是已有 AuthMe 账号，首次关联请再输入 /authme:login <原 AuthMe 密码> 验证所有权；以后可用Myrinbot密码或 QQ 登录。";
     }
     public boolean authenticated(Player player) throws ReflectiveOperationException {
         return Boolean.TRUE.equals(authenticated.invoke(api, player));
@@ -50,7 +50,7 @@ final class AuthMeLink implements LoginLink {
         }
         else {
             byte[] bytes = new byte[18]; new SecureRandom().nextBytes(bytes);
-            // AuthMe owns this internal credential. The user's password stays in StarBridge.
+            // AuthMe owns this internal credential. The user's password stays in Myrinbot.
             register.invoke(api, player, Base64.getUrlEncoder().withoutPadding().encodeToString(bytes), true);
         }
         return true;
@@ -62,7 +62,7 @@ final class AuthMeLink implements LoginLink {
         Properties next = new Properties(); next.putAll(managed); next.setProperty(name, identity);
         Files.createDirectories(path.getParent());
         Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
-        try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "StarBridge verified AuthMe identities; no passwords"); }
+        try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "Myrinbot verified AuthMe identities; no passwords"); }
         try { Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
         catch (AtomicMoveNotSupportedException ex) { Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING); }
         managed.clear(); managed.putAll(next);

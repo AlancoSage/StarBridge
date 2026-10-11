@@ -1,10 +1,10 @@
 """Build Java 8 native Forge adapters against hash-pinned official loader APIs."""
 from __future__ import annotations
-import argparse, hashlib, os, subprocess, urllib.error, urllib.request, zipfile
+import argparse, hashlib, os, shutil, subprocess, urllib.error, urllib.request, zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent
-VERSION='0.1.0'
+VERSION='0.1.1'
 LOADER={
     '1.7.10':('1.7.10-10.13.4.1614-1.7.10','00d1ca02192c7efb87da95552ebf247021f1e1d642f86d0a03076314def11529'),
     '1.12.2':('1.12.2-14.23.5.2859','bd8314729d787e35164476d75afb337afb9783917e4f6fa1f77f049adba22f2d'),
@@ -21,7 +21,7 @@ def fetch(name: str,url: str,expected: str,cache: Path)->Path:
     if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=expected:
         temporary=path.with_suffix('.download')
         try:
-            with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 StarBridge-Builder'}),timeout=120) as response:
+            with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Myrinbot-Builder'}),timeout=120) as response:
                 temporary.write_bytes(response.read())
         except urllib.error.HTTPError as error:
             if error.code!=403: raise
@@ -38,7 +38,7 @@ def build(mc: str,jdk: Path,cache: Path)->Path:
     sources=sorted((ROOT/'common/src/main/java').rglob('*.java'))+sorted((ROOT/f'forge-{mc}/src/main/java').rglob('*.java'))
     javac=jdk/'bin'/('javac.exe' if os.name=='nt' else 'javac')
     subprocess.run([str(javac),'-J-Duser.language=en','--release','8','-encoding','UTF-8','-cp',os.pathsep.join(map(str,libs)),'-d',str(output)]+list(map(str,sources)),check=True)
-    target=ROOT.parent/'bridge/target'/f'StarBridge-Forge-{mc}-{VERSION}.jar';target.parent.mkdir(parents=True,exist_ok=True)
+    target=ROOT.parent/'bridge/target'/f'Myrinbot-Forge-{mc}-{VERSION}.jar';target.parent.mkdir(parents=True,exist_ok=True)
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as archive:
         for directory in [output,ROOT/f'forge-{mc}/src/main/resources']:
             for path in sorted(directory.rglob('*')):
@@ -49,7 +49,8 @@ def build(mc: str,jdk: Path,cache: Path)->Path:
         for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'):
             path=ROOT.parent/name
             if path.is_file():
-                entry=zipfile.ZipInfo('META-INF/licenses/StarBridge/'+name,(2026,1,1,0,0,0));entry.compress_type=zipfile.ZIP_DEFLATED;archive.writestr(entry,path.read_bytes())
+                entry=zipfile.ZipInfo('META-INF/licenses/Myrinbot/'+name,(2026,1,1,0,0,0));entry.compress_type=zipfile.ZIP_DEFLATED;archive.writestr(entry,path.read_bytes())
+    shutil.copyfile(target, target.with_name(target.name.replace('Myrinbot-', 'StarBridge-', 1)))
     print(f'Built Forge {mc}: {target.name}',flush=True)
     return target
 

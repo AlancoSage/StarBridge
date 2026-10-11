@@ -99,7 +99,7 @@ class RuntimeFeatures:
             self.next_notify=now+60
             rows=self.db.execute("SELECT * FROM health_alerts WHERE status='open' AND notified=0 AND acknowledged=0 ORDER BY created LIMIT 5").fetchall()
             if rows:
-                text='星桥故障提醒\n'+'\n'.join(row['title'] for row in rows)+'\n请在管理面板查看。'
+                text='Myrinbot故障提醒\n'+'\n'.join(row['title'] for row in rows)+'\n请在管理面板查看。'
                 try:
                     for group in policy['groups']:await self.state['onebot'].send_group(group,text)
                 except (ConnectionError,RuntimeError,TimeoutError):

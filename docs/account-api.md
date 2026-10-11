@@ -1,6 +1,6 @@
-# 星桥账号注册与网站 API
+# Myrinbot 账号注册与网站 API
 
-版本：`v1`。星桥负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
+版本：`v1`。Myrinbot 负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
 
 ## 用途与准备
 
@@ -28,7 +28,7 @@
 | 面板项 | 填写说明 |
 | --- | --- |
 | SMTP 主机 | 邮件服务商提供的域名或 IP，不含 `https://`、路径和空格 |
-| 端口 / 加密方式 | 必须匹配服务商的 SSL 或 STARTTLS 服务；星桥不接受明文 SMTP |
+| 端口 / 加密方式 | 必须匹配服务商的 SSL 或 STARTTLS 服务；Myrinbot 不接受明文 SMTP |
 | 发件邮箱 | 验证邮件的 From 地址，需符合服务商发信要求 |
 | 登录账号 / 授权码 | SMTP 认证凭据；授权码不是网站 API 密钥，也不是玩家密码 |
 | 注册网页地址 | 可选，写入网页注册邮件的入口；不自动部署网页或授权跨域来源 |
@@ -42,7 +42,7 @@
 
 ## 第一次注册与验收
 
-1. 在部署 Bot 的同一台电脑打开 `http://127.0.0.1:8088/register`；修改过面板端口时使用实际端口，远程玩家使用可访问的 Bot 地址。
+1. 在部署 Bot 的同一台电脑打开 `http://127.0.0.1:5800/register`；修改过面板端口时使用实际端口，远程玩家使用可访问的 Bot 地址。
 2. 填写尚未注册的测试玩家名和测试邮箱，点击发送验证码。玩家名使用 3–16 位英文字母、数字或下划线。
 3. 检查收件箱及垃圾邮件，在页面填入六位邮件验证码，设置并确认 8–128 字符密码，然后完成注册。
 4. 在面板「成员 → 注册账号」搜索测试玩家名，确认邮箱、账号和密码列的“已设置”状态；同一玩家名或邮箱再次注册应被拒绝。
@@ -63,9 +63,9 @@
 
 ## 注册网页与网站接入
 
-内置页面为 `/register`，例如 `http://127.0.0.1:8088/register`。填写玩家名、邮箱后验证，网页自动保存本次申请编号。页面关闭后，可从验证码邮件中复制申请编号继续验证。
+内置页面为 `/register`，例如 `http://127.0.0.1:5800/register`。填写玩家名、邮箱后验证，网页自动保存本次申请编号。页面关闭后，可从验证码邮件中复制申请编号继续验证。
 
-API 根地址：`https://你的星桥域名/api/v1`。浏览器跨站接入需在面板「允许接入的网站来源」填写精确来源，例如 `https://community.example.com`，只包含协议、域名、可选端口。不能使用路径或通配符；同源页面默认可用。支持 CORS 预检；CORS 不替代邮件验证，也不能阻止非浏览器客户端调用公开注册接口。
+API 根地址：`https://你的Bot域名/api/v1`。浏览器跨站接入需在面板「允许接入的网站来源」填写精确来源，例如 `https://community.example.com`，只包含协议、域名、可选端口。不能使用路径或通配符；同源页面默认可用。支持 CORS 预检；CORS 不替代邮件验证，也不能阻止非浏览器客户端调用公开注册接口。
 
 上线使用 HTTPS。反向代理下默认按实际连接来源 IP 限流，不信任客户端自填的 X-Forwarded-For，需按部署规模调整邮件总额度。网站后端 API 密钥不要放在浏览器代码中。
 
@@ -80,7 +80,7 @@ API 根地址：`https://你的星桥域名/api/v1`。浏览器跨站接入需�
 `GET /registration/info` 返回：
 
 ```json
-{"enabled":true,"site_name":"星桥社区","code_minutes":5,"website_url":"https://community.example.com/register"}
+{"enabled":true,"site_name":"Myrinbot社区","code_minutes":5,"website_url":"https://community.example.com/register"}
 ```
 
 不返回邮件配置或密钥。
@@ -157,7 +157,7 @@ SMTP 接受邮件后返回 HTTP 202：
 以下 PowerShell 示例用于已配置 SMTP 的本机 Bot，按顺序申请邮件、输入验证码、注册并查询本人账号。替换测试邮箱和未注册玩家名；密码通过凭据输入窗口填写，不放入命令历史。网页开发也可以直接使用面板下载的 `examples/website-registration.js`，其 `apply`、`verify`、`account` 方法调用相同接口。
 
 ```powershell
-$apiBase = 'http://127.0.0.1:8088/api/v1'
+$apiBase = 'http://127.0.0.1:5800/api/v1'
 $testPlayer = 'TestPlayer'
 $testEmail = '替换为可收信的测试邮箱'
 Invoke-RestMethod -Uri "$apiBase/registration/info"
@@ -233,4 +233,4 @@ revision 防止旧页面覆盖新设置。只有管理员配置接口返回 SMTP
 注册使用现有 aiohttp、SQLite 和 Python 标准库，无新增依赖。发信在后台线程执行，同一实例最多同时发两封，避免阻塞网页事件循环。网页没有持续动画或 GPU 渲染。
 ## 社区官网与玩家信息
 
-星桥社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。
+Myrinbot 社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。

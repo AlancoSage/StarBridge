@@ -12,6 +12,11 @@ MAX_PACKAGE = 64 * 1024 * 1024
 DEFAULT_SETTINGS = {'source': 'github', 'feed_url': '', 'github_repository': DEFAULT_REPOSITORY, 'github_token': ''}
 
 
+def package_names(version):
+    return (f'Myrinbot-Windows-{version}.zip', f'AetherBot-Windows-{version}.zip',
+            f'StarBridge-Windows-{version}.zip')
+
+
 def update_settings(value):
     if not isinstance(value, dict) or value.keys() not in (DEFAULT_SETTINGS.keys(), {'feed_url'}):
         raise RegistrationError('更新设置格式错误')
@@ -41,7 +46,7 @@ def version_number(value):
 class GitHubReleases:
     def __init__(self, settings):
         self.repository = settings['github_repository']
-        self.headers = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'StarBridge-Updater'}
+        self.headers = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'Myrinbot-Updater'}
         if settings['github_token']: self.headers['Authorization'] = 'Bearer ' + settings['github_token']
         self.base = 'https://api.github.com/repos/' + self.repository
 
@@ -74,7 +79,7 @@ class GitHubReleases:
                         raise RegistrationError('GitHub 附件跳转地址不受信任，下载已停止')
                     url = location
                     # Never send a PAT to signed asset URLs, including subsequent redirects.
-                    headers = {'Accept': 'application/octet-stream', 'User-Agent': 'StarBridge-Updater'}
+                    headers = {'Accept': 'application/octet-stream', 'User-Agent': 'Myrinbot-Updater'}
                     continue
                 self.status(response.status)
                 yield response
@@ -92,7 +97,7 @@ class GitHubReleases:
             except RegistrationError: continue
             version = '.'.join(map(str, number))
             assets = row.get('assets', [])
-            updatable = isinstance(assets, list) and any(a.get('name') == f'StarBridge-Windows-{version}.zip' for a in assets if isinstance(a, dict))
+            updatable = isinstance(assets, list) and any(a.get('name') in package_names(version) for a in assets if isinstance(a, dict))
             result.append({'tag': row['tag_name'], 'version': version, 'name': str(row.get('name') or row['tag_name'])[:200],
                            'notes': str(row.get('body') or '')[:3000], 'url': 'https://github.com/' + self.repository + '/releases/tag/' + row['tag_name'],
                            'updatable': updatable, 'published_at': row.get('published_at', '')})
@@ -109,11 +114,13 @@ class GitHubReleases:
             release = await self.metadata(client, '/releases/tags/' + tag)
             if not isinstance(release, dict) or release.get('draft') or release.get('prerelease') or release.get('tag_name') != tag:
                 raise RegistrationError('请选择已发布的正式版本')
-            name = f'StarBridge-Windows-{version}.zip'
             assets = release.get('assets', [])
             if not isinstance(assets, list): raise RegistrationError('GitHub 附件列表错误')
-            package = next((a for a in assets if isinstance(a, dict) and a.get('name') == name and a.get('state') == 'uploaded'), None)
+            package = next((a for name in package_names(version) for a in assets
+                            if isinstance(a, dict) and a.get('name') == name
+                            and a.get('state') == 'uploaded'), None)
             if not package: raise RegistrationError('该历史版本只支持手动安装，没有面板升级包')
+            name = package['name']
             size = package.get('size')
             if type(size) is not int or not 1 <= size <= MAX_PACKAGE: raise RegistrationError('GitHub 部署包大小错误或超过 64 MiB')
             digest = package.get('digest', '') or ''

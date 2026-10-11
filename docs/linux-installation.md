@@ -1,6 +1,6 @@
 # Linux 安装与运行
 
-适用版本：Bot **0.6.9**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
+适用版本：Bot **0.6.10**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
 
 适用于具有 Python 3.11+ 的 Linux 环境。下面的系统依赖命令面向 Ubuntu 24.04 和 Debian 12；其他发行版需使用对应的包管理器。Bot 不需要图形桌面、Java 或显卡，QQ 实现端和 Minecraft 游戏服务器需另外接入。
 
@@ -25,7 +25,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 11), "需要 Python 3.11 
 
 如果版本检查失败，先安装发行版支持的 Python 3.11+ 及其对应的 venv 包，再继续。创建虚拟环境时使用该版本的解释器，例如 `python3.12 -m venv .venv`。
 
-完整解压星桥 Bot 部署包到部署目录，或从 [公开仓库](https://github.com/AlancoSage/StarBridge) 克隆源码；无需额外仓库授权。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
+完整解压 Myrinbot Bot 部署包到部署目录，或从 [公开仓库](https://github.com/AlancoSage/StarBridge) 克隆源码；无需额外仓库授权。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
 
 不要将 Windows 的 `.venv` 或 `.runtime` 复制到 Linux；应在 Linux 上创建运行环境。
 
@@ -61,15 +61,15 @@ cd /opt/starbridge
 .venv/bin/python -m starbridge run --config config.toml
 ```
 
-本机访问 `http://127.0.0.1:8088/`，使用管理令牌登录。前台运行时按 **Ctrl+C** 停止；关闭终端或断开 SSH 后，进程可能退出。需要持续后台运行时使用下一节的 systemd。
+本机访问 `http://127.0.0.1:5800/`，使用管理令牌登录。前台运行时按 **Ctrl+C** 停止；关闭终端或断开 SSH 后，进程可能退出。需要持续后台运行时使用下一节的 systemd。
 
 默认监听地址为 `127.0.0.1`。部署在远程 Linux 服务器时，可先在自己的电脑开启 SSH 隧道，再打开本机浏览器：
 
 ```bash
-ssh -N -L 8088:127.0.0.1:8088 deploy@example.com
+ssh -N -L 5800:127.0.0.1:5800 deploy@example.com
 ```
 
-将 `deploy@example.com` 替换为实际 SSH 用户和服务器地址；保持隧道窗口运行，再访问自己电脑的 `http://127.0.0.1:8088/`。如果本机 8088 已被占用，可以将 `-L` 中第一个端口改为 18088，并访问 `http://127.0.0.1:18088/`。
+将 `deploy@example.com` 替换为实际 SSH 用户和服务器地址；保持隧道窗口运行，再访问自己电脑的 `http://127.0.0.1:5800/`。如果本机 5800 已被占用，可以将 `-L` 中第一个端口改为 15800，并访问 `http://127.0.0.1:15800/`。
 
 QQ 实现端或游戏服务器分开部署时，在面板「设置 → 软件设置」中调整监听地址与端口，并使用各端可以访问的 Bot 地址。`0.0.0.0` 是监听配置，浏览器使用实际 IP 或域名。面板重启应用配置后，还需按部署网络配置防火墙、反向代理或私有网络的访问规则。
 
@@ -81,7 +81,7 @@ QQ 实现端或游戏服务器分开部署时，在面板「设置 → 软件设
 
 ```ini
 [Unit]
-Description=StarBridge Bot
+Description=Myrinbot
 Wants=network-online.target
 After=network-online.target
 

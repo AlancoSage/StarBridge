@@ -98,12 +98,13 @@ def setup_routes(app, state_key, authorize, read_body):
                 address = data.get("api_base", service.settings["api_public_url"])
                 return web.json_response({"apiBase":api_base(address)}, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="config.json"'})
             if action == "project":
-                file = ROOT / "dist/StarBridge-website.zip"
+                from .branding import artifact_path
+                file = artifact_path(ROOT / "dist", "Myrinbot-website.zip")
                 if not file.is_file():
                     raise RegistrationError("尚未生成官网独立项目包，请使用独立项目的 build.py 打包", 404, "project_missing")
                 if file.stat().st_size > 4 * 1024 * 1024:
                     raise RegistrationError("官网项目包超过 4 MiB 上限", 413)
-                return web.FileResponse(file, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="StarBridge-website.zip"'})
+                return web.FileResponse(file, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="Myrinbot-website.zip"'})
             return web.FileResponse(ROOT / "docs/website-deployment.md", headers={"Cache-Control": "no-store",
                 "Content-Disposition": 'attachment; filename="website-deployment.md"'})
         except RegistrationError as exc:

@@ -53,11 +53,11 @@ $('authentication-reload').onclick=()=>{if(!authenticationDirty||confirm('放弃
 $('authentication-download').onclick=async()=>{
   try{
     const response=await fetch('/api/plugin',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
-    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-0.5.2.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-0.5.3.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };
 $('authentication-guide').onclick=async()=>{
-  try{const response=await fetch('/api/authentication/guide',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('文档下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='StarBridge-game-login.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  try{const response=await fetch('/api/authentication/guide',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('文档下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-game-login.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   catch(error){notice('authentication-notice',error.message,'error');}
 };
 $('authentication-forge-download').onclick=async()=>{
@@ -70,6 +70,6 @@ $('authentication-forge-guide').onclick=async()=>{
     const platform=$('authentication-mod-version').value.split('/')[0]||'forge';
     const response=await fetch('/api/authentication/guide?'+new URLSearchParams({platform}),{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
     if(!response.ok)throw Error('模组安装文档下载失败。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=platform==='fabric'?'StarBridge-fabric-game-ends.md':'StarBridge-mod-game-ends.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=platform==='fabric'?'Myrinbot-fabric-game-ends.md':'Myrinbot-mod-game-ends.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };

@@ -36,7 +36,7 @@ final class LoginSecurityLink implements LoginLink, Listener {
     LoginSecurityLink(Plugin installed, Plugin owner) throws ReflectiveOperationException, IOException {
         if (BridgeScheduler.isFolia()) throw new IOException("LoginSecurity 接入不支持 Folia。");
         if (installed == null || owner == null || !installed.isEnabled() || !owner.isEnabled())
-            throw new IOException("LoginSecurity 或星桥尚未启用。");
+            throw new IOException("LoginSecurity 或Myrinbot尚未启用。");
         this.installed = installed; this.owner = owner;
         ClassLoader loader = installed.getClass().getClassLoader();
         Class<?> api = Class.forName("com.lenis0012.bukkit.loginsecurity.LoginSecurity", false, loader);
@@ -110,7 +110,7 @@ final class LoginSecurityLink implements LoginLink, Listener {
             Object config = configuration.invoke(null);
             if (!Boolean.TRUE.equals(registrationEnabled.invoke(config))) throw new IOException("LoginSecurity 已关闭新账号注册。");
             if (Boolean.TRUE.equals(captcha.invoke(config)))
-                throw new IOException("LoginSecurity 开启了注册验证码，请先完成原插件注册再启用星桥登录。");
+                throw new IOException("LoginSecurity 开启了注册验证码，请先完成原插件注册再启用Myrinbot登录。");
             String password = VerifiedLoginAccounts.credential(((Number) minimum.invoke(config)).intValue(), ((Number) maximum.invoke(config)).intValue());
             action = registerAction.newInstance(service, owner, password);
         }
@@ -126,7 +126,7 @@ final class LoginSecurityLink implements LoginLink, Listener {
             if (method.getDeclaringClass() == Object.class) {
                 if ("hashCode".equals(method.getName())) return System.identityHashCode(proxy);
                 if ("equals".equals(method.getName())) return proxy == args[0];
-                return "StarBridge LoginSecurity callback";
+                return "Myrinbot LoginSecurity callback";
             }
             if (!"call".equals(method.getName())) return null;
             // LoginSecurity schedules callbacks on Bukkit's main thread.
@@ -142,7 +142,7 @@ final class LoginSecurityLink implements LoginLink, Listener {
                     attempt.finished = true;
                 } else if (registration) {
                     if (!Boolean.TRUE.equals(registered.invoke(attempt.session))) throw new IOException("LoginSecurity 尚未完成注册。");
-                    // This account was just created after independent StarBridge proof, never an existing native account.
+                    // This account was just created after independent Myrinbot proof, never an existing native account.
                     submit(attempt, loginAction.newInstance(service, owner), false);
                 } else attempt.finished = true;
             } catch (ReflectiveOperationException | RuntimeException | IOException error) {
@@ -179,7 +179,7 @@ final class LoginSecurityLink implements LoginLink, Listener {
     public void logout(Player player) {
         invalidate(player);
         // A disconnect avoids claiming completion before the provider's async logout action actually finishes.
-        player.kickPlayer("已退出星桥与 LoginSecurity 登录，请重新连接服务器。");
+        player.kickPlayer("已退出Myrinbot与 LoginSecurity 登录，请重新连接服务器。");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

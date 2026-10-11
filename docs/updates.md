@@ -1,10 +1,12 @@
 # Bot 更新与回退
 
-适用版本：Bot 0.6.1 起。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。StarBridge 源码与正式 Release 已公开，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。
+当前文档对应 **Bot v0.6.10**；面板更新协议从 0.6.1 起可用。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。项目的公开源码和正式 Release 位于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。
+
+v0.6.10 正式采用 `Myrinbot-*` 附件名称，同时为旧升级器保留内容相同的 `StarBridge-Windows-0.6.10.zip`。本版统一面板和官网的黑白 M 机器人图标，新安装的默认端口为 5800；更新不修改已有 `config.toml` 或端口。部署包内部的 `StarBridge/` 根目录、`update.json` 和受管理文件名保持原协议；历史附件名称也保持原记录。具体关系见 [项目名称与兼容说明](project-name.md)。
 
 ## GitHub 正式版本更新
 
-1. 更新来源选择「GitHub 正式版本」，仓库填写 `AlancoSage/StarBridge`，或自己发布星桥部署包的仓库。
+1. 更新来源选择「GitHub 正式版本」，仓库填写 `AlancoSage/StarBridge`，或自己发布 Myrinbot 部署包的仓库。
 2. 官方公开仓库无需配置 GitHub 读取令牌即可检查和下载。GitHub 提示请求额度不足时，可为自己的账号配置读取令牌；如果使用自己维护的私有仓库，则需有该仓库访问权，并为 fine-grained personal access token 仅选择该仓库、授予 **Contents: Read-only**，在面板填写并保存。
 3. 点击「检查更新」获取最新可升级正式版，或点击「读取 GitHub 版本」查看发布历史。
 4. 点击「下载并校验」，通过大小、SHA256、清单及隔离启动检查后，再点击「备份并升级」。读取和下载不会自动安装。
@@ -17,13 +19,13 @@ GitHub 令牌只保存在 Bot 的数据库中，接口仅返回「是否已配�
 
 ## 首次启用
 
-Windows 使用 `星桥.bat` 启动或重启；Linux 使用原有 `python -m starbridge run --config config.toml`。此命令现在通过稳定的监督进程运行 Bot。旧实例需要先正常停止并用新版本重新启动一次，面板才允许自动版本切换。
+Windows 部署 ZIP 使用 `星桥.bat` 启动或重启，源码推荐 `Myrinbot.bat`；Linux 使用原有 `python -m starbridge run --config config.toml`。此命令现在通过稳定的监督进程运行 Bot。旧实例需要先正常停止并用新版本重新启动一次，面板才允许自动版本切换。
 
 监督进程只负责管理一个服务子进程与版本切换，没有持续外部轮询。一个安装目录只运行一个 Bot 实例。保留 `.runtime/updates/`，它包含回退代码、副本和可能正在使用的独立 Python 环境。不要删除在用环境。
 
 ## 上传升级包
 
-1. 上传完整 `StarBridge-Windows-0.6.0.zip` 或后续同格式部署包，最大 64 MiB。该 ZIP 同时可以用于 Linux Bot 更新。
+1. 上传完整 Bot 部署 ZIP，最大 64 MiB；例如历史 `StarBridge-Windows-0.6.0.zip` 或采用新名称的 `Myrinbot-Windows-<版本>.zip`。该 ZIP 同时可以用于 Linux Bot 更新。
 2. 等待文件校验与隔离启动测试完成。部署包需有 `StarBridge/update.json`，文件 SHA256、版本和升级协议必须一致。
 3. 依赖版本变化时，在独立环境安装锁定依赖，不修改正在运行的虚拟环境。这一步需要能访问 PyPI。
 4. 点击「备份并升级」。Bot 先创建数据安全备份，再停止子进程、保存代码与数据副本、替换代码并重新启动。
@@ -39,8 +41,8 @@ Windows 使用 `星桥.bat` 启动或重启；Linux 使用原有 `python -m star
 
 ```json
 {
-  "version": "0.6.1",
-  "url": "https://downloads.example.com/StarBridge-Windows-0.6.1.zip",
+  "version": "0.6.10",
+  "url": "https://downloads.example.com/Myrinbot-Windows-0.6.10.zip",
   "sha256": "替换为部署包的64位小写SHA256",
   "notes": "本次更新说明"
 }
@@ -52,7 +54,7 @@ Windows 使用 `星桥.bat` 启动或重启；Linux 使用原有 `python -m star
 
 源码仓库提供 `.github/workflows/release.yml`。在 `main` 修改 `starbridge/__init__.py` 的 Bot 版本号，添加相应 `releases/v版本号.md` 后推送，工作流会运行回归测试、构建 Java 8 插件和官网，并发布该版本。也支持匹配版本号的 `v*` 标签和手动运行；同一版本重复触发会跳过已发布版本，不能覆盖旧包。
 
-发布附件为完整 Bot ZIP、`StarBridge-website.zip`、Minecraft JAR 和 `SHA256SUMS.txt`。先创建草稿，上传并核对附件，再正式发布；失败不会把不完整草稿当作可升级版本。Bot、官网和 Minecraft 插件共用本次发布说明，插件自身版本可以与 Bot 不同。
+发布脚本准备完整 `Myrinbot-Windows-<版本>.zip`、`Myrinbot-website.zip`、`Myrinbot-*.jar` 和 `SHA256SUMS.txt`，并附带内容相同的 `StarBridge-Windows-<版本>.zip` 供旧升级器识别。正式发布时先创建草稿，上传并核对附件，再正式发布；失败不会把不完整草稿当作可升级版本。Bot、官网和 Minecraft 插件共用本次发布说明，插件自身版本可以与 Bot 不同。包内 JAR 和官网 ZIP 保留原有受管理路径。
 
 本机也可先按 [模组构建说明](mod-game-ends.md#开发与构建) 与 [Fabric 构建说明](fabric-game-ends.md) 构建该版本全部游戏端，再构建通用插件并发布；发布脚本会检查配套 JAR，并生成官网包、Bot 包及校验文件：
 

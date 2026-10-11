@@ -61,7 +61,7 @@ public final class BukkitCompatibilityCheck {
             if (name.equals("getPlayer") || name.equals("getOfflinePlayer")) return actor;
             if (name.equals("getPluginManager")) return manager;
             if (name.equals("getScheduler")) return scheduler;
-            if (name.equals("getLogger")) return Logger.getLogger("StarBridge-compatibility");
+            if (name.equals("getLogger")) return Logger.getLogger("Myrinbot-compatibility");
             if (name.equals("getName") || name.equals("getVersion") || name.equals("getBukkitVersion")) return "isolated compatibility test";
             if (name.equals("getBanList")) {
                 return proxy(method.getReturnType(), (list, action, arguments) -> {
@@ -75,7 +75,7 @@ public final class BukkitCompatibilityCheck {
         });
         Bukkit.setServer(server);
         Plugin plugin = proxy(Plugin.class, (self, method, values) -> {
-            if (method.getName().equals("getLogger")) return Logger.getLogger("StarBridge-compatibility");
+            if (method.getName().equals("getLogger")) return Logger.getLogger("Myrinbot-compatibility");
             if (method.getName().equals("getServer")) return server;
             if (method.getName().equals("isEnabled")) return true;
             return fallback(method);

@@ -1,27 +1,31 @@
-# 星桥社区官网 · 独立项目
+# Myrinbot 社区官网 · 独立项目
 
-本目录可单独复制到自己的仓库、电脑或服务器开发、部署。网站由纯 HTML/CSS/JavaScript 构成，不导入 Bot 代码，不需要 Bot 数据库、Node.js 或运行时框架。账号、邮件验证和服务器状态通过 HTTP API 接入星桥。
+本目录可单独复制到自己的仓库、电脑或服务器开发、部署。网站由纯 HTML/CSS/JavaScript 构成，不导入 Bot 代码，不需要 Bot 数据库、Node.js 或运行时框架。账号、邮件验证和服务器状态通过 HTTP API 接入 Myrinbot。
 
-官网源码随 [StarBridge 公开仓库](https://github.com/AlancoSage/StarBridge/tree/main/starbridge-website) 发布，采用 **AGPL-3.0-or-later**，完整许可证见 [LICENSE](LICENSE)。可从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载 `StarBridge-website.zip`，或克隆仓库后进入 `starbridge-website` 目录。贡献与问题反馈见 [贡献指南](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，第三方信息见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。
+项目名称为 **Myrinbot**。现有 `starbridge-website/` 目录、`sdk/starbridge.js` 导入路径、`createStarBridgeClient` / `createStarBridgeRegistration` 与 `createAetherBotClient` / `createAetherBotRegistration` 导出和浏览器存储键保留兼容，升级后无需重新配置官网或退出已有会话。新接入使用 `createMyrinbotClient` / `createMyrinbotRegistration`；所有 API 路径与字段保持不变。
+
+官网源码随 [Myrinbot 公开仓库](https://github.com/AlancoSage/StarBridge/tree/main/starbridge-website) 发布，采用 **AGPL-3.0-or-later**，完整许可证见 [LICENSE](LICENSE)。v0.6.10 正式以 Myrinbot 名称分发，官网独立附件为 `Myrinbot-website.zip`，使用与 Bot 面板一致的新黑白 M 机器人图标。可从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载，或克隆仓库后进入 `starbridge-website` 目录；历史版本请按实际附件名称下载。贡献与问题反馈见 [贡献指南](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，第三方信息见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。
 
 ## 本地启动
 
 安装 Python 3.11 或更新版本，在本目录运行：
 
 ```sh
-python serve.py --port 8089 --api-base http://127.0.0.1:8088/api/v1
+python serve.py --port 8089 --api-base http://127.0.0.1:5800/api/v1
 ```
 
-Windows 也可运行 `./start.ps1 -ApiBase http://127.0.0.1:8088/api/v1`；不指定 `-ApiBase` 时读取项目 `config.json`。打开 `http://127.0.0.1:8089/`；终端按 Ctrl+C 停止。`serve.py` 只使用 Python 标准库，不依赖父目录；`--api-base` 只覆盖本次服务提供的配置，不修改文件。开发服务默认仅监听本机，正式部署使用静态 Web 服务器。
+Windows 也可运行 `./start.ps1 -ApiBase http://127.0.0.1:5800/api/v1`；不指定 `-ApiBase` 时读取项目 `config.json`。打开 `http://127.0.0.1:8089/`；终端按 Ctrl+C 停止。`serve.py` 只使用 Python 标准库，不依赖父目录；`--api-base` 只覆盖本次服务提供的配置，不修改文件。开发服务默认仅监听本机，正式部署使用静态 Web 服务器。
+
+v0.6.10 新安装的 Bot 面板和 API 默认使用 5800 端口，官网预览仍使用 8089；已有 Bot 配置保留原端口，请将示例 API 地址替换为实际地址。
 
 ## 在 Bot 面板接入
 
-1. 打开 Bot「接入空间 → 网站绑定」，选择「使用星桥提供的官网」。网站地址填 `http://127.0.0.1:8089/`，Bot 公开 API 地址填 `http://127.0.0.1:8088/api/v1`。
+1. 打开 Bot「接入空间 → 网站绑定」，选择「使用 Myrinbot 提供的官网」。网站地址填 `http://127.0.0.1:8089/`，Bot 公开 API 地址填 `http://127.0.0.1:5800/api/v1`。
 2. 保存后 Bot 自动允许网站的准确来源，不需要重复修改注册来源设置。已有自建网站可选「接入自己的官网」，按 API/SDK 文档接入。
 3. 下载「接入配置」，将 `config.json` 放到本项目根目录。正式部署时换成访客能访问的域名和 API 地址。
 4. 在 Bot 注册设置中配置 SMTP 并启用注册。已注册账号的密码登录不依赖新注册开关。
 
-网站地址可包含子目录。不需要官网时选择「不接入官网」，停止允许此来源的跨域 API 请求并保留原设置；这是浏览器来源授权，不会关闭 API、撤销用户令牌或代替用户身份验证。Bot 可独立使用，选择星桥官网也需自行部署独立项目。
+网站地址可包含子目录。不需要官网时选择「不接入官网」，停止允许此来源的跨域 API 请求并保留原设置；这是浏览器来源授权，不会关闭 API、撤销用户令牌或代替用户身份验证。Bot 可独立使用，选择 Myrinbot 官网也需自行部署独立项目。
 
 ## 打包与部署
 
@@ -29,13 +33,14 @@ Windows 也可运行 `./start.ps1 -ApiBase http://127.0.0.1:8088/api/v1`；不�
 python build.py --api-base https://bridge.example.com/api/v1
 ```
 
-生成 `dist/StarBridge-website.zip`，包含网页、启动和打包工具、SDK 与文档。也可用 `--output` 指定输出文件。打包只读取本项目固定文件，不读取 Bot 配置、数据库或密码；API 地址只写入压缩包内的 `config.json`。
+生成 `dist/Myrinbot-website.zip`，包含网页、启动和打包工具、SDK 与文档。也可用 `--output` 指定输出文件。打包只读取本项目固定文件，不读取 Bot 配置、数据库或密码；API 地址只写入压缩包内的 `config.json`。
 
 解压到 Nginx、Apache 或静态托管目录；可部署在根目录或子目录，导航使用 hash，无需 SPA 重写。Nginx 示例见 `nginx.example.conf`。同域反向代理 `/api/v1/` 时可配置 `{"apiBase":"/api/v1"}`。静态托管不需要安装 Python；Python 仅用于本地预览和打包。
 
 ## 开发与功能
 
 - `index.html`、`site.css`、`site.js`：独立界面与交互；`config.json`：唯一 API 地址配置。
+- `mark.png`：Myrinbot 黑白 M 机器人图标，用于浏览器页签和桌面侧栏；旧 `mark.svg` 路径保留兼容。
 - `sdk/starbridge.js`：已有网站可导入的浏览器 SDK。
 - `docs/website-deployment.md`、`docs/account-api.md`：部署、注册及信息接口文档。
 - 首页与服务器页展示全部配置服务器，含未连接项；状态每 30 秒刷新，后台暂停。

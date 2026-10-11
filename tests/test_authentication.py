@@ -312,7 +312,7 @@ class GameAuthenticationTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status, 401)
         response = await self.client.get("/api/authentication/guide", headers=self.admin)
         self.assertEqual(response.status, 200)
-        self.assertIn("StarBridge-game-login.md", response.headers["Content-Disposition"])
+        self.assertIn("Myrinbot-game-login.md", response.headers["Content-Disposition"])
         guide = await response.text()
         for provider in ("AuthMe", "nLogin", "LoginSecurity", "LibreLogin"):
             self.assertIn(provider, guide)

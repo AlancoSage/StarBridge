@@ -1,5 +1,5 @@
 // Browser-side integration: only public endpoints, never embed a backend API key.
-// Configure this website's origin in StarBridge → Members → Registered accounts.
+// Configure this website's origin in Myrinbot → Members → Registered accounts.
 export function createStarBridgeRegistration(baseUrl) {
   const clean = baseUrl.replace(/\/+$/, '');
   const base = clean.endsWith('/api/v1') ? clean : clean + '/api/v1';
@@ -49,10 +49,18 @@ export function createStarBridgeRegistration(baseUrl) {
 
 export const createStarBridgeClient = createStarBridgeRegistration;
 
+// Recommended names for new integrations.
+export const createMyrinbotRegistration = createStarBridgeRegistration;
+export const createMyrinbotClient = createStarBridgeClient;
+
 // Example:
-// const client = createStarBridgeRegistration('https://bridge.example.com');
+// const client = createMyrinbotRegistration('https://bridge.example.com');
 // const application = await client.apply('Steve', '123456789@qq.com');
 // const result = await client.verify(application.challenge_id, enteredCode, chosenPassword);
 // const me = await client.account(result.access_token);
 // Send the short-lived token to your own backend for validation, then create
 // your own website session. Account ID is not a Minecraft player UUID.
+
+// Compatibility aliases for existing integrations.
+export const createAetherBotRegistration = createStarBridgeRegistration;
+export const createAetherBotClient = createStarBridgeClient;

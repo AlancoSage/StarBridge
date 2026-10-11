@@ -11,6 +11,7 @@ import uuid
 from aiohttp import web
 
 from .bot import Bot, clean_text
+from .brand_icon import ICON_PNG
 from .onebot import OneBot
 from .storage import Store
 from .settings import ConfigConflict, ConfigFile, runtime_config
@@ -189,6 +190,11 @@ async def dashboard(request):
     return web.FileResponse(Path(__file__).parent / "panel.html", headers={"Cache-Control": "no-cache"})
 
 
+async def brand_icon(request):
+    return web.Response(body=ICON_PNG, content_type="image/png",
+                        headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
+
+
 async def dashboard_script(request):
     return web.FileResponse(Path(__file__).parent / "dashboard.js", headers={"Cache-Control": "no-cache"})
 
@@ -337,7 +343,7 @@ async def player_action(request):
         return web.json_response({"error": "游戏服务器未连接，无法提交玩家操作。"}, status=409)
     snap = bot.snapshots[sid]
     if "player_management" not in snap.get("capabilities", []):
-        return web.json_response({"error": "请安装新版星桥插件以启用玩家管理。"}, status=409)
+        return web.json_response({"error": "请安装新版Myrinbot插件以启用玩家管理。"}, status=409)
     target = next((p for p in snap.get("player_records", []) if p["uuid"] == identity and p["name"] == name), None)
     if target is None or (action == "kick" and not target["online"]):
         return web.json_response({"error": "玩家状态已变化，请刷新列表后重试。"}, status=409)
@@ -358,14 +364,15 @@ async def plugin_download(request):
     if kind == "bukkit":
         if request.query.get("version"):
             raise web.HTTPBadRequest(text="Paper / Spigot / Folia 插件无需按游戏版本下载")
-        filename = f"StarBridge-{__bridge_version__}.jar"
+        filename = f"Myrinbot-{__bridge_version__}.jar"
     else:
         from .game_bridges import bridge_filename
         try:
             filename = bridge_filename(kind, request.query.get("version", "1.21.1" if kind == "neoforge" else "1.20.1"))
         except ValueError as error:
             raise web.HTTPBadRequest(text=str(error))
-    path = Path(__file__).resolve().parent.parent / "bridge" / "target" / filename
+    from .branding import artifact_path
+    path = artifact_path(Path(__file__).resolve().parent.parent / "bridge" / "target", filename)
     if not path.is_file():
         raise web.HTTPNotFound(text="插件尚未构建")
     return web.FileResponse(path, headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
@@ -374,10 +381,11 @@ async def plugin_download(request):
 async def game_bridge_catalog(request):
     authorized(request, request.app[STATE]["config"]["app"]["admin_token"])
     from .game_bridges import bridge_catalog
+    from .branding import artifact_path
     rows = bridge_catalog()
     directory = Path(__file__).resolve().parent.parent / "bridge" / "target"
     for row in rows:
-        row["available"] = (directory / row["filename"]).is_file()
+        row["available"] = artifact_path(directory, row["filename"]).is_file()
     return web.json_response({"bridges": rows}, headers={"Cache-Control": "no-store"})
 
 
@@ -424,7 +432,7 @@ async def extension_document(request):
     base = Path(__file__).resolve().parent.parent
     example = request.match_info["document"] == "example"
     path = base / ("examples/community_helper.json" if example else "docs/plugin-development.md")
-    filename = "community_helper.json" if example else "StarBridge-plugin-development.md"
+    filename = "community_helper.json" if example else "Myrinbot-plugin-development.md"
     return web.FileResponse(path, headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
 
 
@@ -603,6 +611,7 @@ def create_app(cfg, config_path=None, restart_event=None):
     update_routes(app, STATE, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
+        web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),
         web.get("/api/config", admin_config), web.put("/api/config", save_config),
         web.post("/api/restart", restart_service),

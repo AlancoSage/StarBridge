@@ -9,6 +9,7 @@ import json
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from starbridge import __version__, __bridge_version__
+from starbridge.branding import ARTIFACT_PREFIX, artifact_path
 from starbridge.game_bridges import bridge_catalog
 from scripts.update_runtime import managed
 
@@ -22,12 +23,19 @@ def build(output):
         names.extend(p.relative_to(ROOT).as_posix() for p in (ROOT / directory).rglob('*')
                      if p.is_file() and '__pycache__' not in p.parts
                      and p.suffix in extensions[directory] and not p.name.startswith('.'))
-    # Ready-to-use optional downloads; do not bundle build tools, caches or website settings.
-    for name in (f'bridge/target/StarBridge-{__bridge_version__}.jar',
-                 *(f'bridge/target/{item["filename"]}' for item in bridge_catalog()), 'dist/StarBridge-website.zip'):
-        if (ROOT / name).is_file():
-            names.append(name)
     files = {name: ROOT / name for name in names}
+    # The deployed supervisor accepts these legacy paths. Use current artifacts as
+    # their contents without changing the existing update protocol or ZIP root.
+    downloads = [f'bridge/target/{ARTIFACT_PREFIX}-{__bridge_version__}.jar',
+                 *(f'bridge/target/{item["filename"]}' for item in bridge_catalog()),
+                 f'dist/{ARTIFACT_PREFIX}-website.zip']
+    for name in downloads:
+        current = Path(name)
+        legacy_name = current.with_name(
+            'StarBridge-' + current.name.removeprefix(ARTIFACT_PREFIX + '-')).as_posix()
+        path = artifact_path(ROOT / current.parent, current.name)
+        if path.is_file():
+            files[legacy_name] = path
     # Keep legal documents in the docs directory accepted by existing update runtimes.
     for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'CONTRIBUTING.md', 'SECURITY.md'):
         path = ROOT / name
@@ -47,7 +55,7 @@ def build(output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', type=Path, default=ROOT / 'dist' / f'StarBridge-Windows-{__version__}.zip')
+    parser.add_argument('--output', type=Path, default=ROOT / 'dist' / f'{ARTIFACT_PREFIX}-Windows-{__version__}.zip')
     args = parser.parse_args()
     count = build(args.output)
     print(f'{args.output.resolve()} ({count} files)')

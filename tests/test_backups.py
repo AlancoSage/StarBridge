@@ -116,7 +116,7 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_online_snapshot_preview_preserves_wal_data_and_hides_credentials(self):
         entry, payload = await self.backup()
-        self.assertIn("StarBridge-", (await self.client.get("/api/backups/"+entry["id"],headers=self.admin)).headers["Content-Disposition"])
+        self.assertIn("Myrinbot-", (await self.client.get("/api/backups/"+entry["id"],headers=self.admin)).headers["Content-Disposition"])
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             self.assertIn("database.sqlite3", archive.namelist())
             self.assertFalse(any(name.endswith(('-wal','-shm')) or 'backups/' in name for name in archive.namelist()))

@@ -4,4 +4,4 @@ pluginManagement {
         maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
-rootProject.name = 'StarBridge-Forge-1.20.1'
+rootProject.name = 'Myrinbot-Forge-1.20.1'

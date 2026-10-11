@@ -23,7 +23,7 @@ class IndependentWebsiteTests(unittest.TestCase):
             original=(project/'config.json').read_bytes()
             result=subprocess.run([sys.executable,str(project/'build.py'),'--api-base','https://bridge.example.com/api/v1'],cwd=project,capture_output=True,text=True,timeout=20)
             self.assertEqual(result.returncode,0,result.stderr)
-            with zipfile.ZipFile(project/'dist/StarBridge-website.zip') as archive:
+            with zipfile.ZipFile(project/'dist/Myrinbot-website.zip') as archive:
                 self.assertEqual(json.loads(archive.read('config.json')),{'apiBase':'https://bridge.example.com/api/v1'})
                 for name in ('serve.py','build.py','start.ps1','LICENSE','docs/account-api.md','sdk/starbridge.js'):
                     self.assertIn(name,archive.namelist())

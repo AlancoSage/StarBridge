@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
+from scripts import release
 from scripts.release import FABRIC_CORE, FABRIC_MIXINS, NEOFORGE_CORE, NEOFORGE_MIXINS, native_assets, native_filename, validate_native_mod
 from starbridge.game_bridges import GAME_BRIDGES
 
@@ -19,8 +21,8 @@ class NativeReleaseAssetTests(unittest.TestCase):
         (self.root/'starbridge/__init__.py').write_text('__version__="0.6.7"\n__forge_version__="0.1.0"\n', encoding='utf-8')
 
     def artifact(self, item, *, override=None, binding_override=None, missing_core=False, missing_resource=False,
-                 missing_mixin=False, mixin_override=None, metadata_transform=None, major=None):
-        path = self.root/'bridge/target'/native_filename(item, '0.1.0')
+                 missing_mixin=False, mixin_override=None, metadata_transform=None, major=None, prefix='StarBridge'):
+        path = self.root/'bridge/target'/native_filename(item, '0.1.0', prefix)
         legacy = item['platform'] == 'forge' and item['version'] in ('1.7.10', '1.12.2', '1.16.5')
         core = ['cn/starbridge/mods/BridgeEngine.class', 'cn/starbridge/mods/LegacyMod.class'] if legacy else [
             'cn/starbridge/forge/StarBridge.class', 'cn/starbridge/forge/GameLogin.class']
@@ -222,3 +224,56 @@ class NativeReleaseAssetTests(unittest.TestCase):
         self.catalog((item, item))
         with self.assertRaisesRegex(ValueError, '重复版本'):
             native_assets(self.root)
+
+    def test_current_brand_requires_current_artifacts_and_keeps_runtime_identity(self):
+        item = {'platform': 'fabric', 'version': '1.20.1', 'java': 17}
+        self.catalog((item,))
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'Myrinbot'\n", encoding='utf-8')
+        legacy = self.artifact(item)
+        current = self.artifact(item, prefix='Myrinbot')
+        self.assertEqual(native_assets(self.root), [current])
+        validate_native_mod(current, item, '0.1.0', prefix='Myrinbot')
+        with self.assertRaisesRegex(ValueError, '文件名不一致'):
+            validate_native_mod(legacy, item, '0.1.0', prefix='Myrinbot')
+        current.unlink()
+        with self.assertRaisesRegex(ValueError, '缺少游戏端构建'):
+            native_assets(self.root)
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = '../other'\n", encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, '产物名称错误'):
+            native_assets(self.root)
+
+    def test_release_build_includes_identical_legacy_aliases_and_checksums(self):
+        item = {'platform': 'fabric', 'version': '1.20.1', 'java': 17}
+        self.catalog((item,))
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'Myrinbot'\n", encoding='utf-8')
+        self.artifact(item, prefix='Myrinbot')
+        (self.root / 'bridge/pom.xml').write_text(
+            '<project xmlns="http://maven.apache.org/POM/4.0.0"><version>0.5.2</version></project>', encoding='utf-8')
+        with zipfile.ZipFile(self.root / 'bridge/target/Myrinbot-0.5.2.jar', 'w') as archive:
+            archive.writestr('plugin.yml', 'name: StarBridge\nversion: 0.5.2\n')
+        (self.root / 'scripts').mkdir()
+        (self.root / 'scripts/update_runtime.py').write_text('stable supervisor', encoding='utf-8')
+        calls = []
+
+        def run(args, **kwargs):
+            calls.append(args)
+            output = Path(args[args.index('--output') + 1])
+            output.write_bytes(b'website package' if 'website' in output.name else b'Bot package')
+
+        with patch.object(release.subprocess, 'run', side_effect=run):
+            version, assets = release.build(self.root)
+        self.assertEqual(version, '0.6.7')
+        self.assertEqual(len(calls), 2)
+        primary = [path for path in assets if path.name.startswith('Myrinbot-')]
+        self.assertEqual({path.name for path in primary}, {
+            'Myrinbot-Windows-0.6.7.zip', 'Myrinbot-website.zip', 'Myrinbot-0.5.2.jar',
+            'Myrinbot-Fabric-1.20.1-0.1.0.jar'})
+        for path in primary:
+            alias = path.with_name(path.name.replace('Myrinbot-', 'StarBridge-', 1))
+            self.assertIn(alias, assets)
+            self.assertEqual(path.read_bytes(), alias.read_bytes())
+        checksums = assets[-1].read_text('utf-8').splitlines()
+        self.assertEqual(len(checksums), 8)
+        self.assertEqual({line.split()[1] for line in checksums}, {path.name for path in assets[:-1]})
+        for path in assets[:-1]:
+            self.assertIn(release.digest(path) + '  ' + path.name, checksums)

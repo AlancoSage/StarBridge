@@ -68,7 +68,7 @@ async def serve(path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="星桥 · QQ / Minecraft 联动机器人")
+    parser = argparse.ArgumentParser(description="Myrinbot · QQ / Minecraft 联动机器人")
     parser.add_argument("command", nargs="?", choices=["init", "run", "_serve"], default="run")
     parser.add_argument("--config", default="config.toml")
     args = parser.parse_args()
@@ -84,7 +84,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if args.command == 'run':
         from scripts.update_runtime import supervise
-        print("星桥已启动；设置可在管理面板调整。首次登录令牌在本地 config.toml 中。")
+        print("Myrinbot已启动；设置可在管理面板调整。首次登录令牌在本地 config.toml 中。")
         raise SystemExit(supervise(path))
     try:
         raise SystemExit(asyncio.run(serve(path)) or 0)

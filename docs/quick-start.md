@@ -1,14 +1,14 @@
 # 快速开始：完成第一次群服联动
 
-适用版本：Bot **0.6.9**，Paper / Spigot / Folia 插件 **0.5.2**。
+适用版本：Bot **0.6.10**，Paper / Spigot / Folia 插件 **0.5.3**。
 
 ## 用途
 
-按「启动 Bot → 接入 Minecraft → 连接 QQ → 验收」完成一台游戏服务器与一个 QQ 群的双向文本聊天和账号绑定。星桥主程序处理配置与消息，游戏端上报玩家和聊天，OneBot 11 实现端负责登录 QQ。
+按「启动 Bot → 接入 Minecraft → 连接 QQ → 验收」完成一台游戏服务器与一个 QQ 群的双向文本聊天和账号绑定。Myrinbot 主程序处理配置与消息，游戏端上报玩家和聊天，OneBot 11 实现端负责登录 QQ。
 
 ## 准备
 
-- 一份完整的星桥部署包，以及可写的部署目录。
+- 一份完整的 Myrinbot 部署包，以及可写的部署目录。
 - Windows 或 Linux；手动安装需要 Python **3.11+**。
 - 一台可正常启动的 Minecraft Java 版服务器和一个测试玩家。Paper / Spigot / Folia 按本页安装；Forge / NeoForge 看 [模组游戏端](mod-game-ends.md)，Fabric 看 [Fabric 游戏端](fabric-game-ends.md)。Java 版本按 [Minecraft 兼容说明](minecraft-compatibility.md) 选择。
 - 一个已在测试群中的机器人 QQ，以及支持 **OneBot 11 通用反向 WebSocket** 的实现端。QQ 登录在该实现端完成。
@@ -21,10 +21,10 @@
 
 | 系统 | 安装方式 | 完成标志 |
 | --- | --- | --- |
-| Windows | 完整解压后双击根目录 `星桥.bat`；也可按 [Windows 手动安装](windows-installation.md#方式二-windows-手动安装) 操作 | 自动部署会在面板就绪后打开浏览器 |
+| Windows | 部署 ZIP 完整解压后双击 `星桥.bat`，源码使用 `Myrinbot.bat`；也可按 [Windows 手动安装](windows-installation.md#方式二-windows-手动安装) 操作 | 自动部署会在面板就绪后打开浏览器 |
 | Linux | 按 [Linux 安装与运行](linux-installation.md) 创建虚拟环境、安装锁定依赖、生成配置并启动 | 终端显示管理面板已启动 |
 
-本机浏览器打开 [管理面板](http://127.0.0.1:8088/)，用项目根目录 `config.toml` 的 `[app]` → `admin_token` 登录。已有配置时保留原配置；不要重复初始化。
+本机浏览器打开 [管理面板](http://127.0.0.1:5800/)，用项目根目录 `config.toml` 的 `[app]` → `admin_token` 登录。已有配置时保留原配置；不要重复初始化。
 
 面板能登录就说明 Bot 已启动，此时 QQ 和游戏端可以仍显示未连接。面板导航说明见 [管理面板](panel-guide.md)。
 
@@ -43,18 +43,18 @@
 
 ### 3. 安装 Minecraft 游戏端
 
-Paper / Spigot / Folia 使用同一个 `StarBridge-0.5.2.jar`：
+Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`：
 
 1. 完整停止游戏服务器。
-2. 在服务器卡片展开「安装插件 · 下载连接配置」，点击「下载新版插件 JAR」；部署包中的路径为 `bridge/target/StarBridge-0.5.2.jar`。将 JAR 放入游戏服务器的 `plugins/`，替换旧版星桥 JAR。
-3. 在同一卡片填写「主程序访问地址」。同机部署为 `http://127.0.0.1:8088`；分开部署填写游戏服可访问的 Bot 地址。
-4. 点击「下载插件 config.yml」，将下载的 `StarBridge-survival-config.yml`（文件名随服务器 ID 变化）重命名为 `config.yml`，放到游戏服的 `plugins/StarBridge/`。目录不存在时先创建。
+2. 在服务器卡片展开「安装插件 · 下载连接配置」，点击「下载新版插件 JAR」；部署包中的路径为 `bridge/target/StarBridge-0.5.3.jar`。将 JAR 放入游戏服务器的 `plugins/`，替换旧版 Myrinbot JAR。
+3. 在同一卡片填写「主程序访问地址」。同机部署为 `http://127.0.0.1:5800`；分开部署填写游戏服可访问的 Bot 地址。
+4. 点击「下载插件 config.yml」，将下载的 `Myrinbot-survival-config.yml`（文件名随服务器 ID 变化）重命名为 `config.yml`，放到游戏服的 `plugins/StarBridge/`。目录不存在时先创建。
 5. 启动游戏服务器，回到面板「总览」，确认对应服务器显示「在线」。
 
 插件配置的对应关系如下。推荐直接使用面板导出文件，不要把示例文字当作真实令牌：
 
 ```yaml
-endpoint: "http://127.0.0.1:8088"
+endpoint: "http://127.0.0.1:5800"
 server-id: "survival"
 token: "填写 survival 对应的服务器连接令牌"
 allowed-commands:
@@ -72,7 +72,7 @@ allowed-commands:
 
 | 参数 | 同机部署的值 |
 | --- | --- |
-| URL | `ws://127.0.0.1:8088/onebot/ws` |
+| URL | `ws://127.0.0.1:5800/onebot/ws` |
 | Token / Access Token | 面板中的「OneBot 连接令牌」；只填写令牌本身 |
 | 模式 | `Universal` / 通用，API 与事件共用一条连接 |
 | 断线重连 | 在 QQ 实现端启用 |
@@ -85,7 +85,7 @@ allowed-commands:
 
 | 操作 | 应看到的结果 |
 | --- | --- |
-| 在关联群发送 `帮助` | 机器人返回星桥命令列表 |
+| 在关联群发送 `帮助` | 机器人返回 Myrinbot 命令列表 |
 | 在群发送 `状态`、`在线` | 返回生存服状态、版本和在线玩家；应与游戏服一致 |
 | 在群发送 `群聊测试 123` | 游戏内收到转发文本 |
 | 测试玩家在游戏聊天发送 `游戏测试 456` | 群内收到带服务器和玩家名的文本 |

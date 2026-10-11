@@ -12,6 +12,6 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 } elseif (Get-Command python -ErrorAction SilentlyContinue) {
     & python @websiteArguments
 } else {
-    throw 'Install Python 3.11 or later, or deploy these static files with Nginx.'
+    throw 'Myrinbot website requires Python 3.11 or later for preview, or deploy these static files with Nginx.'
 }
 exit $LASTEXITCODE

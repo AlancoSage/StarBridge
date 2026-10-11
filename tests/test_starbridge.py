@@ -154,7 +154,11 @@ class IntegrationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_health_panel_and_auth_isolation(self):
         self.assertEqual((await self.client.get("/health")).status, 200)
-        self.assertIn("星桥", await (await self.client.get("/")).text())
+        self.assertIn("Myrinbot", await (await self.client.get("/")).text())
+        icon = await self.client.get("/mark.png")
+        self.assertEqual(icon.status, 200)
+        self.assertEqual(icon.content_type, "image/png")
+        self.assertTrue((await icon.read()).startswith(b"\x89PNG\r\n\x1a\n"))
         self.assertEqual((await self.client.get("/api/status")).status, 401)
         self.assertEqual((await self.client.get("/api/status", headers=self.bridge_headers)).status, 401)
         r = await self.client.get("/api/status", headers=self.admin_headers)

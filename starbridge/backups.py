@@ -151,7 +151,7 @@ def check_database(path):
         present = {entry[1] for entry in actual}
         compatible = [entry for entry in expected if entry[2] not in optional or entry[2] in present]
         if actual != compatible:
-            raise BackupError("数据库结构与当前星桥版本不兼容，或包含未知表、视图、触发器")
+            raise BackupError("数据库结构与当前Myrinbot版本不兼容，或包含未知表、视图、触发器")
         if db.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
             raise BackupError("数据库完整性检查失败")
         if "scheduled_tasks" in present:
@@ -261,7 +261,7 @@ def unpack_archive(archive, folder):
                     or not isinstance(manifest.get("created_at"), str) or len(manifest["created_at"]) > 40
                     or not isinstance(manifest.get("app_version"), str) or len(manifest["app_version"]) > 40
                     or not isinstance(manifest.get("files"), dict)):
-                raise BackupError("这不是支持的星桥备份格式")
+                raise BackupError("这不是支持的Myrinbot备份格式")
             datetime.fromisoformat(manifest["created_at"])
             if set(manifest["files"]) != set(names) - {"manifest.json"} or not REQUIRED <= manifest["files"].keys():
                 raise BackupError("清单与实际文件不一致或缺少配置、数据库")

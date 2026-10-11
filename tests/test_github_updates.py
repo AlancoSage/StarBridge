@@ -47,6 +47,51 @@ class GitHubUpdateTests(unittest.IsolatedAsyncioTestCase):
         with patch('starbridge.github_updates.aiohttp.ClientSession',return_value=client):items=await self.service().releases()
         self.assertEqual([r['version'] for r in items],['0.6.1','0.5.0']);self.assertTrue(items[0]['updatable']);self.assertFalse(items[1]['updatable'])
 
+    async def test_rebranded_package_is_listed_and_preferred_over_legacy_alias(self):
+        current = {'name': 'Myrinbot-Windows-0.6.9.zip', 'id': 51, 'size': 100,
+                   'state': 'uploaded', 'digest': 'sha256:' + 'a' * 64}
+        legacy = {**current, 'name': 'StarBridge-Windows-0.6.9.zip', 'id': 52}
+        previous = {**current, 'name': 'AetherBot-Windows-0.6.9.zip', 'id': 54}
+        release = {'tag_name': 'v0.6.9', 'assets': [legacy, previous, current]}
+        client = Client([Response([release])])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client):
+            rows = await self.service().releases()
+        self.assertTrue(rows[0]['updatable'])
+        client = Client([Response(release)])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client):
+            info = await self.service().check('0.6.8', 'v0.6.9')
+        self.assertEqual(info['asset_id'], current['id'])
+        current['state'] = 'new'
+        client = Client([Response(release)])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client):
+            info = await self.service().check('0.6.8', 'v0.6.9')
+        self.assertEqual(info['asset_id'], previous['id'])
+        previous['state'] = 'new'
+        client = Client([Response(release)])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client):
+            info = await self.service().check('0.6.8', 'v0.6.9')
+        self.assertEqual(info['asset_id'], legacy['id'])
+
+    async def test_current_package_requires_its_own_checksum_without_bypassing_validation(self):
+        current = {'name': 'Myrinbot-Windows-0.6.9.zip', 'id': 51, 'size': 100, 'state': 'uploaded'}
+        legacy = {**current, 'name': 'StarBridge-Windows-0.6.9.zip', 'id': 52,
+                  'digest': 'sha256:' + 'a' * 64}
+        release = {'tag_name': 'v0.6.9', 'assets': [legacy, current, {'name': 'SHA256SUMS.txt', 'id': 53}]}
+        checksum = ('b' * 64 + '  Myrinbot-Windows-0.6.9.zip\n'
+                    + 'a' * 64 + '  StarBridge-Windows-0.6.9.zip\n').encode()
+        client = Client([Response(release), Response(raw=checksum)])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client):
+            info = await self.service().check('0.6.8', 'v0.6.9')
+        self.assertEqual(info['asset_id'], current['id'])
+        self.assertEqual(info['sha256'], 'b' * 64)
+        client = Client([Response(release), Response(raw=('a' * 64 + '  StarBridge-Windows-0.6.9.zip\n').encode())])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client), self.assertRaises(RegistrationError):
+            await self.service().check('0.6.8', 'v0.6.9')
+        current['size'] = 0
+        client = Client([Response(release)])
+        with patch('starbridge.github_updates.aiohttp.ClientSession', return_value=client), self.assertRaises(RegistrationError):
+            await self.service().check('0.6.8', 'v0.6.9')
+
     async def test_digest_and_checksum_fallback_and_numeric_version_order(self):
         asset={'name':'StarBridge-Windows-0.6.1.zip','id':42,'size':100,'state':'uploaded','digest':'sha256:'+'a'*64}
         release={'tag_name':'v0.6.1','assets':[asset]}

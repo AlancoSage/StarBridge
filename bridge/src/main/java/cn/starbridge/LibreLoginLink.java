@@ -46,7 +46,7 @@ final class LibreLoginLink implements LoginLink, Listener {
     private final VerifiedLoginAccounts accounts;
     private final ConcurrentHashMap<UUID, Attempt> attempts = new ConcurrentHashMap<UUID, Attempt>();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "StarBridge-LibreLogin");
+        Thread thread = new Thread(runnable, "Myrinbot-LibreLogin");
         thread.setDaemon(true);
         return thread;
     });
@@ -55,7 +55,7 @@ final class LibreLoginLink implements LoginLink, Listener {
     LibreLoginLink(Plugin installed, Plugin owner) throws ReflectiveOperationException, IOException {
         if (BridgeScheduler.isFolia()) throw new IOException("LibreLogin 接入目前仅支持普通 Paper，不能用于 Folia。");
         if (installed == null || owner == null || !installed.isEnabled() || !owner.isEnabled())
-            throw new IOException("LibreLogin 或星桥尚未启用。");
+            throw new IOException("LibreLogin 或Myrinbot尚未启用。");
         this.installed = installed;
         this.owner = owner;
         ClassLoader loader = installed.getClass().getClassLoader();
@@ -101,7 +101,7 @@ final class LibreLoginLink implements LoginLink, Listener {
     public String ownershipPrompt() {
         return "首次接入请先完成 LibreLogin 原生注册或登录；已有账号使用 /librelogin:login <原密码> [动态验证码]，"
             + "新账号使用 /librelogin:register <密码> <重复密码>。"
-            + (nativeTwoFactorAvailable ? "启用两步验证的账号每次仍需完成原生验证。" : "当前 Paper 端无法验证带有 TOTP 密钥的账号，星桥会拒绝接入此类账号。");
+            + (nativeTwoFactorAvailable ? "启用两步验证的账号每次仍需完成原生验证。" : "当前 Paper 端无法验证带有 TOTP 密钥的账号，Myrinbot会拒绝接入此类账号。");
     }
 
     public boolean authenticated(Player player) throws ReflectiveOperationException, IOException {
@@ -256,7 +256,7 @@ final class LibreLoginLink implements LoginLink, Listener {
     public void logout(Player player) {
         invalidate(player);
         // There is no public deauthorize/logout API. Disconnecting ends the native connection safely.
-        player.kickPlayer("已退出星桥与 LibreLogin 登录，请重新连接服务器。");
+        player.kickPlayer("已退出Myrinbot与 LibreLogin 登录，请重新连接服务器。");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

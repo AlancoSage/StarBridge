@@ -1,27 +1,27 @@
 # Minecraft 版本兼容与 Java 选择
 
-星桥 Bot **0.6.9** 配套游戏桥接插件 **0.5.2** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `StarBridge-0.5.2.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
+Myrinbot Bot **0.6.10** 配套游戏桥接插件 **0.5.3** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
 
 ## 安装与升级
 
 1. 从 Bot 面板的玩家管理或游戏登录页面下载配套 JAR。
-2. 停止游戏服务器，在 `plugins/` 中替换旧 StarBridge JAR，确保只保留一份。
+2. 停止游戏服务器，在 `plugins/` 中替换旧 Myrinbot JAR，确保只保留一份。
 3. 保留 `plugins/StarBridge/config.yml` 的地址、服务器 ID 和令牌，重新启动游戏服务器。
 4. 在 Bot 面板确认桥接在线，检查聊天、`/qbind` 和玩家管理；开启游戏认证的服务器还需检查 `/l`、`/ql` 和未登录时的操作限制。
 
-无需修改 Bot 的 Python 环境，也不需要安装显卡驱动。Folia 必须使用此次 0.5.2 或更新的兼容构建；此前的 0.5.0 未提供 Folia 调度适配。
+无需修改 Bot 的 Python 环境，也不需要安装显卡驱动。Folia 至少使用 0.5.2 兼容构建，推荐当前 0.5.3；此前的 0.5.0 未提供 Folia 调度适配。
 
 ## Folia 接入
 
-1. 在 Bot 面板「接入空间 → 服务器」保存服务器 ID、连接令牌和关联群，下载 `StarBridge-0.5.2.jar` 与这台服务器的 `config.yml`。
-2. 完整停止 Folia，把 JAR 放入 `plugins/`，配置放入 `plugins/StarBridge/config.yml`。只保留一份 StarBridge 插件。
+1. 在 Bot 面板「接入空间 → 服务器」保存服务器 ID、连接令牌和关联群，下载 `Myrinbot-0.5.3.jar` 与这台服务器的 `config.yml`。
+2. 完整停止 Folia，把 JAR 放入 `plugins/`，配置放入 `plugins/StarBridge/config.yml`。只保留一份 Myrinbot 插件。
 3. 用该 Folia 构建要求的 Java 启动游戏服；本次实服验证为 **Folia 1.21.8 正式 build 6 / Java 21**。Java 8 字节码不表示 Folia 服务端能用 Java 8 启动。
 4. 在 Bot 面板确认桥接在线，检查玩家档案、双向聊天、`/qbind` 与管理回执。
-5. 需要游戏登录时，在「成员 → 游戏登录」勾选这台服务器，选择「星桥内置」或「自动」，按需启用密码与 QQ 确认，再检查 `/l`、`/ql`、`/logout` 和未登录限制。
+5. 需要游戏登录时，在「成员 → 游戏登录」勾选这台服务器，选择「Myrinbot 内置」或「自动」，按需启用密码与 QQ 确认，再检查 `/l`、`/ql`、`/logout` 和未登录限制。
 
-无需额外调度插件或客户端组件。星桥自动识别 Folia：全局任务用于组装状态与控制台操作，玩家状态、消息、登录结果及踢出回到各自实体调度器。玩家跨区域移动后仍由其实体调度器处理；已离线连接的回调不会操作新连接。实现方式遵循 [Paper / Folia 调度说明](https://docs.papermc.io/paper/dev/folia-support/)。
+无需额外调度插件或客户端组件。Myrinbot 自动识别 Folia：全局任务用于组装状态与控制台操作，玩家状态、消息、登录结果及踢出回到各自实体调度器。玩家跨区域移动后仍由其实体调度器处理；已离线连接的回调不会操作新连接。实现方式遵循 [Paper / Folia 调度说明](https://docs.papermc.io/paper/dev/folia-support/)。
 
-**Folia 游戏登录只使用星桥内置模式。** 使用内置或自动引擎并移除第三方登录插件；已启用 AuthMe、nLogin、LoginSecurity 或 LibreLogin，或明确选择第三方兼容引擎时星桥拒绝放行。登录插件能加载 Folia 不表示其公开 API 已具备安全的区域线程契约，星桥不会调用未经验证的接口。普通 Paper / Spigot 可以使用下列兼容引擎。
+**Folia 游戏登录只使用 Myrinbot 内置模式。** 使用内置或自动引擎并移除第三方登录插件；已启用 AuthMe、nLogin、LoginSecurity 或 LibreLogin，或明确选择第三方兼容引擎时 Myrinbot 拒绝放行。登录插件能加载 Folia 不表示其公开 API 已具备安全的区域线程契约，Myrinbot 不会调用未经验证的接口。普通 Paper / Spigot 可以使用下列兼容引擎。
 
 ## 第三方登录插件兼容
 
@@ -31,9 +31,9 @@
 | nLogin | 普通 Paper / Spigot 本服原生后端；Identity API，本次检查 2.0.24 / API 2.0 | 每连接原生注册或密码及额外验证；账号 UUID 必须匹配；不接代理模式 |
 | LoginSecurity | 普通 Paper / Spigot；3.x 会话与异步 Action API | 已有账号需原身份；注册验证码和关闭注册不能绕过 |
 | LibreLogin | 普通 Paper；0.24.0 公开 API，Java 21 | 首次原生注册 / 登录后关联；本版 Paper 拒绝带 TOTP 密钥的账号；不接代理或 Folia |
-| 星桥内置 | Paper / Spigot / Folia；Forge / NeoForge / Fabric 对应模组 | 不同时启用第三方认证；模组服与 Folia 可选自动 |
+| Myrinbot 内置 | Paper / Spigot / Folia；Forge / NeoForge / Fabric 对应模组 | 不同时启用第三方认证；模组服与 Folia 可选自动 |
 
-每台游戏服只启用一个已适配的登录插件，星桥在调用 API 前拒绝多个认证所有者。显式引擎缺失、公开 API 不匹配及未知引擎不会回退放行；同一 Bot 接入不同加载器时选择「自动」。各适配器可信关联文件互相隔离，既有 `authme-links.properties` 保留可用，其他插件不能继承它的信任。安装步骤、原生命令、API 来源及验证范围见 [可选登录插件](game-login.md#可选登录插件)。
+每台游戏服只启用一个已适配的登录插件，Myrinbot 在调用 API 前拒绝多个认证所有者。显式引擎缺失、公开 API 不匹配及未知引擎不会回退放行；同一 Bot 接入不同加载器时选择「自动」。各适配器可信关联文件互相隔离，既有 `authme-links.properties` 保留可用，其他插件不能继承它的信任。安装步骤、原生命令、API 来源及验证范围见 [可选登录插件](game-login.md#可选登录插件)。
 
 安装、升级、移除登录插件时完整停止并重启游戏服，不使用热卸载或强制插件停用。正常关服会取消待执行的全局与实体任务并清理回调；插件停用时不在非玩家线程逐个踢人，不能把热停用当成继续在线运行的认证保护方式。面板中的认证开关与业务设置仍可正常保存应用，不需要为了改这些设置重启游戏服。
 
@@ -66,8 +66,8 @@ Folia、Spigot 和历史第三方构建请按对应发行说明选择运行环�
 | Folia 内置登录 | 隔离的双区域登录测试，覆盖密码、QQ、策略与 nonce、超时、退休、四种外部登录插件拒绝和停用竞态，共 33 项 | 通过 |
 | Folia 1.21.8 正式 build 6 | Java 21 实服，4 个区域线程，两名相隔 8192 格的协议玩家；密码 / QQ 登录、限制、档案、广播、白名单、处罚和停服，共 35 项 | 通过 |
 | 新增原生登录适配器 | nLogin 25 项、LoginSecurity 47 项、LibreLogin 35 项隔离公共 API 契约检查，覆盖原账号归属、异步等待、身份变化、失败、重载与并发记录持久化 | 通过 |
-| LoginSecurity 3.3.1 + Paper 1.21.8 正式 build 60 | Java 21 实服，新账号异步注册及状态恢复、已有原账号双证明、原生会话恢复仍需星桥证明、网站 /login 与 /l、QQ /ql、限制与退出，共 23 项 | 通过 |
-| nLogin free 2.0.24 + Paper 1.21.8 正式 build 60 | Java 21 实服，原生或星桥单端成功仍限制、网站与 QQ 命名空间指令、普通原生注册与密码登录、UUID 核对、重连及命令冲突，共 16 项 | 通过 |
+| LoginSecurity 3.3.1 + Paper 1.21.8 正式 build 60 | Java 21 实服，新账号异步注册及状态恢复、已有原账号双证明、原生会话恢复仍需 Myrinbot 证明、网站 /login 与 /l、QQ /ql、限制与退出，共 23 项 | 通过 |
+| nLogin free 2.0.24 + Paper 1.21.8 正式 build 60 | Java 21 实服，原生或 Myrinbot 单端成功仍限制、网站与 QQ 命名空间指令、普通原生注册与密码登录、UUID 核对、重连及命令冲突，共 16 项 | 通过 |
 | LibreLogin 0.24.0 + Paper 1.21.4 正式 build 232 | Java 21 实服，首次原生注册及登录、网站 /l、绑定 QQ /ql、原密码不变、身份核对、拒绝带 TOTP 密钥的账号与正常停服，共 26 项 | 通过 |
 
 Folia 实服检查确认两名玩家分别属于两个独立区域，玩家操作在各自所属实体线程执行。进服、退出登录、重连、踢出与封禁转换期间心跳均被接受，客户端解码错误为 0，并在仍有玩家在线时完成正常停服（退出码 0）。管理处罚自动解封同时核对来源与原因，管理员独立封禁得到保留。
@@ -76,7 +76,7 @@ Folia 实服检查确认两名玩家分别属于两个独立区域，玩家操�
 
 API 检查验证插件直接调用的类和方法签名是否存在；接口代理测试使用真实 API 和模拟服务端，不运行 Minecraft 世界。**目前没有完成全部历史版本、每个构建号及所有插件组合的实服验证，也不能保证未来版本永远不变。**通用构建以跨版本适配为目标，正式部署前应在自己的核心与插件组合上验证。
 
-LoginSecurity 实服检查使用真实 Paper、原登录插件和游戏协议客户端，星桥 HTTP 返回由隔离测试后端提供；nLogin 和 LibreLogin 使用真实星桥账号后端。QQ 发送与确认在测试中模拟，不向真实 QQ 发送消息。nLogin Premium 专属二次验证未做实服检查；隔离公共 API 测试检查原生未认证时不会放行。AuthMe 当前完成公开 API 与事件回归，未完成这些实服组合的验证。
+LoginSecurity 实服检查使用真实 Paper、原登录插件和游戏协议客户端，Myrinbot HTTP 返回由隔离测试后端提供；nLogin 和 LibreLogin 使用真实 Myrinbot 账号后端。QQ 发送与确认在测试中模拟，不向真实 QQ 发送消息。nLogin Premium 专属二次验证未做实服检查；隔离公共 API 测试检查原生未认证时不会放行。AuthMe 当前完成公开 API 与事件回归，未完成这些实服组合的验证。
 
 ## 跨版本行为
 

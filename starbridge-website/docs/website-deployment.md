@@ -1,41 +1,95 @@
 # 社区官网部署与玩家信息 API
 
-## 可以选择的部署方式
+官网接入是可选功能。这篇文档用于选择接入方式、部署独立官网，或在已有网页中调用服务器与账号 API。Bot 首次安装见 [快速开始](https://github.com/AlancoSage/StarBridge/blob/main/docs/quick-start.md)；只需要邮件注册时可直接使用 Bot 的 `/register` 页面，见 [账号注册](account-api.md)。
 
-星桥提供完整的社区官网：首页、全部服务器状态、邮箱注册、密码登录、本人档案与邮件找回密码。所有页面为本地 HTML/CSS/JavaScript，无运行时框架、外部字体、图片服务、WebGL 或持续动画；导航只播放一次 160 毫秒淡入，并遵守减少动态效果设置。服务器状态页展示全部已配置服务器，包含未连接项，提供已连接数量及在线人数合计；每 30 秒刷新，后台暂停，回到页面立即刷新，也支持手动刷新。官网不展示公开玩家目录，已有网站仍可通过下述玩家信息 API 接入。
+本文对应随 **Bot v0.6.10** 正式分发的 `Myrinbot-website.zip`，官网与面板使用同一枚黑白 M 机器人图标。新安装的 Bot 默认面板与 API 端口为 **5800**，官网本机预览仍使用 **8089**；已有 Bot 配置保留原端口，接入时使用实际 API 地址。
+
+## 先选择接入方式
+
+| 面板选择 | 适用情况 | 需要完成的事 |
+| --- | --- | --- |
+| 不接入官网 | 只使用 Bot、游戏服及群功能；新安装默认 | 保持此模式即可，Bot 可独立运行 |
+| 使用 Myrinbot 提供的官网 | 需要现成的首页、服务器状态和玩家账号页 | 下载独立项目、自行部署、填写网站与 API 地址并替换 `config.json` |
+| 接入自己的官网 | 已有自己的页面和内容 | 填写网站地址，用本页 API 或 SDK 接入所需功能 |
+
+两种接入方式均需网站地址，使用同一套 HTTP API 和来源授权。选择提供的官网不会自动部署网站；选择自有官网后，页面设计与内容由自己的项目管理，Bot 显示 API 公开范围设置及接口文档。
+
+「不接入官网」保留已保存的网站地址和官网设置，停止允许该网站来源的跨域请求，旧官网入口不再跳转；不会启动、停止或部署外部网站服务。不关闭公共 API、注册功能或撤销用户令牌；其他手动授权来源仍可使用。
+
+## 官网项目与部署内容
+
+Myrinbot 提供完整的社区官网：首页、全部服务器状态、邮箱注册、密码登录、本人档案与邮件找回密码。所有页面为本地 HTML/CSS/JavaScript，无运行时框架、外部字体、图片服务、WebGL 或持续动画；导航只播放一次 160 毫秒淡入，并遵守减少动态效果设置。服务器状态页展示全部已配置服务器，包含未连接项，提供已连接数量及在线人数合计；每 30 秒刷新，后台暂停，回到页面立即刷新，也支持手动刷新。官网不展示公开玩家目录，已有网站仍可通过下述玩家信息 API 接入。
 
 - **独立项目**：`starbridge-website/` 可以单独复制到自己的仓库和服务器，包含独立启动、打包工具、SDK 与文档。Bot 不承载官网静态文件，也不需要网站源目录才能启动。
 - **独立部署**：在「接入空间 → 网站绑定」下载独立项目和 `config.json`，解压项目并替换接入配置，然后部署到自己选择的静态服务器或托管目录。面板下载的是预先生成的项目包；源码修改后运行独立项目的 `build.py` 重新打包。
 - **已有网站**：使用本页接口和部署包中的 `sdk/starbridge.js`，可以自定义界面。
 
-独立项目不含星桥数据库、Bot 配置、密码或任何管理/网站后端密钥。首页介绍、规则、游戏地址、入群链接及公开开关都在星桥面板调整，无需重新打包；网站只通过 HTTP API 读取这些数据。API 地址持久保存在 Bot 接入设置中，下载接入配置后需替换网站根目录的 `config.json`；保存 Bot 设置不会直接修改远端网站文件。
+独立项目不含 Myrinbot 数据库、Bot 配置、密码或任何管理/网站后端密钥。首页介绍、规则、游戏地址、入群链接及公开开关都在 Myrinbot 面板调整，无需重新打包；网站只通过 HTTP API 读取这些数据。API 地址持久保存在 Bot 接入设置中，下载接入配置后需替换网站根目录的 `config.json`；保存 Bot 设置不会直接修改远端网站文件。
 
 官网采用静态网格、方块装饰和紧凑导航。面板支持 `accent_color`、`secondary_color`（`#RRGGBB` 格式）、`theme_mode`（`system/light/dark`）及 `grid_background`。访客可通过「外观」选择配色和明暗模式，偏好保存在本浏览器 `localStorage`，不修改全站设置；「恢复官网默认外观」清除此偏好。窄屏导航自动放到页底。没有背景视频、加载遮罩、持续动画或模糊滤镜。
 
+## 开始前准备
+
+- Bot 已运行，服主可以打开「接入空间 → 网站绑定」。
+- 准备独立网页的部署目录或静态托管，以及访客能访问的 Bot 公开 API 地址。网页地址和 API 地址可以使用不同域名。
+- 官网要开放新注册或密码找回时，先按 [账号注册](account-api.md) 配置 SMTP；只展示服务器状态时不要求 SMTP 或 OneBot。
+- 本机预览使用 Python 3.11+，正式部署静态文件不需要 Python。不要双击 HTML 以 `file://` 方式测试跨域接入。
+
 ## 配置步骤
 
-Bot 面板提供三种官网接入方式：
-
-- **不接入官网**（新安装默认）：Bot 可独立使用。保留已保存的网站地址和官网设置，停止允许该网站来源的跨域请求，旧官网入口不再跳转；不会启动、停止或部署外部网站服务。
-- **使用星桥提供的官网**：下载星桥独立官网项目，自行选择部署位置，填写部署后的地址接入。在 Bot 面板调整官网内容、外观及公开范围。
-- **接入自己的官网**：填写已有官网地址，使用 API/SDK 接入注册、登录、本人信息和服务器状态；页面设计与内容由自己的项目管理，Bot 显示 API 公开范围设置及接口文档。
-
-两种接入方式均需网站地址；它们使用同一套 HTTP API 和来源授权，选择提供的官网不会自动部署网站。不接入官网不关闭公共 API、注册功能或撤销用户令牌；其他手动授权来源仍可使用。
-
-1. 在「网站绑定」选择「使用星桥提供的官网」或「接入自己的官网」，填写网站地址、Bot 公开 API 地址并保存。网站地址支持子目录，例如 `https://www.example.com/community/`；Bot 会自动允许其准确来源 `https://www.example.com`。
-2. 在「成员 → 注册账号」配置 SMTP 和发件人，启用注册。官网登录不依赖注册开关，已注册用户可在停止新注册后继续登录。
-3. 设置官网名称、首页内容、游戏地址、入群链接及公开范围。接入网站无需重复填写注册来源白名单；其他第三方网站可继续在注册设置中加入精确来源，不支持 `*` 或 `file://`。
+1. 在「网站绑定」选择「使用 Myrinbot 提供的官网」或「接入自己的官网」，填写网站地址、Bot 公开 API 地址并保存。网站地址支持子目录，例如 `https://www.example.com/community/`；Bot 会自动允许其准确来源 `https://www.example.com`。
+2. 需要注册或密码找回时，在「成员 → 注册账号」配置 SMTP 和发件人；需要开放新用户注册时再启用注册。只展示公开信息可以跳过。官网登录不依赖注册开关，已注册用户可在停止新注册后继续登录。
+3. 使用 Myrinbot 提供的官网时，设置官网名称、首页内容、游戏地址、入群链接及外观；两种接入方式都检查公开范围与官网登录开关。接入网站无需重复填写注册来源白名单；其他第三方网站可继续在注册设置中加入精确来源，不支持 `*` 或 `file://`。
 4. API 地址填写 `https://bridge.example.com/api/v1`，保存后下载接入配置；同来源反向代理 `/api/v1/` 时可填写 `/api/v1`。
-5. 上传所有网页文件。站点可位于子目录，资源使用相对地址，导航使用 hash，不需要 SPA 重写规则。
-6. 使用测试邮箱验证注册、登录、本人档案和找回密码，再向玩家提供官网地址。
+5. 使用 Myrinbot 提供的官网时，解压下载的独立项目，用新下载的 `config.json` 替换根目录配置，上传所有网页文件。站点可位于子目录，资源使用相对地址，导航使用 hash，不需要 SPA 重写规则。自有官网按下方 SDK 示例修改自己的项目。
+6. 按实际启用的功能测试服务器状态、注册、登录、本人档案和找回密码，再向玩家提供官网地址。
 
-本机在独立项目目录执行 `python serve.py --port 8089 --api-base http://127.0.0.1:8088/api/v1`（Windows 也可运行 `./start.ps1 -ApiBase http://127.0.0.1:8088/api/v1`），Bot 中网站地址填 `http://127.0.0.1:8089/`。启动工具只依赖 Python 3.11+ 标准库，不依赖 Bot 或父目录；`--api-base` 覆盖本次服务的配置，不修改磁盘，不指定时读取项目 `config.json`。正式静态部署不需要 Python。API 的 `127.0.0.1` 对外网玩家指向玩家自己的机器，正式部署须使用玩家可访问的地址。
+### 最小本机预览
 
-独立打包：`python build.py --api-base https://bridge.example.com/api/v1`，生成 `dist/StarBridge-website.zip`；`--output` 可指定输出位置。只读取项目固定文件，API 地址写入压缩包，原始配置保持不变。将生成的 ZIP 放到 Bot 的 `dist/StarBridge-website.zip` 后，面板可提供项目下载。
+先在「网站绑定」选择「使用 Myrinbot 提供的官网」，网站地址填 `http://127.0.0.1:8089/`，API 地址填 `http://127.0.0.1:5800/api/v1`，保存并允许公开服务器。下载并解压项目，在独立项目目录执行：
+
+```powershell
+python serve.py --port 8089 --api-base http://127.0.0.1:5800/api/v1
+```
+
+Windows 也可执行：
+
+```powershell
+.\start.ps1 -ApiBase http://127.0.0.1:5800/api/v1
+```
+
+Bot 使用其他端口时同步替换 API 地址。打开 `http://127.0.0.1:8089/`，应看到面板配置的社区名称；服务器页包含所有已配置服务器，未连接服务器也会显示。此时只需完成公开信息读取，再按 [验收](#上线前验收) 测试注册与登录。
+
+启动工具只依赖 Python 3.11+ 标准库，不依赖 Bot 或父目录；`--api-base` 覆盖本次服务的配置，不修改磁盘，不指定时读取项目 `config.json`。正式静态部署不需要 Python。API 的 `127.0.0.1` 对外网玩家指向玩家自己的机器，正式部署须使用玩家可访问的地址。
+
+独立打包：`python build.py --api-base https://bridge.example.com/api/v1`，生成 `dist/Myrinbot-website.zip`；`--output` 可指定输出位置。只读取项目固定文件，API 地址写入压缩包，原始配置保持不变。Bot 的发布脚本会将同一官网包放到内部兼容路径 `dist/StarBridge-website.zip`，面板以新品牌文件名提供下载；源码手动部署时，将独立构建的 ZIP 复制到该兼容路径即可。
 
 选择「不接入官网」后，即使该来源同时存在于手动白名单，Bot 也拒绝该网站来源的跨域 API 请求；其他手动授权网站不受影响。CORS 不代替身份验证，不阻止非浏览器客户端，关闭接入不会撤销用户令牌或关闭公共 API。旧 `/community/` 地址在接入时跳转到网站，未接入时返回 404，静态资源不再从 Bot 提供。接入方式保存在 `website_mode`（`none/provided/custom`）；旧版启用的接入设置迁移为 `custom`，关闭的设置迁移为 `none`，不会擅自更换地址。
 
-公网官网和 API 使用 HTTPS，避免浏览器混合内容拦截。独立项目内提供 `nginx.example.conf`，自行填写目录、域名和证书；反向代理应只公开需要的 `/api/v1/` 与官网资源，管理面板可保留在内网。星桥当前以实际 socket 地址限流，不信任任意 `X-Forwarded-For`，经代理的用户可能共用额度。
+公网官网和 API 使用 HTTPS，避免浏览器混合内容拦截。独立项目内提供 `nginx.example.conf`，自行填写目录、域名和证书；反向代理应只公开需要的 `/api/v1/` 与官网资源，管理面板可保留在内网。Myrinbot 当前以实际 socket 地址限流，不信任任意 `X-Forwarded-For`，经代理的用户可能共用额度。
+
+## 上线前验收
+
+1. 从实际官网域名打开首页，确认名称、规则、地址及服务器列表与面板设置一致；在手机上确认导航和表单可以使用。
+2. 使用测试邮箱完成注册，退出再用注册玩家名和密码登录；群注册旧账号先通过邮件设置密码。关闭新注册后，已有账号仍应可以登录。
+3. 查看本人档案。尚未游戏登录或绑定时为空；完成 [账号绑定](https://github.com/AlancoSage/StarBridge/blob/main/docs/account-binding.md) 或 [游戏登录](https://github.com/AlancoSage/StarBridge/blob/main/docs/game-login.md) 后刷新，确认只显示本人的身份。
+4. 测试找回密码，确认旧会话失效；重新登录后测试退出，确认前端清理令牌。
+5. 核对公开服务器和公开玩家开关。未授权的数据接口应返回 403；官网模板不提供公开玩家目录页。
+6. 从实际玩家设备访问，确认 API 没有 `127.0.0.1`、内网地址、HTTPS 混合内容或 CORS 错误。面板「检查 API」只证明当前管理浏览器可读公开 API。
+
+## 常见问题
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| 面板已绑定，网站打不开 | 绑定只保存地址和来源授权；先确认静态站点已上传并由网站服务提供，再核对域名、端口和部署目录 |
+| 首页正常，但信息一直加载失败 | 打开网站的 `config.json` 确认 `apiBase`；Bot 保存设置不会修改远端文件，需要重新下载并替换配置 |
+| 本机正常，外网玩家失败 | 将 `127.0.0.1` 或内网 API 换成玩家可访问的 HTTPS 地址；检查代理是否公开 `/api/v1/` |
+| 浏览器显示跨域错误 | 保存与当前网页协议、域名、端口相同的网站地址；`localhost` 与 `127.0.0.1` 是不同来源，子目录不属于来源 |
+| 选择“不接入官网”后旧网站不能调用 | 该网站来源的跨域请求会被拒绝，即使同时在手动白名单中；重新接入并保存后再测试 |
+| 服务器显示未连接或玩家为 unknown | 先检查 [游戏桥接](https://github.com/AlancoSage/StarBridge/blob/main/docs/quick-start.md) 心跳；未连接不能用来断定游戏服已经关闭，公开 API 也不会按同名猜测本人 UUID |
+| 注册或找回密码邮件失败 | 按 [账号注册常见问题](account-api.md#常见问题) 核对 SMTP、限流和当前验证码 |
+| 登录返回 401 或 503 | 401 检查注册玩家名和密码；503 检查官网登录开关或验证繁忙，群注册账号先设置密码 |
+| 下载官网包返回 project_missing | 发布包应包含预先生成的项目 ZIP；源码部署按独立项目 `build.py` 打包，再放入 Bot 的 `dist/StarBridge-website.zip` |
 
 ## 访问权限与数据范围
 
@@ -53,7 +107,7 @@ Bot 面板提供三种官网接入方式：
 
 ## 公共接口
 
-下列路径都相对于星桥地址，GET 不需要凭据。所有 JSON 接口禁止缓存；跨域来源受网站接入及注册来源设置约束，CORS 不代替用户身份验证。
+下列路径都相对于 Myrinbot 地址，GET 不需要凭据。所有 JSON 接口禁止缓存；跨域来源受网站接入及注册来源设置约束，CORS 不代替用户身份验证。
 
 ### `GET /api/v1/community/info`
 
@@ -71,7 +125,7 @@ Bot 面板提供三种官网接入方式：
 {"players":[{"name":"Steve","uuid":"12345678-1234-1234-1234-123456789abc","status":"online"}],"page":1,"page_size":24,"total":1}
 ```
 
-列表来自星桥记录的未删除玩家档案，注册账号尚未到访或关联游戏身份时不会凭空生成游戏 UUID。状态为 `online`、`offline` 或 `unknown`。仅用当前有效心跳确认在线/离线，断连或缺少足够数据时为 `unknown`。
+列表来自 Myrinbot 记录的未删除玩家档案，注册账号尚未到访或关联游戏身份时不会凭空生成游戏 UUID。状态为 `online`、`offline` 或 `unknown`。仅用当前有效心跳确认在线/离线，断连或缺少足够数据时为 `unknown`。
 
 ### `GET /api/v1/players/{uuid}`
 
@@ -133,9 +187,45 @@ SDK 增加 `services(token)`、`bind(token,server,code)`、`unbind(token,server)
 
 ## 已有网站接入示例
 
+### 先运行一次公开读取
+
+在「网站绑定」选择「接入自己的官网」，网站地址填写 `http://127.0.0.1:8089/`，API 地址填写 `http://127.0.0.1:5800/api/v1`，保存并允许公开服务器。下载面板中的 SDK，保留文件名 `website-registration.js`，与下面保存为 `index.html` 的文件放在同一测试目录：
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Myrinbot API 接入示例</title>
+<h1 id="community-name">正在读取社区信息…</h1>
+<pre id="servers"></pre>
+<script type="module">
+  import {createMyrinbotClient} from './website-registration.js';
+  const bridge = createMyrinbotClient('http://127.0.0.1:5800/api/v1');
+  const name = document.getElementById('community-name');
+  const output = document.getElementById('servers');
+  try {
+    const info = await bridge.communityInfo();
+    name.textContent = info.title;
+    const data = await bridge.servers();
+    output.textContent = data.servers.map(server =>
+      `${server.name}：${server.connected ? `已连接，在线 ${server.online_count} 人` : '未连接'}`
+    ).join('\n') || '尚未配置服务器';
+  } catch (error) {
+    output.textContent = `读取失败：${error.message}`;
+  }
+</script>
+</html>
+```
+
+在该测试目录运行 `python -m http.server 8089 --bind 127.0.0.1`，打开 `http://127.0.0.1:8089/`。如果正在运行前面的官网预览，先停止它以释放 8089 端口。确认社区名称和服务器状态读取成功，再接入下面的账号功能；公开读取不需要任何密钥。正式部署替换 API 地址和绑定的网站地址，并使用 HTTPS。
+
+### 按需加入账号与玩家查询
+
+独立项目内 SDK 路径为 `sdk/starbridge.js`；从面板下载时文件名为 `website-registration.js`，按自己保存的位置调整 import。下例中的 `playerInput`、`passwordInput` 分别取自账号表单的玩家名和密码输入，玩家查询需启用公开玩家：
+
 ```js
-import {createStarBridgeClient} from './sdk/starbridge.js';
-const bridge = createStarBridgeClient('https://bridge.example.com');
+import {createMyrinbotClient} from './sdk/starbridge.js';
+const bridge = createMyrinbotClient('https://bridge.example.com');
 const info = await bridge.communityInfo();
 const directory = await bridge.players({q:'Steve',page:1,pageSize:24});
 const result = await bridge.login(playerInput, passwordInput);
@@ -143,7 +233,7 @@ const profile = await bridge.profile(result.access_token);
 await bridge.logout(result.access_token);
 ```
 
-SDK 保留原来的 `createStarBridgeRegistration`、`info/apply/resend/verify/account/requestPassword/setPassword` 方法，新增 `communityInfo/servers/players/player/login/logout/profile`。可传后端来源或包含 `/api/v1` 的完整地址。使用 DOM `textContent` 展示 API 文本，避免把用户或管理员输入当 HTML 执行。
+新接入推荐使用 `createMyrinbotClient` 或注册专用的 `createMyrinbotRegistration`。SDK 继续提供 `createStarBridgeClient`、`createStarBridgeRegistration`、`createAetherBotClient` 与 `createAetherBotRegistration` 兼容别名，已有网站无需改动。客户端提供 `info/apply/resend/verify/account/requestPassword/setPassword`，以及 `communityInfo/servers/players/player/login/logout/profile`。可传后端来源或包含 `/api/v1` 的完整地址。使用 DOM `textContent` 展示 API 文本，避免把用户或管理员输入当 HTML 执行。
 
 ### 网站服务端查询
 
@@ -170,4 +260,4 @@ def starbridge_profile(verified_account_id):
 
 ## 备份与恢复
 
-官网内容及接入设置 `data/website-settings.json` 加入星桥备份；账号、绑定、实际 UUID 关联位于数据库内。恢复会撤销所有临时用户令牌。独立网站源码和部署文件由网站项目单独备份；Bot 数据备份不包含它们。旧版无接入字段的备份默认不启用网站接入，恢复后检查网站地址、公开范围与文案。
+官网内容及接入设置 `data/website-settings.json` 加入 Myrinbot 备份；账号、绑定、实际 UUID 关联位于数据库内。恢复会撤销所有临时用户令牌。独立网站源码和部署文件由网站项目单独备份；Bot 数据备份不包含它们。旧版无接入字段的备份默认不启用网站接入，恢复后检查网站地址、公开范围与文案。
