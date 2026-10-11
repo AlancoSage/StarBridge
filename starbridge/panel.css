@@ -441,7 +441,12 @@ button.text-button.danger { color: var(--danger); }
 .login-box p { margin-bottom: 24px; }
 .login-box form { display: flex; flex-wrap: wrap; gap: 14px; }
 .login-box form > button { width: 100%; padding: 12px; }
-#panel-account-login { display: grid; gap: 12px; width: 100%; }
+.login-box form > .field, .login-box form > .notice { width: 100%; text-align: left; }
+.login-box form > .notice { margin: 0; }
+.login-box .field label { font-size: 13px; color: var(--text); }
+.login-box .field .hint { margin: 7px 0 0; }
+.login-setup-link { margin-top: 20px; font-size: 12px; }
+#owner-setup { margin-top: clamp(20px, 4vh, 48px); }
 .register-page { min-height: 100dvh; padding: clamp(20px, 6vh, 70px) 16px 30px; }
 .register-shell { max-width: 480px; margin: 0 auto; }
 .register-brand { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--accent); font-size: 34px; text-decoration: none; margin-bottom: 28px; }

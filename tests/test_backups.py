@@ -58,6 +58,25 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
         response = await self.client.post("/api/backups/restore", headers=self.admin, json={"preview_id":preview["preview_id"]})
         self.assertEqual(response.status, 200, await response.text()); return await response.json()
 
+    def changed_database_backup(self, payload, operation):
+        with zipfile.ZipFile(io.BytesIO(payload)) as source:
+            values = {entry.filename: source.read(entry) for entry in source.infolist()}
+        path = self.base / 'changed-backup.db'
+        path.write_bytes(values['database.sqlite3'])
+        with closing(sqlite3.connect(path)) as db:
+            with db:
+                operation(db)
+        values['database.sqlite3'] = path.read_bytes()
+        manifest = json.loads(values['manifest.json'])
+        manifest['files']['database.sqlite3'] = {'size': len(values['database.sqlite3']),
+            'sha256': hashlib.sha256(values['database.sqlite3']).hexdigest()}
+        values['manifest.json'] = json.dumps(manifest).encode()
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, 'w') as archive:
+            for name, value in values.items():
+                archive.writestr(name, value)
+        return stream.getvalue()
+
     def mutate(self):
         with self.state["store"].db:
             self.state["store"].db.execute("DELETE FROM bindings")
@@ -113,6 +132,75 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
         with closing(sqlite3.connect(self.state['config']['app']['database'])) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM admin_sessions').fetchone()[0],0)
             self.assertEqual(db.execute('SELECT count(*) FROM admin_users').fetchone()[0],1)
+
+    async def test_restore_owner_account_uses_backup_password_and_revokes_owner_session(self):
+        credentials = {'username': 'HostOwner', 'password': 'Owner-password-2026'}
+        response = await self.client.post('/api/admin-auth/setup', headers=self.admin, json=credentials)
+        self.assertEqual(response.status, 200, await response.text())
+        owner_headers = {'Authorization': 'Bearer ' + (await response.json())['access_token']}
+        original_hash = self.state['store'].db.execute('SELECT password_hash FROM admin_owner').fetchone()[0]
+        self.admin = owner_headers
+        _, payload = await self.backup()
+        with self.state['store'].db:
+            self.state['store'].db.execute("UPDATE admin_owner SET username='ChangedOwner',revision=revision+1")
+        preview = await self.preview(payload)
+        self.assertNotIn(original_hash, json.dumps(preview))
+        self.assertNotIn(credentials['password'], json.dumps(preview))
+        await self.schedule(preview)
+        await self.client.close()
+        self.assertTrue(await asyncio.to_thread(apply_pending_restore, self.path))
+        self.client = TestClient(TestServer(create_app(load(self.path), self.path)))
+        await self.client.start_server()
+        self.state = self.client.app[STATE]
+        row = self.state['store'].db.execute('SELECT * FROM admin_owner').fetchone()
+        self.assertEqual(row['username'], 'HostOwner')
+        self.assertEqual(row['password_hash'], original_hash)
+        self.assertEqual(self.state['store'].db.execute('SELECT count(*) FROM admin_sessions').fetchone()[0], 0)
+        self.assertEqual((await self.client.get('/api/session', headers=owner_headers)).status, 401)
+        login = await self.client.post('/api/admin-auth/login', json=credentials)
+        self.assertEqual(login.status, 200, await login.text())
+        self.assertTrue((await login.json())['identity']['owner'])
+
+    async def test_old_backup_without_owner_table_restores_and_requires_fresh_setup(self):
+        _, payload = await self.backup()
+        payload = self.changed_database_backup(payload, lambda db: db.execute('DROP TABLE admin_owner'))
+        credentials = {'username': 'HostOwner', 'password': 'Owner-password-2026'}
+        response = await self.client.post('/api/admin-auth/setup', headers=self.admin, json=credentials)
+        self.assertEqual(response.status, 200, await response.text())
+        preview = await self.preview(payload)
+        await self.schedule(preview)
+        await self.client.close()
+        self.assertTrue(await asyncio.to_thread(apply_pending_restore, self.path))
+        self.client = TestClient(TestServer(create_app(load(self.path), self.path)))
+        await self.client.start_server()
+        self.assertEqual(await (await self.client.get('/api/admin-auth/setup')).json(), {'required': True})
+        self.assertEqual((await self.client.post('/api/admin-auth/login', json=credentials)).status, 401)
+        response = await self.client.post('/api/admin-auth/setup', headers=self.admin, json=credentials)
+        self.assertEqual(response.status, 200, await response.text())
+
+    async def test_owner_setup_invalidates_existing_restore_preview(self):
+        _, payload = await self.backup()
+        preview = await self.preview(payload)
+        response = await self.client.post('/api/admin-auth/setup', headers=self.admin,
+            json={'username': 'HostOwner', 'password': 'Owner-password-2026'})
+        self.assertEqual(response.status, 200, await response.text())
+        response = await self.client.post('/api/backups/restore', headers=self.admin,
+                                          json={'preview_id': preview['preview_id']})
+        self.assertEqual(response.status, 409, await response.text())
+        self.assertFalse(self.state.get('maintenance'))
+
+    async def test_backup_owner_validation_rejects_reserved_team_id_and_username_collision(self):
+        await self.state['admin_accounts'].save({'username': 'Helper', 'password': 'Helper-password-2026'})
+        response = await self.client.post('/api/admin-auth/setup', headers=self.admin,
+            json={'username': 'HostOwner', 'password': 'Owner-password-2026'})
+        self.assertEqual(response.status, 200, await response.text())
+        _, payload = await self.backup()
+        changes = ("UPDATE admin_users SET id='owner'", "UPDATE admin_users SET username='hostowner'",
+                   "UPDATE admin_owner SET password_hash='invalid-hash'", "UPDATE admin_owner SET revision=0")
+        for statement in changes:
+            with self.subTest(statement=statement):
+                bad = self.changed_database_backup(payload, lambda db: db.execute(statement))
+                await self.preview(bad, 400)
 
     async def test_online_snapshot_preview_preserves_wal_data_and_hides_credentials(self):
         entry, payload = await self.backup()

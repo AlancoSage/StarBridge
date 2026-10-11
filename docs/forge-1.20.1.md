@@ -1,6 +1,6 @@
 # Forge 1.20.1 游戏端
 
-**当前版本：Myrinbot Bot 0.6.10 · Forge 游戏端模组 0.1.1。** 适用 Minecraft Java 版 1.20.1、Forge 47.x、Java 17；Forge 接入从 Bot 0.6.2 起提供。
+**当前版本：Myrinbot Bot 0.6.11 · Forge 游戏端模组 0.1.1。** 适用 Minecraft Java 版 1.20.1、Forge 47.x、Java 17；Forge 接入从 Bot 0.6.2 起提供。
 
 这是服务端模组，文件放在 `mods/`。Paper / Spigot 使用原有插件，两种游戏端可以同时连接同一台 Bot。不要将 Bukkit 插件放入 Forge 的 `mods/`。
 

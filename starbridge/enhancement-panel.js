@@ -32,7 +32,7 @@ function managerRender(data){
       button(user.enabled?'停用':'启用',async()=>{try{managerRender(await api('/api/admin-users/'+user.id,{method:'PUT',body:JSON.stringify({revision:user.revision,enabled:!user.enabled})}));}catch(error){enhancementNotice('managers',error.message,'error');}}),
       button('删除',async()=>{if(!confirm('删除管理员 '+user.username+' 并撤销其登录？'))return;try{managerRender(await api('/api/admin-users/'+user.id,{method:'DELETE',body:JSON.stringify({revision:user.revision})}));managerClear();}catch(error){enhancementNotice('managers',error.message,'error');}},'danger small'));
     row.append(left,actions);return row;
-  }));if(!data.users.length)$('manager-list').append(node('p','暂未创建团队账号，服主管理令牌仍可正常使用。','hint'));
+  }));if(!data.users.length)$('manager-list').append(node('p','暂未创建团队账号，可为管理员分配独立的用户名、密码与权限。','hint'));
 }
 function monitoringRender(data){
   enhancementPopulate('monitoring',data);
@@ -87,4 +87,3 @@ $('backup-policy-cleanup').onclick=async()=>{if(enhancementDirty.backup_policy){
 $('monitor-refresh').onclick=()=>loadEnhancements('monitoring',true);
 $('statistics-refresh').onclick=()=>loadEnhancements('statistics',true);
 $('statistics-server').onchange=$('statistics-days').onchange=()=>loadEnhancements('statistics',true);
-$('panel-login-kind').onchange=()=>{const account=$('panel-login-kind').value==='account';$('token').hidden=account;$('token').disabled=account;$('panel-account-login').hidden=!account;for(const id of ['panel-username','panel-password']){$(id).disabled=!account;$(id).required=account;}};

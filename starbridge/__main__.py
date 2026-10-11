@@ -84,7 +84,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if args.command == 'run':
         from scripts.update_runtime import supervise
-        print("Myrinbot已启动；设置可在管理面板调整。首次登录令牌在本地 config.toml 中。")
+        print("Myrinbot已启动；面板使用用户名和密码登录。首次无服主账号时，点击“创建服主账号”，使用本地 config.toml 的 app.admin_token 完成首次授权并设置账号。")
         raise SystemExit(supervise(path))
     try:
         raise SystemExit(asyncio.run(serve(path)) or 0)

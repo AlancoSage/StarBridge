@@ -2,7 +2,7 @@
 
 先进入 **接入空间 → 连接诊断** 查看当前状态，再进入 **活动 → 运行日志** 对照最近一次操作。记录错误时间、服务器 ID、Bot 和游戏端版本；分享日志时隐藏令牌、邮箱授权码和个人信息。
 
-完整诊断操作见 [连接诊断](diagnostics-and-templates.md)。本页对应 Bot 0.6.10 / Bukkit 游戏插件 0.5.3。
+完整诊断操作见 [连接诊断](diagnostics-and-templates.md)。本页对应 Bot 0.6.11 / Bukkit 游戏插件 0.5.3。
 
 ## 按现象检查
 
@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | BAT 运行后面板没打开 | 安装输出、`data/server.log`、`data/server-error.log`、Python 与目录是否完整 | [Windows 安装](windows-installation.md) |
 | Linux 报环境或依赖错误 | 是否用当前项目虚拟环境，Python 是否为 3.11+ | [Linux 安装](linux-installation.md) |
-| 面板登录失败 | 登录方式、服主管理令牌或团队账号是否正确 | [面板登录](panel-guide.md#登录面板) |
+| 面板登录失败 | 服主或团队账号的用户名、密码及启用状态是否正确；首次无服主账号时先创建 | [面板登录](panel-guide.md#登录面板) |
 | QQ 一直未连接 | 反向 WebSocket URL、Universal、令牌与已登录 QQ 账号 | [OneBot 连接](onebot-connection.md) |
 | 游戏服未连接 | JAR 是否启用、endpoint、服务器 ID、游戏令牌和启动日志 | [快速开始](quick-start.md)、[版本与 Java](minecraft-compatibility.md) |
 | 群里没有回复或聊天没同步 | 群路由、功能开关、机器人在线状态和实际目标游戏服 | [消息同步](message-sync.md)、[群命令](group-commands.md) |

@@ -1,6 +1,6 @@
 # Linux 安装与运行
 
-适用版本：Bot **0.6.10**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
+适用版本：Bot **0.6.11**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
 
 适用于具有 Python 3.11+ 的 Linux 环境。下面的系统依赖命令面向 Ubuntu 24.04 和 Debian 12；其他发行版需使用对应的包管理器。Bot 不需要图形桌面、Java 或显卡，QQ 实现端和 Minecraft 游戏服务器需另外接入。
 
@@ -48,7 +48,7 @@ if [ ! -f config.toml ]; then
 fi
 ```
 
-首次登录令牌位于 `config.toml` 的 `[app]` 下的 `admin_token`。QQ 接入使用 `onebot.token`，每个游戏服务器使用自己的连接令牌。后续设置都可以在管理面板内调整。
+首次创建服主账号时，使用 `config.toml` 的 `[app]` 下的 `admin_token` 完成一次授权并设置用户名和密码；日常面板登录使用账号密码。该管理令牌还用于兼容管理 API。QQ 接入使用 `onebot.token`，每个游戏服务器使用自己的连接令牌。后续设置都可以在管理面板内调整。
 
 虚拟环境使用 Python 官方的 [venv](https://docs.python.org/3/library/venv.html)；无需执行激活脚本，也无需向系统 Python 安装项目依赖。系统包说明见 [Ubuntu python3-venv](https://packages.ubuntu.com/noble/python3-venv) 与 [Debian python3-venv](https://packages.debian.org/bookworm/python3-venv)。
 
@@ -61,7 +61,7 @@ cd /opt/starbridge
 .venv/bin/python -m starbridge run --config config.toml
 ```
 
-本机访问 `http://127.0.0.1:5800/`，使用管理令牌登录。前台运行时按 **Ctrl+C** 停止；关闭终端或断开 SSH 后，进程可能退出。需要持续后台运行时使用下一节的 systemd。
+本机访问 `http://127.0.0.1:5800/`，使用用户名和密码登录。首次没有服主账号时，点击「创建服主账号」，使用本机 `config.toml` 的 `app.admin_token` 完成首次授权并设置自己的账号，再回到普通登录。前台运行时按 **Ctrl+C** 停止；关闭终端或断开 SSH 后，进程可能退出。需要持续后台运行时使用下一节的 systemd。
 
 默认监听地址为 `127.0.0.1`。部署在远程 Linux 服务器时，可先在自己的电脑开启 SSH 隧道，再打开本机浏览器：
 
@@ -127,7 +127,7 @@ systemd 托管的日志通过 `journalctl` 查看，Windows BAT 的 `data/server
 
 ## 预期结果
 
-前台终端或 `journalctl` 显示管理面板已启动；浏览器能打开面板，并使用 `config.toml` 的 `app.admin_token` 登录。systemd 托管时，`systemctl status starbridge` 应显示服务正在运行。
+前台终端或 `journalctl` 显示管理面板已启动；浏览器能打开面板，并使用账号密码登录。首次创建服主账号只使用 `app.admin_token` 授权一次。systemd 托管时，`systemctl status starbridge` 应显示服务正在运行。
 
 此时 QQ 与游戏端可以仍未连接。按 [快速开始](quick-start.md) 配置服务器、安装游戏端，再按 [OneBot 11 连接](onebot-connection.md) 连接 QQ。使用 SSH 隧道登录面板时，游戏端与 QQ 实现端仍需各自能访问 Bot。
 
@@ -144,6 +144,7 @@ systemd 托管的日志通过 `journalctl` 查看，Windows BAT 的 `data/server
 | `Address already in use` | 检查是否已有 Bot 或其他服务使用该端口；不要重复启动 |
 | 本机正常、远程浏览器打不开 | 检查监听地址、实际访问地址、SSH 隧道及防火墙规则 |
 | systemd 显示用户或路径错误 | 检查 `User` 是否存在，以及 `WorkingDirectory`、`ExecStart` 和配置路径是否正确 |
-| 面板令牌不正确 | 使用当前实例配置中的 `app.admin_token`，不要使用 OneBot 或游戏连接令牌 |
+| 面板账号或密码不正确 | 使用本实例的服主或团队账号密码，确认账号已启用；首次没有服主账号时先点击「创建服主账号」 |
+| 首次创建服主账号授权失败 | 使用当前实例配置中的 `app.admin_token`，不要使用 OneBot 或游戏连接令牌 |
 
 连接后的问题见 [故障排查](troubleshooting.md)；更新操作见 [更新与回退](updates.md)。

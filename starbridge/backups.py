@@ -123,7 +123,7 @@ def operations_revision(db):
     settings = [list(row) for row in db.execute("SELECT * FROM operations_settings ORDER BY key")] if "operations_settings" in tables else []
     tasks = [list(row) for row in db.execute("SELECT id,definition,revision FROM scheduled_tasks ORDER BY id")] if "scheduled_tasks" in tables else []
     extra = {table:[list(row) for row in db.execute('SELECT * FROM '+table+' ORDER BY 1')]
-             for table in ('runtime_settings','admin_users','plugin_versions') if table in tables}
+             for table in ('runtime_settings','admin_users','admin_owner','plugin_versions') if table in tables}
     return hashlib.sha256(encode([settings, tasks, extra])).hexdigest()
 
 
@@ -146,7 +146,7 @@ def check_database(path):
     try:
         actual, expected = schema(db), trusted_schema()
         optional = {"operations_settings", "scheduled_tasks", "schedule_runs", "whitelist_applications",
-                    "admin_users", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
+                    "admin_users", "admin_owner", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
                     "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages", "sanctions", "sanction_targets"}
         present = {entry[1] for entry in actual}
         compatible = [entry for entry in expected if entry[2] not in optional or entry[2] in present]
@@ -182,9 +182,21 @@ def check_database(path):
         if "admin_users" in present:
             from .admin_accounts import permissions
             if db.execute('SELECT count(*) FROM admin_users').fetchone()[0]>30:raise BackupError('管理员超过 30 位')
-            for row in db.execute('SELECT username,permissions,enabled,revision FROM admin_users'):
-                if not re.fullmatch(r'[A-Za-z0-9_\-]{3,32}',row[0]) or row[2] not in (0,1) or type(row[3]) is not int or row[3]<1:raise BackupError('管理员设置格式错误')
+            for row in db.execute('SELECT username,permissions,enabled,revision,id FROM admin_users'):
+                if (not isinstance(row[0],str) or not re.fullmatch(r'[A-Za-z0-9_\-]{3,32}',row[0]) or row[2] not in (0,1)
+                        or type(row[3]) is not int or row[3]<1 or not isinstance(row[4],str)
+                        or not re.fullmatch(r'[a-f0-9]{32}',row[4])):
+                    raise BackupError('管理员设置格式错误')
                 permissions(json.loads(row[1]))
+        if "admin_owner" in present:
+            from .passwords import ITERATIONS
+            for uid, username, digest, revision in db.execute('SELECT id,username,password_hash,revision FROM admin_owner'):
+                if (uid != 'owner' or not isinstance(username,str) or not re.fullmatch(r'[A-Za-z0-9_\-]{3,32}', username)
+                        or type(revision) is not int or revision < 1
+                        or not isinstance(digest,str) or not re.fullmatch(r'pbkdf2_sha256\$'+str(ITERATIONS)+r'\$[a-f0-9]{32}\$[a-f0-9]{64}', digest)):
+                    raise BackupError('服主账号设置格式错误')
+                if "admin_users" in present and db.execute('SELECT 1 FROM admin_users WHERE lower(username)=lower(?)',(username,)).fetchone():
+                    raise BackupError('服主账号与管理员名称冲突')
         if "plugin_versions" in present:
             if db.execute('SELECT count(*) FROM plugin_versions').fetchone()[0]>150:raise BackupError('插件历史数量超过上限')
             for pid,definition,settings in db.execute('SELECT plugin,definition,settings FROM plugin_versions'):

@@ -164,7 +164,7 @@ function Start-StarBridgeWindows {
         if ($LASTEXITCODE -ne 0) { throw '配置校验失败，请按上方提示检查 config.toml。' }
         $info = $infoJson | ConvertFrom-Json
         Write-Host "管理面板：$($info.panel_url)"
-        Write-Host '首次登录使用 config.toml 中的 app.admin_token，其余设置均可在面板内调整。'
+        Write-Host '面板使用用户名和密码登录；首次无服主账号时，点击“创建服主账号”，使用 config.toml 的 app.admin_token 完成首次授权并设置账号。'
         if ($InstallOnly) { Write-Host "[4/4] 部署完成，尚未启动。双击 $entrypoint 可运行。"; return }
         if (-not $existing) {
             & $venv scripts\windows_runtime.py check-port
@@ -183,7 +183,7 @@ function Start-StarBridgeWindows {
             if ($service.HasExited) { break }
             try {
                 $response = Invoke-WebRequest -UseBasicParsing -Uri $info.panel_url -TimeoutSec 2
-                if ($response.StatusCode -eq 200 -and $response.Content -match 'id="panel-login-kind"') { $ready = $true; break }
+                if ($response.StatusCode -eq 200 -and $response.Content -match 'id="panel-username"') { $ready = $true; break }
             } catch {}
             Start-Sleep -Milliseconds 500
         }

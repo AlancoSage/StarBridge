@@ -54,6 +54,10 @@ class Store:
                 id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
                 permissions TEXT NOT NULL, enabled INTEGER NOT NULL, revision INTEGER NOT NULL, created REAL NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS admin_owner (
+                id TEXT PRIMARY KEY NOT NULL CHECK(id='owner'), username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL, revision INTEGER NOT NULL, created REAL NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS admin_sessions (
                 token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires REAL NOT NULL
             );

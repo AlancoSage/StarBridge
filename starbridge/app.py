@@ -37,7 +37,10 @@ STATE = web.AppKey("state", dict)
 
 
 def authorized(request, token):
-    if request.get(ADMIN_IDENTITY) and not request[ADMIN_IDENTITY]["owner"] and token == request.app[STATE]["config"]["app"]["admin_token"]:
+    if (request.get(ADMIN_IDENTITY) and request.path.startswith("/api/")
+            and not request.path.startswith("/api/v1/")
+            and token == request.app[STATE]["config"]["app"]["admin_token"]):
+        request.app[STATE]["admin_accounts"].authorized_identity(request)
         return
     supplied = request.headers.get("Authorization", "").encode()
     if not secrets.compare_digest(supplied, ("Bearer " + token).encode()):

@@ -1,6 +1,6 @@
 # Windows 安装与运行
 
-适用版本：Bot **0.6.10**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
+适用版本：Bot **0.6.11**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
 
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 
@@ -23,7 +23,7 @@ Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。BAT 安�
 
 1. 下载 Myrinbot Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
 2. 双击部署目录中的 **星桥.bat**；从源码部署时可双击 **Myrinbot.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
-3. 管理面板就绪后自动打开浏览器。首次登录使用本地 `config.toml` 的 `app.admin_token`；进入面板填写机器人连接、服务器和关联群。
+3. 管理面板就绪后自动打开浏览器，使用用户名和密码登录。首次尚未创建服主账号时，点击「创建服主账号」，使用本地 `config.toml` 的 `app.admin_token` 完成首次授权并设置用户名、密码，再登录面板填写机器人连接、服务器和关联群。
 
 Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PATH，无需 Git、Java 或显卡。QQ 登录实现端与 Minecraft 服务器仍由用户单独接入。ARM64 使用 Python 官方 ARM64 安装包，依赖安装需要该架构可用的二进制包。
 
@@ -32,7 +32,7 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 | 文件 | 用途 |
 | --- | --- |
 | `星桥.bat` / 源码中的 `Myrinbot.bat` | 自动安装并启动；窗口内选择打开面板、启动、停止、重启或关闭窗口 |
-| `config.toml` | 本地运行配置，包含首次登录令牌 |
+| `config.toml` | 本地运行配置，包含首次创建服主账号的授权令牌及各端连接令牌 |
 | `data/server.log`、`data/server-error.log` | 启动输出与错误日志 |
 
 重复启动会核对 PID、Python 路径和启动命令，只复用本项目的实例。端口被其他程序占用时提示错误，不关闭其他程序或擅自修改端口。重新安装不覆盖 `config.toml` 和 `data`。Windows 重启后再次双击 `星桥.bat`。
@@ -108,7 +108,7 @@ if (-not (Test-Path -LiteralPath config.toml)) {
 .\.venv\Scripts\python.exe -m starbridge run --config config.toml
 ```
 
-保持此终端打开，在浏览器访问 `http://127.0.0.1:5800/`。首次登录使用 `config.toml` 中 `[app]` 下的 `admin_token`，进入面板后再设置 QQ 实现端、游戏服务器和关联群。手动启动不会自动打开浏览器。
+保持此终端打开，在浏览器访问 `http://127.0.0.1:5800/`，使用用户名和密码登录。首次没有服主账号时，点击「创建服主账号」，使用 `config.toml` 中 `[app]` 下的 `admin_token` 完成首次授权并设置自己的账号，再登录并设置 QQ 实现端、游戏服务器和关联群。手动启动不会自动打开浏览器。
 
 ### 6. 停止与下次启动
 
@@ -125,7 +125,7 @@ BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；
 
 ## 预期结果
 
-浏览器能打开 [本机管理面板](http://127.0.0.1:5800/) 并使用 `app.admin_token` 登录。此时总览中的 QQ 或游戏端可以仍未连接，按 [快速开始](quick-start.md) 继续配置；QQ 单独接入见 [OneBot 11 连接](onebot-connection.md)。
+浏览器能打开 [本机管理面板](http://127.0.0.1:5800/) 并使用账号密码登录；首次创建服主账号的授权令牌不用于日常登录。此时总览中的 QQ 或游戏端可以仍未连接，按 [快速开始](quick-start.md) 继续配置；QQ 单独接入见 [OneBot 11 连接](onebot-connection.md)。
 
 自动安装的 Bot 在后台运行，使用 `星桥.bat` 菜单管理；手动运行的 Bot 保持终端打开，按 Ctrl+C 停止。已修改监听端口时，按实际端口访问面板。
 
@@ -140,7 +140,8 @@ BAT 的菜单只管理由它在本目录启动、记录并核验的后台 Bot；
 | `No module named starbridge` | 在项目根目录执行，并使用本项目 `.venv` 中的 Python |
 | 5800 端口被占用 | 检查是否已有 Bot 或其他程序运行；停止自己的旧实例后再启动 |
 | 双击后 Bot 未就绪 | 查看安装窗口提示和 `data/server-error.log`；不要仅凭窗口已打开判断成功 |
-| 面板令牌不正确 | 使用当前目录 `config.toml` 的 `app.admin_token`，不要使用 OneBot 或游戏服务器连接令牌 |
+| 面板账号或密码不正确 | 使用本实例的服主或团队账号密码，确认账号已启用；首次没有服主账号时先点击「创建服主账号」 |
+| 首次创建服主账号授权失败 | 使用当前目录 `config.toml` 的 `app.admin_token`，不要使用 OneBot 或游戏服务器连接令牌 |
 | 移动目录后环境不可用 | 将 `.venv` 改名保留后在新目录重新安装；保留 `config.toml` 和 `data/` |
 
 Bot 已启动后的连接问题见 [故障排查](troubleshooting.md)。

@@ -1,6 +1,6 @@
 # OneBot 11：连接 QQ 机器人
 
-适用版本：Bot **0.6.10**。
+适用版本：Bot **0.6.11**。
 
 ## 用途
 
@@ -40,7 +40,7 @@
 | 消息格式 | 推荐消息段数组；Myrinbot 也接收 CQ 码字符串 |
 | 断线重连 | 在实现端启用，可设置 3–5 秒间隔 |
 
-Myrinbot 的 OneBot 连接使用 `onebot.token`。面板登录使用 `app.admin_token`，Minecraft 游戏端使用对应服务器的 `servers.token`，三者不可混用。
+Myrinbot 的 OneBot 连接使用 `onebot.token`，Minecraft 游戏端使用对应服务器的 `servers.token`。面板日常登录使用用户名和密码；`app.admin_token` 仅用于首次创建服主账号的授权和兼容管理 API。各类凭据不可混用。
 
 ### 3. 按部署位置选择地址
 

@@ -4,6 +4,7 @@ let token = '', revision = '', timer = null, busy = false, dirty = false, saving
 let saved = null, canRestart = false, serial = 0;
 let latestStatus = null, logsPaused = false, frozenLogs = [];
 let panelIdentity = null;
+let panelAuthBusy = false, ownerSetupRequired = false;
 let communityFeatures = {whitelist:false,tickets:false,sanctions:false};
 let managedPlayer = null, playerRequestId = null, playerSubmitting = false;
 let latestPlayerActionId = null;
@@ -120,7 +121,10 @@ async function api(url, options = {}) {
   const response = await fetch(url, {signal: AbortSignal.timeout(10000), ...options, headers: {'Authorization': 'Bearer ' + token, ...(options.body ? {'Content-Type': 'application/json'} : {}), ...options.headers}, cache: 'no-store'});
   const raw = await response.text();
   let data; try { data = JSON.parse(raw); } catch { data = {error: raw}; }
-  if (!response.ok) throw Error(response.status === 401 ? '令牌不正确或已更换，请重新登录。' : data.error || '请求失败：' + response.status);
+  if (!response.ok) {
+    const error = Error(data.error || (response.status === 401 ? '登录无效或已过期，请重新登录。' : '请求失败：' + response.status));
+    error.status = response.status; error.code = data.code; throw error;
+  }
   return data;
 }
 const areaPages = {
@@ -851,24 +855,88 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && token) refresh();
 });
 
-$('form').addEventListener('submit', async e => {
-  e.preventDefault(); token = $('token').value.trim();
-  const submit = $('form').querySelector('button'); submit.disabled = true;
+async function enterPanel(accessToken) {
+  token = accessToken;
+  if (typeof token !== 'string' || !token) { token = ''; throw Error('登录响应无效，请重新登录。'); }
   try {
-    if ($('panel-login-kind').value==='account') {
-      const result=await api('/api/admin-auth/login',{method:'POST',body:JSON.stringify({username:$('panel-username').value.trim(),password:$('panel-password').value})});token=result.access_token;
-    }
     panelIdentity=await api('/api/session');
     communityFeatures=Object.fromEntries(Object.entries(await api('/api/community-features')).map(([key,value])=>[key,value.settings.enabled]));
     if(panelIdentity.owner){const data=await api('/api/config');renderConfig(data);}
-    $('token').value = ''; $('login').hidden = true; $('content').hidden = false; $('save-bar').hidden = false; $('logout').hidden = false;
+    $('login').hidden = $('owner-setup').hidden = true; $('content').hidden = false; $('save-bar').hidden = false; $('logout').hidden = false;
     $('page-actions').hidden = false; document.body.classList.remove('logged-out'); selectTab(location.hash.slice(1) || 'overview');
     $('panel-password').value='';panelAccess();setText('panel-user',panelIdentity.username);
     setText('panel-avatar', Array.from(panelIdentity.username || 'Myrinbot')[0].toUpperCase());
     await refresh(); startAutoRefresh();
-  } catch (error) { notice('notice', error.message, 'error'); }
-  finally { submit.disabled = false; }
+  } catch (error) {
+    try { await api('/api/admin-auth/logout',{method:'POST'}); } catch {}
+    token = ''; panelIdentity = null; clearInterval(timer);
+    document.body.classList.add('logged-out'); $('content').hidden = $('save-bar').hidden = $('logout').hidden = $('page-actions').hidden = true;
+    $('owner-setup').hidden = true; $('login').hidden = false; setNavOpen(false);
+    throw error;
+  }
+}
+function setPanelAuthBusy(value) {
+  panelAuthBusy = value;
+  for (const id of ['login','owner-setup']) {
+    $(id).setAttribute('aria-busy', String(value));
+    for (const control of $(id).querySelectorAll('input,button')) control.disabled = value;
+  }
+}
+async function checkOwnerSetup() {
+  const result = await api('/api/admin-auth/setup');
+  ownerSetupRequired = result.required === true;
+  $('panel-setup-open').hidden = !ownerSetupRequired;
+  return ownerSetupRequired;
+}
+function showPanelLogin() {
+  $('owner-setup').hidden = true; $('login').hidden = false;
+  $('owner-setup-form').reset(); notice('owner-setup-notice','');
+  $('panel-username').focus();
+}
+$('panel-setup-open').onclick = () => {
+  if (panelAuthBusy || !ownerSetupRequired) return;
+  $('panel-password').value = ''; notice('login-notice','');
+  $('login').hidden = true; $('owner-setup').hidden = false;
+  $('owner-username').focus();
+};
+$('owner-setup-back').onclick = () => { if (!panelAuthBusy) showPanelLogin(); };
+$('form').addEventListener('submit', async event => {
+  event.preventDefault(); if (panelAuthBusy) return;
+  const username = $('panel-username').value.trim(), password = $('panel-password').value;
+  token = ''; panelIdentity = null; notice('login-notice',''); setPanelAuthBusy(true);
+  $('panel-login-submit').textContent = '正在登录…';
+  try {
+    const result = await api('/api/admin-auth/login',{method:'POST',body:JSON.stringify({username,password})});
+    await enterPanel(result.access_token);
+  } catch (error) { notice('login-notice',error.message,'error',{persistent:true}); }
+  finally { $('panel-password').value=''; setPanelAuthBusy(false); $('panel-login-submit').textContent='登录'; }
 });
+$('owner-setup-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (panelAuthBusy || !ownerSetupRequired) return;
+  if ($('owner-password').value !== $('owner-password-confirm').value) {
+    notice('owner-setup-notice','两次输入的密码不一致。','error',{persistent:true}); $('owner-password-confirm').focus(); return;
+  }
+  const username = $('owner-username').value.trim(), password = $('owner-password').value;
+  const authorization = $('owner-authorization').value.trim();
+  notice('owner-setup-notice',''); setPanelAuthBusy(true); $('owner-setup-submit').textContent='正在创建…';
+  let created = false;
+  try {
+    const result = await api('/api/admin-auth/setup',{method:'POST',headers:{Authorization:'Bearer '+authorization},body:JSON.stringify({username,password})});
+    created = true; ownerSetupRequired = false; $('panel-setup-open').hidden = true;
+    $('owner-setup-form').reset(); $('panel-username').value = username;
+    await enterPanel(result.access_token);
+  } catch (error) {
+    if (created) { showPanelLogin(); notice('login-notice','服主账号已创建，请使用新用户名和密码登录。'+error.message,'error',{persistent:true}); }
+    else if (error.status === 409) {
+      try { await checkOwnerSetup(); } catch {}
+      if (!ownerSetupRequired) { showPanelLogin(); notice('login-notice',error.message,'error',{persistent:true}); }
+      else notice('owner-setup-notice',error.message,'error',{persistent:true});
+    } else notice('owner-setup-notice',error.message,'error',{persistent:true});
+  } finally {
+    $('owner-authorization').value = ''; setPanelAuthBusy(false); $('owner-setup-submit').textContent='创建服主账号';
+  }
+});
+checkOwnerSetup().catch(() => notice('login-notice','暂时无法检查首次设置状态，请刷新页面重试。','error',{persistent:true}));
 $('content').addEventListener('input', e => {
   if (e.target.matches('input,textarea') && e.target.type !== 'search' && !e.target.readOnly && e.target.dataset.field !== 'endpoint' && !e.target.closest('#view-players, #view-extensions, #view-accounts, #view-authentication, #view-backups, #view-schedules, #view-whitelist, #view-website, #view-managers, #view-monitoring, #view-statistics, .service-space')) markDirty();
 });
@@ -896,7 +964,6 @@ $('save').onclick = async () => {
   try {
     const cfg = collect();
     const data = await api('/api/config', {method: 'PUT', body: JSON.stringify({config: cfg, revision})});
-    token = data.config.app.admin_token;
     renderConfig(data);
     notice('save-notice', '设置已保存。' + (data.restart_required.length ? '监听地址、端口或数据库更改将在重启后生效。' : '业务设置已立即生效。') + (data.onebot_reconnect ? '请同步 QQ 实现端令牌或账号设置，等待重新连接。' : ''), 'success');
   } catch (e) { notice($('connection-dialog').open ? 'connection-dialog-notice' : 'save-notice', e.message, 'error'); }
@@ -917,7 +984,7 @@ $('restart').onclick = async () => {
     url.port = String(saved.app.port);
     notice('restart-result', '正在重启，QQ 和游戏插件将自动重新连接。', '', {persistent:true});
     if (url.origin !== location.origin) {
-      $('restart-result').append(node('p', '连接地址已更改，请打开新面板并使用已保存的登录令牌登录：'));
+      $('restart-result').append(node('p', '连接地址已更改，请打开新面板并使用用户名和密码登录：'));
       const a = node('a', url.origin, 'link'); a.href = url.origin; a.target = '_blank'; a.rel = 'noopener'; $('restart-result').append(a);
     } else {
       await new Promise(resolve => setTimeout(resolve, 1500));
