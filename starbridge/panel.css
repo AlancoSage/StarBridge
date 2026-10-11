@@ -326,6 +326,16 @@ summary { color: var(--accent); font-size: 12px; cursor: pointer; }
 .server-title:before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
 .server-title h3, .command-meta, .switch-row label { overflow-wrap: anywhere; }
 .command-group { margin: 8px 0 28px; }
+.command-toolbar input { flex: 1 1 240px; max-width: 420px; }
+.command-toolbar .count { margin-left: 0; }
+.command-toolbar > button { margin-left: auto; }
+.command-empty { padding: 30px; }
+.command-empty h2 { margin-bottom: 10px; }
+.command-empty > p { max-width: 620px; }
+.command-empty > button { margin-top: 18px; }
+.command-group-empty { padding: 20px; border: 1px dashed var(--border); border-radius: 10px; }
+.command-empty-note { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+body:has(#command-create-dialog[open]) { overflow: hidden; }
 .commands, .reply-grid { display: grid; gap: 14px; }
 .pair { display: grid; grid-template-columns: 155px minmax(0, 1fr); min-width: 0; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .reply-grid .pair { background: var(--surface-soft); }

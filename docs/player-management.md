@@ -1,6 +1,6 @@
 # 玩家管理
 
-适用于 Myrinbot Bot **0.6.12** 与 Paper / Spigot / Folia 游戏插件 **0.5.3**。Forge / NeoForge / Fabric 需使用[对应版本的模组](mod-game-ends.md)。
+适用于 Myrinbot Bot **0.6.13** 与 Paper / Spigot / Folia 游戏插件 **0.5.3**。Forge / NeoForge / Fabric 需使用[对应版本的模组](mod-game-ends.md)。
 
 ## 用途
 

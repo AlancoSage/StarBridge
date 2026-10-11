@@ -240,6 +240,7 @@ function selectTab(name) {
   if (!panelAllowed(name)) name=panelIdentity?.owner&&name in communityFeatures?'community-features':'overview';
   const changed = document.body.dataset.view !== name;
   if (name !== 'connection' && $('connection-dialog').open) $('connection-dialog').close();
+  if (name !== 'commands' && $('command-create-dialog').open) $('command-create-dialog').close();
   const wasNavOpen = navOpen;
   if (navOpen) setNavOpen(false);
   document.body.dataset.view = name;
@@ -362,6 +363,7 @@ function addPair(container, key = '', value = '', isReply = false, changed = mar
   body.append(meta); row.append(head, body);
   container.append(row);
   filterCommandCards();
+  return row;
 }
 function pairs(container) {
   const map = Object.create(null);
@@ -376,6 +378,59 @@ function pairs(container) {
 }
 function splitIds(text) { return text.trim() ? text.trim().split(/[\s,，;；]+/).filter(Boolean) : []; }
 
+function commandTargets() {
+  return [...$('server-editors').children].map(card => ({
+    card, value: card.querySelector('[data-field="id"]').id,
+    name: card.querySelector('[data-field="name"]').value.trim() || '新服务器',
+    id: card.querySelector('[data-field="id"]').value.trim() || '未填写',
+  }));
+}
+function syncCommandTargets() {
+  const select = $('command-target-server'), previous = select.value, targets = commandTargets();
+  select.replaceChildren(new Option('请选择目标服务器', ''));
+  for (const target of targets) select.append(new Option(target.name + ' · ID：' + target.id, target.value));
+  select.value = targets.some(target => target.value === previous) ? previous : '';
+  $('command-create-confirm').disabled = saving || !panelIdentity?.owner || !select.value;
+  if ($('command-create-dialog').open && targets.length < 2) $('command-create-dialog').close();
+}
+function goToCommandServers() {
+  if (!panelIdentity?.owner || saving) return;
+  selectTab('servers'); $('add-server').focus();
+}
+function addCommandDraft(card) {
+  if (!panelIdentity?.owner || saving || !card?.isConnected) return;
+  $('command-search').value = '';
+  const row = addPair(serverCommands.get(card));
+  markDirty(); row.querySelector('[data-field="key"]').focus();
+}
+$('command-create').onclick = () => {
+  if (!panelIdentity?.owner || saving || $('command-create-dialog').open) return;
+  const targets = commandTargets();
+  if (!targets.length) { goToCommandServers(); return; }
+  if (targets.length === 1) { addCommandDraft(targets[0].card); return; }
+  $('command-target-server').value = ''; syncCommandTargets();
+  $('command-create-dialog').returnValue = '';
+  $('command-create-dialog').showModal(); $('command-target-server').focus();
+};
+$('command-server-add').onclick = goToCommandServers;
+$('command-search-clear').onclick = () => { $('command-search').value = ''; filterCommandCards(); $('command-search').focus(); };
+$('command-target-server').onchange = () => {
+  $('command-create-confirm').disabled = saving || !panelIdentity?.owner || !$('command-target-server').value;
+};
+$('command-create-form').onsubmit = event => {
+  event.preventDefault();
+  if (!panelIdentity?.owner || saving || !$('command-create-dialog').open) return;
+  const target = commandTargets().find(row => row.value === $('command-target-server').value);
+  if (!target) { syncCommandTargets(); $('command-target-server').focus(); return; }
+  $('command-create-dialog').close('created'); addCommandDraft(target.card);
+};
+for (const id of ['command-create-close', 'command-create-cancel']) $(id).onclick = () => { if (!saving) $('command-create-dialog').close(); };
+$('command-create-dialog').addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+$('command-create-dialog').addEventListener('keydown', event => trapFocus($('command-create-dialog'), event));
+$('command-create-dialog').addEventListener('close', () => {
+  if ($('command-create-dialog').returnValue !== 'created' && panelIdentity?.owner && $('command-create').getClientRects().length) $('command-create').focus();
+});
+
 function addServer(server) {
   const card = node('div', '', 'server-card');
   const commandGroup = node('section', '', 'command-group');
@@ -385,17 +440,24 @@ function addServer(server) {
   }, 'danger small'));
   card.append(head);
   const grid = node('div', '', 'grid');
-  field(grid, '服务器 ID', server.id, 'id', {hint: '与插件 server-id 一致；更改 ID 不会迁移旧绑定。'});
+  const id = field(grid, '服务器 ID', server.id, 'id', {hint: '与插件 server-id 一致；更改 ID 不会迁移旧绑定。'});
   const name = field(grid, '显示名称', server.name, 'name');
-  name.addEventListener('input', () => { head.querySelector('h3').textContent = name.value || '新服务器'; commandHead.querySelector('h3').textContent = name.value || '新服务器'; });
+  const updateCommandServer = () => {
+    head.querySelector('h3').textContent = name.value || '新服务器';
+    commandHead.querySelector('h3').textContent = name.value || '新服务器';
+    commandHead.querySelector('.hint').textContent = 'ID：' + (id.value.trim() || '未填写');
+    filterCommandCards();
+  };
+  id.addEventListener('input', updateCommandServer); name.addEventListener('input', updateCommandServer);
   field(grid, '关联 QQ 群', server.groups.join('\n'), 'groups', {multiline: true, full: true, hint: '每行一个群号，也可用逗号或空格分隔。'});
   field(grid, '游戏插件连接令牌', server.token, 'token', {secret: true, full: true, hint: '修改后需要在游戏插件同步此令牌，可使用下方下载的配置。'});
   card.append(grid);
   const commands = node('div', '', 'commands');
   serverCommands.set(card, commands);
   const commandHead = node('div', '', 'section-head');
-  commandHead.append(node('h3', server.name || '新服务器'), button('＋ 添加命令', () => { $('command-search').value = ''; addPair(commands); markDirty(); }));
-  commandGroup.append(commandHead, commands);
+  const commandTitle = node('div'); commandTitle.append(node('h3', server.name || '新服务器'), node('p', 'ID：' + (server.id || '未填写'), 'hint'));
+  commandHead.append(commandTitle, button('＋ 添加命令', () => addCommandDraft(card)));
+  commandGroup.append(commandHead, commands, node('p', '还没有指令，点击「＋ 添加命令」开始配置。', 'hint command-group-empty'));
   $('command-editors').append(commandGroup);
   card.append(button('管理远程命令 →', () => { selectTab('commands'); commandGroup.scrollIntoView({block: 'center', behavior: reducedMotion.matches ? 'instant' : 'smooth'}); }));
   for (const [key, value] of Object.entries(server.commands || {})) addPair(commands, key, value);
@@ -408,6 +470,7 @@ function addServer(server) {
   addModBridgeControls(details, card, server.id);
   card.append(details);
   $('server-editors').append(card);
+  filterCommandCards();
 }
 function readServer(card) {
   const val = role => card.querySelector('[data-field="' + role + '"]').value;
@@ -450,6 +513,7 @@ function pendingBanner(fields, error = '') {
   }
 }
 function renderConfig(data) {
+  if ($('command-create-dialog').open) $('command-create-dialog').close();
   saved = data.config; revision = data.revision; canRestart = data.can_restart;
   $('self-id').value = saved.onebot.self_id;
   $('admins').value = saved.onebot.admins.join('\n');
@@ -517,15 +581,19 @@ $('connection-save').onclick = async () => {
 };
 
 function filterCommandCards() {
-  for (const [containerId, inputId, counterId] of [['command-editors', 'command-search', 'command-total']]) {
-    const container = $(containerId), query = $(inputId).value.trim().toLowerCase();
-    const cards = [...container.querySelectorAll('.pair')]; let visible = 0;
-    for (const card of cards) {
-      const text = [...card.querySelectorAll('input,textarea')].map(el => el.value).join(' ').toLowerCase();
-      card.hidden = query !== '' && !text.includes(query); if (!card.hidden) visible++;
-    }
-    $(counterId).textContent = query ? `匹配 ${visible} / ${cards.length} 项` : `全部${containerId === 'reply-editors' ? '回复' : '命令'}：${cards.length}`;
+  const container = $('command-editors'), query = $('command-search').value.trim().toLowerCase();
+  const cards = [...container.querySelectorAll('.pair')], groups = [...container.children]; let visible = 0;
+  for (const card of cards) {
+    const text = [...card.querySelectorAll('input,textarea')].map(el => el.value).join(' ').toLowerCase();
+    card.hidden = query !== '' && !text.includes(query); if (!card.hidden) visible++;
   }
+  $('command-total').textContent = query ? `匹配 ${visible} / ${cards.length} 项` : `全部命令：${cards.length}`;
+  for (const group of groups) group.querySelector('.command-group-empty').hidden = !!group.querySelector('.pair');
+  $('command-create').hidden = $('command-server-add').hidden = !panelIdentity?.owner;
+  $('command-create').disabled = saving;
+  $('command-empty').hidden = !!groups.length || !panelIdentity?.owner;
+  $('command-search-empty').hidden = !query || !!visible || !groups.length || !panelIdentity?.owner;
+  syncCommandTargets();
 }
 
 const playerActionLabels = {kick: '踢出', ban: '永久封禁', unban: '解除封禁', whitelist_add: '加入白名单', whitelist_remove: '移出白名单'};
@@ -776,6 +844,7 @@ function renderLogs() {
   });
 }
 $('command-search').oninput = filterCommandCards;
+$('command-editors').addEventListener('input', filterCommandCards);
 $('binding-search').oninput = renderBindings; $('binding-server').onchange = renderBindings;
 $('log-search').oninput = renderLogs; $('log-kind').onchange = renderLogs;
 $('pause-logs').onclick = () => { logsPaused = !logsPaused; if (logsPaused) frozenLogs = [...(latestStatus?.logs || [])]; $('pause-logs').textContent = logsPaused ? '继续更新' : '暂停更新'; renderLogs(); };
@@ -970,7 +1039,7 @@ $('save').onclick = async () => {
   finally {
     controls.forEach((el, i) => { el.disabled = disabled[i]; });
     saving = false; $('save').textContent = '保存全部设置'; $('connection-save').textContent = '保存全部设置';
-    $('connection-dialog').removeAttribute('aria-busy'); markDirty(dirty); await refresh();
+    $('connection-dialog').removeAttribute('aria-busy'); markDirty(dirty); filterCommandCards(); await refresh();
   }
 };
 $('restart').onclick = async () => {
@@ -998,4 +1067,4 @@ $('restart').onclick = async () => {
   } catch (e) { notice('restart-result', e.message, 'error'); }
   finally { $('restart').disabled = !canRestart; }
 };
-$('logout').onclick = async () => { if (dirty && !confirm('有未保存的更改，确认退出？')) return; try{await api('/api/admin-auth/logout',{method:'POST'});}catch{}dirty = false; token = ''; clearInterval(timer); location.reload(); };
+$('logout').onclick = async () => { if (dirty && !confirm('有未保存的更改，确认退出？')) return; if ($('command-create-dialog').open) $('command-create-dialog').close(); try{await api('/api/admin-auth/logout',{method:'POST'});}catch{}dirty = false; token = ''; clearInterval(timer); location.reload(); };
