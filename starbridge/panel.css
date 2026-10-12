@@ -350,6 +350,25 @@ body:has(#command-create-dialog[open]) { overflow: hidden; }
 .command-card-body textarea { min-height: 116px; }
 .command-meta { grid-column: 1 / -1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 10px; color: var(--muted); }
 .command-meta b { font-weight: 450; color: var(--accent); }
+.command-path { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px; border-left: 3px solid var(--accent); background: var(--surface-soft); border-radius: 0 8px 8px 0; }
+.command-path > div { display: grid; align-content: start; gap: 7px; min-width: 0; }
+.command-path .hint { margin: 0; font-size: 10px; }
+.command-path code, .command-destination { font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.command-preview-footer { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.command-preview-footer .hint { flex: 1 1 220px; margin: 0; }
+.reply-grid > .reply-entry { display: block; padding: 18px; background: var(--surface); }
+.reply-entry-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.reply-entry-head h3 { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.reply-entry-body { display: grid; gap: 14px; }
+.reply-entry-body .field { margin: 0; }
+.reply-entry-body textarea { min-height: 90px; }
+.reply-check { display: grid; gap: 12px; padding: 18px; margin: 16px 0; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 12px; }
+.reply-check label, .reply-check .hint { margin: 0; }
+.reply-check .tag { justify-self: start; }
+.reply-test-result { display: block; padding: 14px; min-height: 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; }
+.reply-test-result[data-result="match"] { border-color: var(--positive); }
+.reply-test-result[data-result="invalid"] { border-color: var(--warning); }
+@media (max-width: 680px) { .command-path { grid-template-columns: minmax(0, 1fr); } }
 .switch-row { display: flex; align-items: center; gap: 16px; padding: 21px 0; border-top: 1px solid var(--border); }
 .switch-row:first-child { border-top: 0; }
 .switch-row label { flex: 1; margin: 0; font-size: 13px; color: var(--text); }

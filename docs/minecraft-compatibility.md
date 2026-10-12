@@ -1,6 +1,6 @@
 # Minecraft 版本兼容与 Java 选择
 
-Myrinbot Bot **0.6.13** 配套游戏桥接插件 **0.5.3** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
+Myrinbot Bot **0.6.14** 配套游戏桥接插件 **0.5.3** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
 
 ## 安装与升级
 

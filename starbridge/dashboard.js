@@ -348,22 +348,35 @@ function field(parent, title, value, role, {multiline = false, secret = false, h
   return input;
 }
 
-function addPair(container, key = '', value = '', isReply = false, changed = markDirty) {
-  const row = node('div', '', 'pair' + (isReply ? '' : ' remote'));
-  const head = node('div', '', 'command-card-head'), title = node('strong', key || (isReply ? '新回复' : '新命令'));
-  const remove = button('×', () => { row.remove(); changed(); filterCommandCards(); }, '');
-  remove.setAttribute('aria-label', isReply ? '移除回复' : '移除命令');
-  head.append(node('span', isReply ? 'A' : '⌘'), title, node('span', isReply ? '文本' : '命令', 'tag'), remove);
+function addPair(container, key = '', value = '') {
+  const row = node('div', '', 'pair remote');
+  const head = node('div', '', 'command-card-head'), title = node('strong', key || '新命令');
+  const remove = button('×', () => { row.remove(); markDirty(); filterCommandCards(); }, '');
+  remove.setAttribute('aria-label', '移除命令');
+  head.append(node('span', '→'), title, node('span', '固定操作', 'tag'), remove);
   const body = node('div', '', 'command-card-body');
-  const name = field(body, isReply ? '触发关键词' : '群内命令名', key, 'key');
-  name.addEventListener('input', () => { title.textContent = name.value || (isReply ? '新回复' : '新命令'); });
-  field(body, isReply ? '回复内容' : '控制台命令', value, 'value', {multiline: isReply});
-  const meta = node('div', '', 'command-meta');
-  meta.append(node('span', '权限与触发方式'), node('b', isReply ? '全体成员 · 精确匹配' : '指定管理员'));
-  body.append(meta); row.append(head, body);
+  const name = field(body, '群内命令名', key, 'key');
+  name.addEventListener('input', () => { title.textContent = name.value || '新命令'; });
+  field(body, '控制台命令', value, 'value');
+  const path = node('div', '', 'command-path'); path.setAttribute('aria-label', '指令执行路径');
+  for (const [label, cls, tag] of [['1 · 群内用法', 'command-usage', 'code'], ['2 · 目标服务器', 'command-destination', 'span'], ['3 · 固定执行内容', 'command-operation', 'code']]) {
+    const step = node('div'); step.append(node('span', label, 'hint'), node(tag, '', cls)); path.append(step);
+  }
+  const meta = node('div', '', 'command-preview-footer');
+  const copyUsage = button('复制群内用法', () => copy('执行 ' + name.value.trim())); copyUsage.classList.add('command-copy');
+  meta.append(node('p', '由配置中的机器人管理员在关联群发送。当前草稿保存后生效。', 'hint'), copyUsage);
+  body.append(path, meta); row.append(head, body);
   container.append(row);
   filterCommandCards();
   return row;
+}
+function renderCommandPath(row) {
+  const key = row.querySelector('[data-field="key"]').value.trim(), value = row.querySelector('[data-field="value"]').value;
+  const group = row.closest('.command-group');
+  row.querySelector('.command-usage').textContent = key ? '执行 ' + key : '填写群内命令名';
+  row.querySelector('.command-destination').textContent = group ? group.querySelector('h3').textContent + ' · ' + group.querySelector('.section-head .hint').textContent : '未选择服务器';
+  row.querySelector('.command-operation').textContent = value.trim() ? value : '填写控制台命令';
+  row.querySelector('.command-copy').disabled = saving || !panelIdentity?.owner || !key || !value.trim();
 }
 function pairs(container) {
   const map = Object.create(null);
@@ -584,6 +597,7 @@ function filterCommandCards() {
   const container = $('command-editors'), query = $('command-search').value.trim().toLowerCase();
   const cards = [...container.querySelectorAll('.pair')], groups = [...container.children]; let visible = 0;
   for (const card of cards) {
+    renderCommandPath(card);
     const text = [...card.querySelectorAll('input,textarea')].map(el => el.value).join(' ').toLowerCase();
     card.hidden = query !== '' && !text.includes(query); if (!card.hidden) visible++;
   }

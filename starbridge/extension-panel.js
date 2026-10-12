@@ -18,6 +18,7 @@ function renderExtensions(data) {
       identity.append(node('h3', plugin.name), node('p', `${plugin.id} · ${plugin.version || '版本未知'}${plugin.author ? ' · '+plugin.author : ''}`, 'hint'));
       head.append(identity, node('span', extensionStatus[plugin.status], 'pill '+(plugin.status === 'running' ? 'green' : '')));
       card.append(head, node('p', plugin.description || '这个插件没有填写介绍。', 'muted'));
+      if (!plugin.builtin) card.append(node('p', 'JSON 规则 · 按声明的事件与权限响应', 'hint extension-format'));
       const rules = node('div', '', 'extension-rules');
       for (const rule of plugin.rules) rules.append(node('span', (rule.command || extensionEvents[rule.event]) + (rule.admin_only ? ' · 管理员' : rule.bound_only ? ' · 已绑定' : ''), 'tag'));
       card.append(rules);
@@ -123,8 +124,8 @@ function openExtensionSettings(plugin, permissions = false) {
   if (!Object.keys(plugin.schema).length) $('extension-settings').append(node('p', '这个插件没有可调整的设置。', 'muted'));
   $('extension-dialog').showModal();
 }
-$('extension-form').addEventListener('input', event => { if (event.target.type !== 'search') extensionDraft = true; });
-$('extension-form').addEventListener('change', () => { extensionDraft = true; });
+$('extension-form').addEventListener('input', event => { if (event.target.type !== 'search' && !event.target.closest('[data-preview-only]')) extensionDraft = true; });
+$('extension-form').addEventListener('change', event => { if (!event.target.closest('[data-preview-only]')) extensionDraft = true; });
 $('extension-form').onsubmit = async event => {
   event.preventDefault();
   let settings;
@@ -174,12 +175,32 @@ function filterKeywordEditor() {
   $('reply-total').textContent = query ? `匹配 ${visible} / ${cards.length} 项` : `共 ${cards.length} / 200 条回复`;
   $('add-reply').disabled = cards.length >= 200;
   $('reply-empty').hidden = cards.length > 0;
+  renderKeywordPreview();
 }
 function addKeywordReply(key = '', value = '') {
-  addPair($('reply-editors'), key, value, true, () => { extensionDraft = true; filterKeywordEditor(); });
-  const row = $('reply-editors').lastElementChild;
-  row.querySelector('[data-field="key"]').maxLength = 80;
-  row.querySelector('[data-field="value"]').maxLength = 3500;
+  const row = node('article', '', 'pair reply-entry'), head = node('div', '', 'reply-entry-head');
+  const title = node('h3', key || '未填写触发消息');
+  const remove = button('移除', () => { row.remove(); extensionDraft = true; filterKeywordEditor(); });
+  remove.setAttribute('aria-label', '移除回复');
+  head.append(node('span', '问答条目', 'tag'), title, remove);
+  const body = node('div', '', 'reply-entry-body');
+  const trigger = field(body, '收到这句话', key, 'key'); trigger.maxLength = 80;
+  trigger.addEventListener('input', () => { title.textContent = trigger.value.trim() || '未填写触发消息'; });
+  const reply = field(body, '发送这段文字', value, 'value', {multiline: true}); reply.maxLength = 3500;
+  row.append(head, body); $('reply-editors').append(row);
+}
+function renderKeywordPreview() {
+  if (!$('reply-test-message')) return;
+  const message = $('reply-test-message').value.trim(), result = $('reply-test-result'), state = $('reply-test-state');
+  let status = 'idle', content = '在上方输入群消息，检查它会匹配哪条草稿回复。', caption = '等待输入';
+  if (message) {
+    try {
+      const draft = pairs($('reply-editors'));
+      if (Object.hasOwn(draft, message)) { status = 'match'; caption = '匹配到草稿回复'; content = draft[message]; }
+      else { status = 'miss'; caption = '没有匹配'; content = '当前草稿里没有与这句话完全一致的触发消息。'; }
+    } catch (error) { status = 'invalid'; caption = '先检查草稿'; content = error.message; }
+  }
+  result.dataset.result = status; result.textContent = content; state.textContent = caption;
 }
 function openKeywordEditor(replies) {
   const wrap = node('div', '', 'full keyword-editor'), toolbar = node('div', '', 'toolbar');
@@ -195,7 +216,14 @@ function openKeywordEditor(replies) {
   toolbar.append(search, total, add);
   const editors = node('div', '', 'reply-grid'); editors.id = 'reply-editors';
   const empty = node('p', '还没有关键词，添加一条回复开始吧。', 'log-empty'); empty.id = 'reply-empty';
-  wrap.append(node('p', '精确匹配整条群消息；回复以纯文字发送。帮助、绑定、状态等内置命令优先。', 'hint'), toolbar, editors, empty);
+  const check = node('section', '', 'reply-check'); check.dataset.previewOnly = 'true'; check.setAttribute('aria-label', '回复草稿本地检查');
+  const label = node('label', '本地试一条群消息'); label.htmlFor = 'reply-test-message';
+  const test = node('input'); test.id = 'reply-test-message'; test.type = 'text'; test.autocomplete = 'off'; test.maxLength = 500;
+  test.placeholder = '输入一条触发消息，如：规则'; test.oninput = renderKeywordPreview;
+  const state = node('span', '', 'tag'); state.id = 'reply-test-state';
+  const result = node('output', '', 'reply-test-result'); result.id = 'reply-test-result'; result.setAttribute('for', test.id); result.setAttribute('role', 'status');
+  check.append(label, test, state, result, node('p', '只检查当前草稿的文字匹配，不发送群消息。实际响应还取决于插件开关、权限和内置命令。', 'hint'));
+  wrap.append(node('p', '每条问答由一句触发消息和一段文字回复组成。整条消息一致时匹配，保存后按插件开关生效。', 'hint'), toolbar, check, editors, empty);
   $('extension-settings').append(wrap);
   for (const [key, value] of Object.entries(replies)) addKeywordReply(key, value);
   editors.addEventListener('input', filterKeywordEditor);
