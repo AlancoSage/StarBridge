@@ -8,6 +8,7 @@ import time
 import uuid
 
 from .bot import clean_text
+from .qq_identity import user_id
 
 CHINA = timezone(timedelta(hours=8))
 PLAYER = re.compile(r"[A-Za-z0-9_]{1,16}")
@@ -303,7 +304,7 @@ class Operations:
             raise OperationError("白名单申请尚未开放，请联系管理员", 503)
         if not isinstance(sid, str) or sid not in self.bot.servers or not isinstance(player, str) or not PLAYER.fullmatch(player):
             raise OperationError("请选择服务器并填写 1–16 位合法玩家名")
-        if not isinstance(qq, str) or not QQ.fullmatch(qq) or (group and group not in self.bot.servers[sid]["groups"]):
+        if not user_id(qq) or (group and group not in self.bot.servers[sid]["groups"]):
             raise OperationError("QQ 号或关联群错误")
         reason = text(reason, "申请理由", 300)
         if not admin and config["require_registered"]:

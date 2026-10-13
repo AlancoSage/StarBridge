@@ -2,15 +2,15 @@
 
 项目名称为 **Myrinbot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.14**，配套 Bukkit 游戏插件 **0.5.3** 与 Forge / NeoForge / Fabric 模组 **0.1.1**。远程指令按服务器展示群内用法与固定执行路径，文字回复使用独立问答编辑器和本地草稿检查；扩展采用 Myrinbot JSON 声明式规则。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网使用黑白 M 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.15**，配套 Bukkit 游戏插件 **0.5.3** 与 Forge / NeoForge / Fabric 模组 **0.1.1**。新增 QQ 官方机器人接入，可在面板选择 AppID / AppSecret 鉴权与官方 WebSocket Gateway。支持群 @消息、单聊事件及文字回复，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网使用黑白 M 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
-面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；通过 OneBot 11 接入 QQ。
+面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
 源码公开于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 **AGPL-3.0-or-later**，完整条款见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。开发与贡献请阅读 [CONTRIBUTING.md](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，安全问题见 [SECURITY.md](https://github.com/AlancoSage/StarBridge/blob/main/SECURITY.md)，第三方依赖与许可证见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。从开源后的源码构建部署 ZIP 时，`docs/` 目录也会附带这些文件。
 
 在线使用说明、插件开发和 API 文档：[Myrinbot 文档中心](https://wiki.rainside.top/starbridge)。
 
-首次部署从 [快速开始](docs/quick-start.md) 按 Bot → 游戏端 → OneBot → 联动验收完成配置；已接入的服务器可直接查阅 [功能文档目录](docs/index.md)。
+首次部署从 [快速开始](docs/quick-start.md) 按 Bot → 游戏端 → QQ 接入 → 联动验收完成配置；官机按 [官方接入步骤](docs/qq-official.md) 配置，已接入的服务器可直接查阅 [功能文档目录](docs/index.md)。
 
 项目采用独立的 Myrinbot 桥接协议，游戏服务器需安装配套插件或对应加载器的服务端模组。
 
@@ -28,6 +28,7 @@
 - 配置导入与部署模板：单服、多服、QQ 登录、聊天联动四种模板，导入 TOML/JSON 前先预览，保留本机令牌。
 
 - OneBot 11 **通用反向 WebSocket**，令牌验证、请求响应关联、断线错误处理。
+- QQ 官方机器人：AppID / AppSecret 鉴权、WebSocket Gateway、群 @消息及 C2C 单聊事件、文字回复；应用与场景分别管理 OpenID 身份，支持范围见 [官机接入](docs/qq-official.md)。
 - QQ 群 ↔ Minecraft 双向**文本**聊天；群图片转为 `[图片]` 提示。
 - 游戏玩家加入 / 离开群通知。
 - `/qbind` 游戏内生成 5 分钟验证码，在群内 `绑定 验证码`，SQLite 持久化。
@@ -53,7 +54,7 @@
 
 - Python **3.11+**。本机已使用 Python 3.14 验证。
 - Minecraft **Java 版 Paper / Spigot / Folia** 使用同一个通用兼容 JAR；插件最低要求 **Java 8**，实际启动 Java 版本仍按服务端要求选择。Folia 1.21.8 使用 Java 21。详见 [Minecraft 版本兼容与 Java 选择](docs/minecraft-compatibility.md)。
-- 已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端，例如 NapCat。Myrinbot 自身不负责登录 QQ。
+- QQ 接入二选一：已登录 QQ、支持 OneBot 11 反向 WebSocket 的实现端（例如 NapCat），或具备群聊 / 单聊权限的 QQ 开放平台机器人应用。
 
 已通过 Bukkit 1.4.7 / 1.7.9、Spigot 1.8.8 / 1.12.2 / 1.16.5 / 1.20.4 / 1.21.11 / 26.3 及 Paper 26.3 的 API 引用检查，并完成 Java 8 运行与隔离登录测试；这些检查不等同于所有历史版本的实服验证。
 
@@ -63,7 +64,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.14 的完整部署包为 `Myrinbot-Windows-0.6.14.zip`，独立官网包为 `Myrinbot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.14.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.15 的完整部署包为 `Myrinbot-Windows-0.6.15.zip`，独立官网包为 `Myrinbot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.15.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -185,7 +186,7 @@ groups = ["你的QQ群号"]
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.14 配套通用插件：当前源码构建输出 `bridge/target/Myrinbot-0.5.3.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.3.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.15 配套通用插件：当前源码构建输出 `bridge/target/Myrinbot-0.5.3.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.3.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。

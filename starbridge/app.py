@@ -12,7 +12,8 @@ from aiohttp import web
 
 from .bot import Bot, clean_text
 from .brand_icon import ICON_PNG
-from .onebot import OneBot
+from .qq_connection import QQConnection
+from .qq_identity import OFFICIAL_DEFAULTS, user_id
 from .storage import Store
 from .settings import ConfigConflict, ConfigFile, runtime_config
 from .players import PLAYER_ACTIONS, management_state, player_records
@@ -265,6 +266,8 @@ async def commit_config(state, payload, recheck=lambda: None):
                         values.append(candidate[section].get(key))
                 if isinstance(candidate.get("servers"), list):
                     values.extend(server.get("token") for server in candidate["servers"] if isinstance(server, dict))
+                if isinstance(candidate.get("qq_official"), dict):
+                    values.append(candidate["qq_official"].get("client_secret"))
                 if api_token in values:
                     raise ValueError("管理、QQ 和游戏令牌必须独立于网站 API 密钥")
             cfg, revision = state["config_file"].save(payload.get("config"), payload.get("revision"))
@@ -278,7 +281,8 @@ async def commit_config(state, payload, recheck=lambda: None):
         updated = runtime_config(cfg, state["config_file"].path)
         for key in ("host", "port", "database"):
             updated["app"][key] = current["app"][key]
-        ob_changed = any(current["onebot"].get(k) != updated["onebot"].get(k) for k in ("token", "self_id"))
+        ob_changed = (any(current["onebot"].get(k) != updated["onebot"].get(k) for k in ("token", "self_id"))
+                      or current.get("qq_official", OFFICIAL_DEFAULTS) != updated.get("qq_official", OFFICIAL_DEFAULTS))
         servers = {s["id"]: s for s in updated["servers"]}
         # Revoke queued actions if their routing or authority changed.
         for sid, old in state["bot"].servers.items():
@@ -294,14 +298,15 @@ async def commit_config(state, payload, recheck=lambda: None):
         if not updated["features"]["qq_to_mc"]:
             with state["store"].db:
                 state["store"].db.execute("DELETE FROM jobs WHERE json_extract(payload,'$.kind')='broadcast'")
+        if ob_changed:
+            with state["store"].db:
+                state["store"].db.execute("DELETE FROM jobs WHERE json_extract(payload,'$.reply_group') IS NOT NULL")
         state["config"] = updated
         state["bot"].cfg = updated
         state["bot"].servers = servers
         state["bot"].groups = {g: s for s in updated["servers"] for g in s["groups"]}
-        state["onebot"].cfg = updated["onebot"]
         state["restart_error"] = ""
-        if ob_changed and state["onebot"].connected:
-            await state["onebot"].ws.close(code=1000, message=b"Configuration updated")
+        await state["onebot"].reconfigure(updated, ob_changed)
         state["store"].audit("settings", "管理员已通过面板保存配置")
         result = settings_response(state, cfg, revision)
         result["onebot_reconnect"] = ob_changed
@@ -506,8 +511,8 @@ async def profile_bind(request):
     data = await body(request)
     try:
         sid, qq = data.get("server"), data.get("qq")
-        if not isinstance(sid, str) or sid not in state["bot"].servers or not isinstance(qq, str) or not re.fullmatch(r"[1-9][0-9]{0,19}", qq):
-            raise ValueError("请选择服务器并填写正确的 QQ 号")
+        if not isinstance(sid, str) or sid not in state["bot"].servers or not user_id(qq):
+            raise ValueError("请选择服务器并填写 QQ 号或官机接入信息中的用户身份")
         pid = int(request.match_info["pid"])
         state["catalog"].bind(pid, sid, qq)
     except LookupError:
@@ -541,6 +546,7 @@ async def admin_status(request):
     bot = state["bot"]
     data = {
         "onebot": state["onebot"].connected, "self_id": state["onebot"].self_id,
+        "qq_provider": state["onebot"].provider, "qq_error": state["onebot"].official.error if state["onebot"].provider == "official" else "",
         "uptime": int(time.time() - bot.started),
         "servers": [{"id": s["id"], "name": s["name"], "groups": s["groups"],
                      "online": bot.online(s["id"]), **bot.snapshots.get(s["id"], {})} for s in bot.servers.values()],
@@ -564,10 +570,10 @@ async def admin_status(request):
 async def lifecycle(app):
     state = app[STATE]
     await state["plugins"].start()
+    await state["onebot"].start()
     workers = [asyncio.create_task(state["bot"].worker()), asyncio.create_task(game_worker(state)), asyncio.create_task(state["operations"].worker()), asyncio.create_task(state["runtime"].worker())]
     yield
-    if state["onebot"].connected:
-        await state["onebot"].ws.close()
+    await state["onebot"].close()
     for task in workers:
         task.cancel()
     for task in workers:
@@ -584,7 +590,7 @@ async def lifecycle(app):
 def create_app(cfg, config_path=None, restart_event=None):
     store = Store(cfg["app"]["database"])
     catalog = Catalog(store)
-    onebot = OneBot(cfg["onebot"], store)
+    onebot = QQConnection(cfg, store)
     bot = Bot(cfg, store, onebot)
     plugin_temp = TemporaryDirectory(prefix="starbridge-plugins-") if not config_path and cfg["app"]["database"] == ":memory:" else None
     base = (Path(config_path).resolve().parent if config_path else Path(plugin_temp.name) if plugin_temp

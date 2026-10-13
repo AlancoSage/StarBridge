@@ -2,7 +2,7 @@
 
 Myrinbot 把 QQ 群、Minecraft 服务器和社区账号连接起来。你可以在管理面板配置消息联动、玩家档案、账号注册与登录、插件、官网和备份。
 
-当前说明对应 **Bot 0.6.14 / Bukkit 游戏插件 0.5.3 / 游戏端模组 0.1.1**。控制台使用用户名和密码登录，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网采用黑白 M 机器人图标；新安装的默认面板端口为 5800。Forge、NeoForge、Fabric 按游戏版本使用各自的模组。首次部署请从 [快速开始](quick-start.md) 阅读；已经接好服务器，可以直接查看下面的功能指南。
+当前说明对应 **Bot 0.6.15 / Bukkit 游戏插件 0.5.3 / 游戏端模组 0.1.1**。控制台使用用户名和密码登录，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网采用黑白 M 机器人图标；新安装的默认面板端口为 5800。Forge、NeoForge、Fabric 按游戏版本使用各自的模组。首次部署请从 [快速开始](quick-start.md) 阅读；已经接好服务器，可以直接查看下面的功能指南。
 
 项目原有配置和接入标识保持兼容，详细关系见 [项目名称与兼容说明](project-name.md)。
 
@@ -12,7 +12,7 @@ Myrinbot 把 QQ 群、Minecraft 服务器和社区账号连接起来。你可以
 | --- | --- | --- |
 | 1 | [安装 Bot：Windows](windows-installation.md) 或 [Linux](linux-installation.md) | 浏览器能登录管理面板 |
 | 2 | 安装 [Paper / Spigot / Folia 插件](minecraft-compatibility.md)、[Forge / NeoForge 模组](mod-game-ends.md) 或 [Fabric 模组](fabric-game-ends.md) | 面板中对应服务器收到心跳 |
-| 3 | [连接 OneBot 11](onebot-connection.md) 并填写关联群 | 概览显示 QQ 已连接 |
+| 3 | [连接 OneBot 11](onebot-connection.md) 或 [QQ 官机](qq-official.md)，并填写关联群 | 概览显示 QQ 已连接 |
 | 4 | [测试消息同步](message-sync.md) 和 [群命令](group-commands.md) | 群聊和游戏能够互通，查询返回当前服务器信息 |
 
 Bot、QQ 实现端和游戏服务端可以运行在同一台机器，也可以分开部署。连接地址需要由发起连接的那台机器访问；`127.0.0.1` 始终指那台机器自身。[快速开始](quick-start.md) 会说明三个组件分别配置什么。
@@ -21,7 +21,7 @@ Bot、QQ 实现端和游戏服务端可以运行在同一台机器，也可以�
 
 | 文档分区 | 常用入口 |
 | --- | --- |
-| 入门与部署 | [快速开始](quick-start.md)、[OneBot 连接](onebot-connection.md)、[面板使用](panel-guide.md)、[版本与 Java 选择](minecraft-compatibility.md) |
+| 入门与部署 | [快速开始](quick-start.md)、[OneBot 连接](onebot-connection.md)、[官机接入](qq-official.md)、[面板使用](panel-guide.md)、[版本与 Java 选择](minecraft-compatibility.md) |
 | 玩家与账号 | [QQ 绑定](account-binding.md)、[玩家管理](player-management.md)、[消息同步](message-sync.md)、[群命令](group-commands.md)、[游戏登录](game-login.md)、[注册 API](account-api.md) |
 | 插件与自动化 | [插件开发与最小示例](plugin-development.md)、[定时任务及白名单申请](automation-and-whitelist.md) |
 | 官网与 API | [独立官网部署及信息接口](website-deployment.md)、[注册与密码接口](account-api.md) |
@@ -35,7 +35,7 @@ Bot、QQ 实现端和游戏服务端可以运行在同一台机器，也可以�
 | 组件 | 用途 | 是否必须 |
 | --- | --- | --- |
 | Myrinbot Bot | 连接 QQ 与游戏，保存账号和管理设置，提供面板及 API | 必须 |
-| OneBot 11 实现端 | 登录 QQ，将 QQ 事件发送给 Bot | 使用 QQ 联动时必须；Myrinbot 本身不登录 QQ |
+| OneBot 11 实现端 | 登录 QQ，将 QQ 事件发送给 Bot | OneBot 模式需要；官机通过开放平台应用接入 |
 | Myrinbot 游戏插件或模组 | 上报游戏状态，转发聊天，执行授权操作 | 使用 Minecraft 联动时必须 |
 | 社区官网 | 提供网页注册、服务器状态和本人信息 | 可选，可使用 Myrinbot 官网或自己的网页 |
 | 第三方登录插件 | 接管 Minecraft 原生认证 | 可选，按 [适配范围](game-login.md#可选登录插件) 选择 |

@@ -1,6 +1,8 @@
 # OneBot 11：连接 QQ 机器人
 
-适用版本：Bot **0.6.14**。
+适用版本：Bot **0.6.15**。
+
+本页针对 OneBot 11 接入。使用 QQ 开放平台官机时，改按 [QQ 官方机器人接入](qq-official.md) 配置 AppID / AppSecret；同一实例一次使用一种接入方式。
 
 ## 用途
 

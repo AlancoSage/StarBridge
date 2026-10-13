@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import tempfile
 import tomllib
+from .qq_identity import OFFICIAL_DEFAULTS, official_parts
 
 FEATURES = ("qq_to_mc", "mc_to_qq", "join_quit", "unbind_on_leave", "set_group_card")
 
@@ -26,16 +27,16 @@ def string(value, label, maximum=256):
     return value
 
 
-def ids(value, label):
+def ids(value, label, official=False):
     if (not isinstance(value, list) or len(value) > 1000
-        or any(not isinstance(v, str) or not re.fullmatch(r"[1-9][0-9]{0,18}", v) for v in value)
+        or any(not isinstance(v, str) or not (re.fullmatch(r"[1-9][0-9]{0,18}", v) or (official and official_parts(v, ("qg",)))) for v in value)
         or len(set(value)) != len(value)):
-        raise ValueError(f"{label} 必须是无重复的 QQ / 群号列表（数字字符串）")
+        raise ValueError(f"{label} 必须是无重复的 QQ / 群号列表，官机群请填写接入信息中的 qg 身份")
 
 
 def validate(value):
     cfg = deepcopy(value)
-    table(cfg, ("app", "onebot", "features", "replies", "servers"), "配置")
+    table(cfg, ("app", "onebot", "qq_official", "features", "replies", "servers"), "配置")
     try:
         app, ob = cfg["app"], cfg["onebot"]
         table(app, ("host", "port", "database", "admin_token"), "主程序设置")
@@ -48,6 +49,23 @@ def validate(value):
         if app["database"] == ":memory:" or any(c in app["database"] for c in "\r\n"):
             raise ValueError("请输入有效的持久化数据库文件路径")
         tokens = [app["admin_token"], ob["token"]]
+        if "qq_official" in cfg:
+            official = cfg["qq_official"]
+            table(official, OFFICIAL_DEFAULTS, "QQ 官机设置")
+            official = cfg["qq_official"] = {**deepcopy(OFFICIAL_DEFAULTS), **official}
+            if type(official["enabled"]) is not bool or type(official["allow_active"]) is not bool:
+                raise ValueError("官机接入与主动消息开关必须是布尔值")
+            app_id, secret = official["app_id"], official["client_secret"]
+            if not isinstance(app_id, str) or (app_id and not re.fullmatch(r"[1-9][0-9]{0,19}", app_id)):
+                raise ValueError("官机 AppID 必须为数字字符串")
+            if not isinstance(secret, str) or (secret and not re.fullmatch(r"[!-~]{8,256}", secret)):
+                raise ValueError("官机 AppSecret 必须为 8–256 位非空格 ASCII 字符")
+            if official["enabled"] and (not app_id or not secret or secret.startswith("CHANGE-ME")):
+                raise ValueError("启用 QQ 官机前请填写 AppID 和 AppSecret")
+            admins = official["admins"]
+            if (not isinstance(admins, list) or len(admins) > 1000 or any(not official_parts(v, ("qug", "qup")) or official_parts(v, ("qug", "qup"))[1] != app_id for v in admins)
+                    or len(set(admins)) != len(admins)):
+                raise ValueError("官机管理员必须为本 AppID 接入信息中的 qug / qup 身份，不能填写普通 QQ 号")
         ob.setdefault("admins", [])
         ob.setdefault("self_id", "")
         ids(ob["admins"], "管理员 QQ")
@@ -77,7 +95,7 @@ def validate(value):
             server_ids.add(sid)
             string(server["name"], "服务器名称", 80)
             tokens.append(server["token"])
-            ids(server["groups"], f"{sid} 群号")
+            ids(server["groups"], f"{sid} 群号", official=True)
             if groups.intersection(server["groups"]):
                 raise ValueError("每个群只能关联一台服务器，群号不能重复")
             groups.update(server["groups"])
@@ -93,6 +111,8 @@ def validate(value):
             raise ValueError("所有令牌必须为 24–256 位非空格 ASCII 字符，请点击生成随机令牌")
         if len(set(tokens)) != len(tokens):
             raise ValueError("管理、OneBot 和各服务器必须使用不同令牌")
+        if cfg.get("qq_official", {}).get("client_secret") in tokens:
+            raise ValueError("官机 AppSecret 必须独立于管理、OneBot 和游戏令牌")
     except KeyError as exc:
         raise ValueError(f"缺少必填配置项：{exc.args[0]}") from None
     return cfg
@@ -101,6 +121,8 @@ def validate(value):
 def runtime_config(cfg, path):
     result = deepcopy(cfg)
     result["app"]["database"] = str((Path(path).resolve().parent / cfg["app"]["database"]).resolve())
+    if cfg.get("qq_official", {}).get("enabled"):
+        result["onebot"]["admins"] = list(cfg["qq_official"]["admins"])
     return result
 
 
@@ -110,7 +132,9 @@ def serialize(cfg):
     lines = ["# 由Myrinbot管理面板保存；修改前一版位于同目录 .bak 文件。"]
     if not cfg["servers"]:
         lines.append("servers = []")
-    for section in ("app", "onebot", "features", "replies"):
+    for section in ("app", "onebot", "qq_official", "features", "replies"):
+        if section not in cfg:
+            continue
         lines.extend(["", f"[{section}]"])
         lines.extend(f"{literal(k)} = {literal(v)}" for k, v in cfg[section].items())
     for server in cfg["servers"]:

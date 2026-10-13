@@ -1,6 +1,6 @@
 # Windows 安装与运行
 
-适用版本：Bot **0.6.14**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
+适用版本：Bot **0.6.15**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
 
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 

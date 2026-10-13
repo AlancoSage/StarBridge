@@ -4,10 +4,10 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import json
-import re
 import time
 import uuid
 from .registration import RegistrationError
+from .qq_identity import group_id
 
 DEFAULTS = {
     'monitoring':{'enabled':True,'startup_grace_seconds':30,'notify_groups':False,'groups':[]},
@@ -27,7 +27,7 @@ def validate_setting(key,value):
         if type(out[field]) is not int or not low<=out[field]<=high:raise RegistrationError(f'{field} 范围需为 {low}–{high}')
     if key=='monitoring':
         groups=out['groups']
-        if not isinstance(groups,list) or len(groups)>10 or any(not isinstance(g,str) or not re.fullmatch(r'[1-9][0-9]{0,19}',g) for g in groups) or len(groups)!=len(set(groups)):raise RegistrationError('提醒群最多 10 个，需为不重复的群号')
+        if not isinstance(groups,list) or len(groups)>10 or any(not group_id(g) for g in groups) or len(groups)!=len(set(groups)):raise RegistrationError('提醒群最多 10 个，需为不重复的群号或官机 qg 身份')
         if out['notify_groups'] and not groups:raise RegistrationError('启用群提醒前需要填写接收群')
     return out
 

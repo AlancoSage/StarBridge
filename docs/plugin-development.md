@@ -2,6 +2,8 @@
 
 插件接口版本：**1**。本接口用于扩展 Myrinbot 机器人主程序，与 Minecraft 服务端的 Myrinbot JAR 分开管理。
 
+QQ 官机同样使用本规则接口。群权限范围填写完整 `qg:AppID:group_openid`，用户范围填写 `qug:AppID:member_openid` 或 `qup:AppID:user_openid`；身份按应用与场景分别检查。群规则接收平台下发的 @消息，通知发送受有效回复上下文及主动发送权限约束，详见 [官机接入](qq-official.md)。
+
 ## 用途与边界
 
 一个插件就是一个 UTF-8 JSON 文件，可以增加 QQ 群命令、文本模板回复、Minecraft 入服／退服通知，以及在面板中编辑的配置项。无需 Python、Java 或第三方依赖；插件文件不会被作为代码运行。

@@ -12,6 +12,7 @@ import time
 import uuid
 
 from .bot import clean_text
+from .qq_identity import user_id, group_id
 
 
 PLUGIN_API = 1
@@ -61,9 +62,9 @@ def permission_value(value):
         raise ValueError("使用者需选择所有成员、已绑定成员或机器人管理员")
     for key in ("servers", "groups", "allow_users", "deny_users"):
         values = output[key]
-        pattern = r"[A-Za-z0-9_-]{1,40}" if key == "servers" else r"[1-9][0-9]{0,19}"
-        if not isinstance(values, list) or len(values) > 100 or any(not isinstance(item, str) or not re.fullmatch(pattern, item) for item in values) or len(set(values)) != len(values):
-            raise ValueError("权限范围最多 100 项且不能重复；群号和 QQ 号需为数字")
+        valid = (lambda item: isinstance(item, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,40}", item))) if key == "servers" else group_id if key == "groups" else user_id
+        if not isinstance(values, list) or len(values) > 100 or any(not valid(item) for item in values) or len(set(values)) != len(values):
+            raise ValueError("权限范围最多 100 项且不能重复；身份需为 QQ / 群号或官机接入身份")
     return output
 
 

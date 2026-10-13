@@ -91,8 +91,23 @@ class Bot:
 
     async def handle_event(self, event):
         group, qq = str(event.get("group_id", "")), str(event.get("user_id", ""))
+        valid_user = getattr(self.onebot, "valid_user", lambda value: value.isdigit())
+        official = getattr(self.onebot, "provider", "onebot") == "official"
+        text = plain_message(event.get("message", ""))[:2000]
+        if (official and event.get("post_type") == "message" and valid_user(qq) and text in ("接入信息", "/接入信息")
+                and event.get("self_id") == self.onebot.self_id and not event.get("anonymous")):
+            mid = event.get("message_id")
+            if not isinstance(mid, str) or self.store.seen(f"official-info:{group}:{qq}:{mid}") or not self.allow(("official-info", group, qq), count=3, period=60):
+                return
+            reply = f"Myrinbot 官机接入信息\n你的用户身份：{qq}"
+            if event.get("message_type") == "group":
+                reply += f"\n本群身份：{group}\n将本群身份填写到服务器关联群；管理员填写对应用户身份。"
+                await self.onebot.send_group(group, reply)
+            elif event.get("message_type") == "private":
+                await self.onebot.send_private(qq, reply + "\n群内身份与单聊身份分别管理，不会自动关联普通 QQ 号。")
+            return
         if (event.get("post_type") == "message" and event.get("message_type") == "private"
-                and not event.get("anonymous") and qq.isdigit() and qq != str(event.get("self_id")) and self.authentication):
+                and not event.get("anonymous") and valid_user(qq) and qq != str(event.get("self_id")) and self.authentication):
             mid = event.get("message_id")
             if not isinstance(mid, (int, str)) or isinstance(mid, bool):
                 return
@@ -108,7 +123,7 @@ class Bot:
                 await self.onebot.send_private(qq, reply)
             return
         server = self.groups.get(group)
-        if not server or not qq.isdigit() or qq == str(event.get("self_id")):
+        if not server or not valid_user(qq) or qq == str(event.get("self_id")):
             return
         sid = server["id"]
         if event.get("post_type") == "notice":
@@ -133,14 +148,17 @@ class Bot:
         reply = None
         if command in ("帮助", "help", "/help"):
             reply = HELP
-            if self.registration and self.registration.settings["enabled"]:
+            if official:
+                reply = reply.replace("普通群消息会同步到游戏。", "平台下发的 @机器人群消息会同步到游戏。")
+                reply += "\n官机群内请先 @机器人；接入信息 — 查看本群和用户身份。\n注册请使用社区注册网页；群名片和成员退群事件不由官机提供。"
+            if not official and self.registration and self.registration.settings["enabled"]:
                 reply += "\n/申请 玩家名 QQ号 — 邮箱验证注册\n/注册 验证码 — 完成社区账号注册"
             if self.operations and self.operations.config()["settings"]["enabled"]:
                 reply += "\n/白名单 玩家名 [理由] — 申请入服\n/白名单状态 — 查询申请进度"
         elif command in ("/白名单", "/白名单状态") and self.operations:
             reply = await self.operations.group_command(command, arg, server, group, qq)
         elif command in ("/申请", "/注册") and self.registration:
-            reply = await self.registration.group_command(command, arg, server, group, qq)
+            reply = "QQ 官机不提供实际 QQ 号，请使用服主提供的注册网页进行邮箱验证。" if official else await self.registration.group_command(command, arg, server, group, qq)
         elif command in ("/确认登录", "/拒绝登录"):
             reply = "请私聊机器人使用登录确认指令，不要将确认消息发送到群里。"
         elif command in ("状态", "在线"):
@@ -153,7 +171,7 @@ class Bot:
                     row = self.store.bind(sid, qq, arg)
                     reply = f"绑定成功：{row['name']}（{server['name']}）"
                     self.store.audit("binding", f"{qq} 绑定 {sid}/{row['name']}")
-                    if self.cfg["features"].get("set_group_card"):
+                    if not official and self.cfg["features"].get("set_group_card"):
                         try:
                             await self.onebot.call("set_group_card", {"group_id": int(group), "user_id": int(qq), "card": row["name"]})
                         except (RuntimeError, ConnectionError, TimeoutError):

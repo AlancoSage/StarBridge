@@ -14,6 +14,16 @@ token = "CHANGE-ME-onebot"
 self_id = ""
 admins = ["123456789"]
 
+# 可选：QQ 官方群聊 / 单聊接入。启用后暂不接收 OneBot 连接。
+# 群内 @机器人 发送「接入信息」，复制 qg: 群身份和 qug: 管理员身份。
+[qq_official]
+enabled = false
+app_id = ""
+client_secret = ""
+admins = []
+# 无有效回复消息时尝试主动发送；还需 QQ 平台对应权限与额度。
+allow_active = false
+
 [features]
 qq_to_mc = true
 mc_to_qq = true

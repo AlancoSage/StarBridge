@@ -462,7 +462,7 @@ function addServer(server) {
     filterCommandCards();
   };
   id.addEventListener('input', updateCommandServer); name.addEventListener('input', updateCommandServer);
-  field(grid, '关联 QQ 群', server.groups.join('\n'), 'groups', {multiline: true, full: true, hint: '每行一个群号，也可用逗号或空格分隔。'});
+  field(grid, '关联 QQ 群 / 官机群身份', server.groups.join('\n'), 'groups', {multiline: true, full: true, hint: '每行一个群号，或官机接入信息中的 qg: 群身份，也可用逗号或空格分隔。'});
   field(grid, '游戏插件连接令牌', server.token, 'token', {secret: true, full: true, hint: '修改后需要在游戏插件同步此令牌，可使用下方下载的配置。'});
   card.append(grid);
   const commands = node('div', '', 'commands');
@@ -534,6 +534,11 @@ function renderConfig(data) {
   for (const key of ['host', 'port', 'database']) $(key).value = saved.app[key];
   $('admin-token').value = saved.app.admin_token;
   $('onebot-url').value = location.origin.replace(/^http/, 'ws') + '/onebot/ws';
+  const official = saved.qq_official || {enabled:false, app_id:'', client_secret:'', admins:[], allow_active:false};
+  $('qq-provider').value = official.enabled ? 'official' : 'onebot';
+  $('official-app-id').value = official.app_id; $('official-client-secret').value = official.client_secret;
+  $('official-admins').value = official.admins.join('\n'); $('official-allow-active').checked = official.allow_active;
+  renderQQProvider();
   $('server-editors').replaceChildren(); $('command-editors').replaceChildren(); saved.servers.forEach(addServer);
   $('feature-editors').replaceChildren();
   for (const [key, [title, hint]] of Object.entries(features)) {
@@ -547,20 +552,41 @@ function renderConfig(data) {
   filterCommandCards();
 }
 
+function readOfficialSettings() {
+  return {enabled:$('qq-provider').value === 'official', app_id:$('official-app-id').value.trim(),
+    client_secret:$('official-client-secret').value, admins:splitIds($('official-admins').value), allow_active:$('official-allow-active').checked};
+}
+function renderQQProvider() {
+  const official = $('qq-provider').value === 'official';
+  $('legacy-connection-identity').hidden = $('legacy-connection-parameters').hidden = official;
+  $('official-connection-fields').hidden = !official;
+  $('connection-dialog').querySelector('.connection-eyebrow').textContent = official ? 'QQ · 官方开放平台' : 'QQ · ONEBOT 11';
+}
+$('qq-provider').addEventListener('change', () => { renderQQProvider(); markDirty(); });
 function renderConnection() {
   if (!saved) return;
-  const connection = saved.onebot, online = latestStatus?.onebot === true;
+  const connection = saved.onebot, official = saved.qq_official?.enabled === true;
+  const online = latestStatus?.onebot === true && (latestStatus.qq_provider || 'onebot') === (official ? 'official' : 'onebot');
   const connectedId = online ? latestStatus.self_id : '';
   setText('connection-status-text', latestStatus ? (online ? '已连接' : '等待连接') : '正在读取');
   $('connection-status').classList.toggle('is-online', online);
   $('connection-status').querySelector('.status-dot').classList.toggle('online', online);
-  setText('connection-account', connectedId || connection.self_id || '自动识别');
+  setText('connection-account', official ? saved.qq_official.app_id : connectedId || connection.self_id || '自动识别');
+  document.querySelector('#connection-card .bot-facts dt').textContent = official ? '官机 AppID' : '机器人 QQ';
+  document.querySelector('#connection-card .bot-identity p').textContent = official ? 'QQ 官方 · WebSocket Gateway' : 'OneBot 11 · 反向 WebSocket';
   setText('connection-groups', new Set(saved.servers.flatMap(server => server.groups)).size + ' 个');
-  setText('connection-admin-count', connection.admins.length + ' 位');
-  setText('connection-address', $('onebot-url').value);
-  setText('connection-state-hint', online ? '连接正常，可以接收和发送群消息。' : '等待 QQ 协议端连接，请确认地址与令牌一致。');
+  setText('connection-admin-count', (official ? saved.qq_official.admins : connection.admins).length + ' 位');
+  setText('connection-address', official ? 'Myrinbot 主动连接 QQ 官方 Gateway' : $('onebot-url').value);
+  document.querySelector('#connection-card [data-copy="onebot-url"]').hidden = official;
+  setText('connection-state-hint', official ? (latestStatus?.qq_error || (online ? '官机连接正常，群内请 @机器人发送消息。' : '等待官方鉴权与网关连接，请核对应用设置。')) : online ? '连接正常，可以接收和发送群消息。' : '等待 QQ 协议端连接，请确认地址与令牌一致。');
+  renderChanged('qq-connection-guide', official, () => {
+    const steps = [...document.querySelectorAll('.connection-guide li')];
+    const values = official ? [['填写应用信息','在接入设置选择 QQ 官方机器人，填写 AppID 和 AppSecret。'],['获取群与用户身份','连接后在群内 @机器人发送「接入信息」，复制本群身份和用户身份。'],['关联服务器与管理员','将本群身份填入服务器关联群；需要执行指令时，将用户身份加入官机管理员列表。']] : [['设置机器人','打开接入设置，填写管理员 QQ 和连接令牌，保存后生效。'],['连接协议端','在 NapCat 等协议端创建 WebSocket 客户端，填写连接地址与相同的令牌，选择 Universal 模式。'],['确认连接','卡片显示“已连接”后即可接收群消息。如未连接，可以查看日志或运行连接诊断。']];
+    steps.forEach((step,i) => {step.querySelector('h4').textContent=values[i][0];step.querySelector('p').textContent=values[i][1];});
+  });
   const changed = $('self-id').value.trim() !== connection.self_id || $('onebot-token').value !== connection.token ||
-    JSON.stringify(splitIds($('admins').value)) !== JSON.stringify(connection.admins);
+    JSON.stringify(splitIds($('admins').value)) !== JSON.stringify(connection.admins) ||
+    JSON.stringify(readOfficialSettings()) !== JSON.stringify(saved.qq_official || {enabled:false, app_id:'', client_secret:'', admins:[], allow_active:false});
   $('connection-draft').hidden = !changed;
   setText('connection-save-hint', dirty ? '保存会同时应用面板中尚未保存的设置。' : '更改会保留为草稿，保存后生效。');
 }
@@ -580,6 +606,8 @@ $('connection-dialog').addEventListener('keydown', event => {
 $('connection-dialog').addEventListener('close', () => {
   $('onebot-token').type = 'password';
   $('connection-dialog').querySelector('[data-reveal="onebot-token"]').textContent = '显示';
+  $('official-client-secret').type = 'password';
+  $('connection-dialog').querySelector('[data-reveal="official-client-secret"]').textContent = '显示';
 });
 $('connection-dialog').addEventListener('click', event => {
   if (event.target !== $('connection-dialog') || saving) return;
@@ -863,13 +891,16 @@ $('binding-search').oninput = renderBindings; $('binding-server').onchange = ren
 $('log-search').oninput = renderLogs; $('log-kind').onchange = renderLogs;
 $('pause-logs').onclick = () => { logsPaused = !logsPaused; if (logsPaused) frozenLogs = [...(latestStatus?.logs || [])]; $('pause-logs').textContent = logsPaused ? '继续更新' : '暂停更新'; renderLogs(); };
 function collect() {
-  return {
+  const result = {
     app: {host: $('host').value.trim(), port: Number($('port').value), database: $('database').value.trim(), admin_token: $('admin-token').value},
     onebot: {self_id: $('self-id').value.trim(), admins: splitIds($('admins').value), token: $('onebot-token').value},
     features: Object.fromEntries(Object.keys(features).map(k => [k, $('feature-' + k).checked])),
     replies: saved.replies, // Retain the pre-migration backup; live replies belong to the plugin.
     servers: Array.from($('server-editors').children, readServer),
   };
+  const official = readOfficialSettings();
+  if (saved.qq_official || official.enabled || official.app_id || official.client_secret || official.admins.length || official.allow_active) result.qq_official = official;
+  return result;
 }
 
 function renderLiveView() {

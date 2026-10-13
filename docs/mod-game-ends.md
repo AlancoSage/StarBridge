@@ -1,6 +1,6 @@
 # Forge 与 NeoForge 游戏端
 
-**适用：Myrinbot Bot 0.6.14 · 游戏端模组 0.1.1。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入 Myrinbot。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.3](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
+**适用：Myrinbot Bot 0.6.15 · 游戏端模组 0.1.1。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入 Myrinbot。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.3](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
 
 Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 26.2 / 26.3** 使用另一套独立 JAR 与配置，安装步骤见 [Fabric 游戏端](fabric-game-ends.md)。下文专门说明 Forge 与 NeoForge。
 
@@ -17,7 +17,7 @@ Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 
 | 1.19.2 | Forge 43.5.0 | 17 | `config/starbridge-common.toml` |
 | 1.20.1 | Forge 47.4.10 | 17 | `config/starbridge-common.toml` |
 | 1.20.4 | NeoForge 20.4.251 | 17 | `config/starbridge-bridge.properties` |
-| 1.20.6 | NeoForge 20.6.141 | 21 | `config/starbridge-bridge.properties` |
+| 1.20.6 | NeoForge 20.6.151 | 21 | `config/starbridge-bridge.properties` |
 | 1.21.1 | NeoForge 21.1.256 | 21 | `config/starbridge-common.toml` |
 | 1.21.4 | NeoForge 21.4.158 | 21 | `config/starbridge-bridge.properties` |
 | 1.21.8 | NeoForge 21.8.54 | 21 | `config/starbridge-bridge.properties` |
@@ -149,7 +149,7 @@ Bot 0.6.6 新增的六个 NeoForge 游戏端均在各自实际加载器与 Java 
 | 26.1.2 | 实际服务端的 `ProtocolInfo` / `StreamCodec`，真实 TCP 编解码 | 23 项 |
 | 26.2 | 实际服务端的 `ProtocolInfo` / `StreamCodec`，真实 TCP 编解码 | 23 项 |
 
-Bot 0.6.7 新增的 **NeoForge 1.20.6 / 20.6.141 / Java 21** 使用实际服务端的 `ProtocolInfo` / `StreamCodec` 建立真实 TCP 连接，**23 项检查通过，协议解码错误为 0**。验证覆盖上面的登录、QQ 确认、白名单、聊天与处罚回执流程，同时完整解码注册表、配方和背包同步数据包。登录测试使用 1.20.6 原生离线 signed 命令包与 ACK；该版本协议没有 checksum 字段。
+Bot 0.6.7 新增的 **NeoForge 1.20.6 / 20.6.151 / Java 21** 使用实际服务端的 `ProtocolInfo` / `StreamCodec` 建立真实 TCP 连接，**23 项检查通过，协议解码错误为 0**。验证覆盖上面的登录、QQ 确认、白名单、聊天与处罚回执流程，同时完整解码注册表、配方和背包同步数据包。登录测试使用 1.20.6 原生离线 signed 命令包与 ACK；该版本协议没有 checksum 字段。
 
 1.20.6、26.1.2 与 26.2 的测试探针在服务端类加载器内使用本版本的原生数据包与注册表。探针仅用于隔离验证，最终成品不包含探针或测试 HTTP 接口。登录测试覆盖对应版本的离线 signed 命令包、ACK，以及协议存在时的 checksum；这不等于已验证正版账号的密码学签名链。
 

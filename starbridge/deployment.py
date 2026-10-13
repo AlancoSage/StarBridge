@@ -27,6 +27,8 @@ class Deployment:
         cfg, _ = self.state['config_file'].read()
         cfg['app']['admin_token'] = '<保留本机令牌>'
         cfg['onebot']['token'] = '<保留本机令牌>'
+        if 'qq_official' in cfg:
+            cfg['qq_official']['client_secret'] = '<保留本机官机密钥>'
         for server in cfg['servers']: server['token'] = '<自动生成或保留>'
         cfg['replies'] = {}
         return {'format': 'starbridge-config-v1', 'config': cfg, 'authentication': self.state['authentication'].config_response()['settings']}
@@ -61,6 +63,10 @@ class Deployment:
             if not isinstance(candidate, dict) or not isinstance(candidate.get('onebot'), dict) or not isinstance(candidate.get('servers'), list): raise RegistrationError('配置缺少 QQ 设置或服务器列表')
             old = {s['id']: s for s in current['servers']}
             candidate['app'] = deepcopy(current['app']); candidate['onebot']['token'] = current['onebot']['token']
+            if 'qq_official' in current:
+                candidate['qq_official'] = deepcopy(current['qq_official'])
+            else:
+                candidate.pop('qq_official', None)
             for server in candidate['servers']:
                 if not isinstance(server, dict): raise RegistrationError('服务器格式错误')
                 server['token'] = old.get(server.get('id'), {}).get('token') or secrets.token_hex(32)
@@ -106,7 +112,10 @@ class Deployment:
         def add(key, title, status, detail, fix=''): checks.append({'id': key, 'title': title, 'status': status, 'detail': detail, 'fix': fix})
         add('python', 'Python 运行环境', 'ok', platform.python_version() + ' · ' + platform.system())
         connected = state['onebot'].connected
-        add('onebot', 'QQ 机器人', 'ok' if connected else 'error', 'OneBot WebSocket 已连接' if connected else '尚未连接 OneBot', '在 QQ 实现端设置通用反向 WebSocket 地址及独立令牌。' if not connected else '')
+        official = getattr(state['onebot'], 'provider', 'onebot') == 'official'
+        label = 'QQ 官方 Gateway' if official else 'OneBot WebSocket'
+        hint = '在接入设置中核对 AppID、AppSecret、平台群聊权限与公网 IP 白名单。' if official else '在 QQ 实现端设置通用反向 WebSocket 地址及独立令牌。'
+        add('onebot', 'QQ 机器人', 'ok' if connected else 'error', label + (' 已连接' if connected else ' 尚未连接'), hint if not connected else '')
         for sid, server in state['bot'].servers.items():
             snapshot = state['bot'].snapshots.get(sid, {}); online = state['bot'].online(sid)
             add('server:' + sid, server['name'], 'ok' if online else 'error',
