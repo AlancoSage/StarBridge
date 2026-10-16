@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 let token = '', revision = '', timer = null, busy = false, dirty = false, saving = false;
 let saved = null, canRestart = false, serial = 0;
+let savedFormSignature = null;
 let latestStatus = null, logsPaused = false, frozenLogs = [];
 let panelIdentity = null;
 let panelAuthBusy = false, ownerSetupRequired = false;
@@ -103,9 +104,19 @@ function notice(id, text, type = '', {persistent = false} = {}) {
     setText(id, ''); noticeTimers.delete(id);
   }, 5000));
 }
-function markDirty(value = true) {
-  document.body.classList.toggle('has-unsaved', value);
-  dirty = value; $('save').disabled = !dirty || saving;
+function configSignature(config) {
+  return JSON.stringify(config, (_key, value) => value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+}
+function markDirty() {
+  dirty = false;
+  if (saved && savedFormSignature !== null) {
+    try { dirty = configSignature(collect()) !== savedFormSignature; }
+    // An incomplete or duplicate command is still an unsaved draft.
+    catch { dirty = true; }
+  }
+  document.body.classList.toggle('has-unsaved', dirty);
+  $('save').disabled = !dirty || saving;
   $('save-top').disabled = !dirty || saving;
   $('connection-save').disabled = !dirty || saving;
   $('dirty-label').textContent = dirty ? '有尚未保存的更改' : '所有更改已保存';
@@ -548,7 +559,8 @@ function renderConfig(data) {
   }
   $('restart').disabled = !canRestart;
   pendingBanner(data.restart_required, data.restart_error);
-  markDirty(false);
+  savedFormSignature = configSignature(collect());
+  markDirty();
   filterCommandCards();
 }
 
@@ -562,7 +574,7 @@ function renderQQProvider() {
   $('official-connection-fields').hidden = !official;
   $('connection-dialog').querySelector('.connection-eyebrow').textContent = official ? 'QQ · 官方开放平台' : 'QQ · ONEBOT 11';
 }
-$('qq-provider').addEventListener('change', () => { renderQQProvider(); markDirty(); });
+$('qq-provider').addEventListener('change', renderQQProvider);
 function renderConnection() {
   if (!saved) return;
   const connection = saved.onebot, official = saved.qq_official?.enabled === true;
@@ -1051,8 +1063,9 @@ $('owner-setup-form').addEventListener('submit', async event => {
   }
 });
 checkOwnerSetup().catch(() => notice('login-notice','暂时无法检查首次设置状态，请刷新页面重试。','error',{persistent:true}));
-$('content').addEventListener('input', e => {
-  if (e.target.matches('input,textarea') && e.target.type !== 'search' && !e.target.readOnly && e.target.dataset.field !== 'endpoint' && !e.target.closest('#view-players, #view-extensions, #view-accounts, #view-authentication, #view-backups, #view-schedules, #view-whitelist, #view-website, #view-managers, #view-monitoring, #view-statistics, .service-space')) markDirty();
+for (const event of ['input', 'change']) $('content').addEventListener(event, e => {
+  if (e.target.matches('input,textarea,select') && !e.target.readOnly && e.target.type !== 'search'
+      && e.target.closest('#view-app, #connection-dialog, #feature-editors, #server-editors, #command-editors')) markDirty();
 });
 document.querySelectorAll('[data-reveal]').forEach(btn => { btn.onclick = () => {
   const input = $(btn.dataset.reveal); input.type = input.type === 'password' ? 'text' : 'password'; btn.textContent = input.type === 'password' ? '显示' : '隐藏';
@@ -1084,7 +1097,7 @@ $('save').onclick = async () => {
   finally {
     controls.forEach((el, i) => { el.disabled = disabled[i]; });
     saving = false; $('save').textContent = '保存全部设置'; $('connection-save').textContent = '保存全部设置';
-    $('connection-dialog').removeAttribute('aria-busy'); markDirty(dirty); filterCommandCards(); await refresh();
+    $('connection-dialog').removeAttribute('aria-busy'); markDirty(); filterCommandCards(); await refresh();
   }
 };
 $('restart').onclick = async () => {
