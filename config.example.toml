@@ -24,6 +24,11 @@ admins = []
 # 无有效回复消息时尝试主动发送；还需 QQ 平台对应权限与额度。
 allow_active = false
 
+# 只将下列指定指令的群内回复渲染成图片；预设指令填写“执行 命令名”。
+[reply_images]
+enabled = false
+commands = []
+
 [features]
 qq_to_mc = true
 mc_to_qq = true

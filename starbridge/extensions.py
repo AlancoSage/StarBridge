@@ -506,7 +506,7 @@ class PluginManager:
                     return True
                 if self.bot.allow(("plugin", KEYWORDS_ID), count=12, period=10):
                     # Literal text: braces and CQ syntax are never interpreted.
-                    await self.bot.onebot.send_group(group, keywords["settings"]["replies"][text])
+                    await self.bot.reply(group, keywords["settings"]["replies"][text], text)
                     self.store.audit("extension", f"插件 {KEYWORDS_ID} 响应关键词 {text}")
                 return True
             for entry in self.entries.values():
@@ -536,7 +536,7 @@ class PluginManager:
                         reply = self.template(entry, rule, server, group_id=group, user_id=user,
                                               arg=text[len(command):].strip(), player=row["name"] if row else "未绑定")
                     # Text segments are escaped by OneBot.send_group; no CQ code execution.
-                    await self.bot.onebot.send_group(group, reply)
+                    await self.bot.reply(group, reply, command)
                     self.store.audit("extension", f"插件 {entry['definition']['id']} 响应命令 {command}")
                     return True
             return False

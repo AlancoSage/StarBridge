@@ -550,6 +550,9 @@ function renderConfig(data) {
   $('official-app-id').value = official.app_id; $('official-client-secret').value = official.client_secret;
   $('official-admins').value = official.admins.join('\n'); $('official-allow-active').checked = official.allow_active;
   renderQQProvider();
+  const replyImages = saved.reply_images || {enabled:false, commands:[]};
+  $('reply-image-enabled').checked = replyImages.enabled;
+  $('reply-image-commands').value = replyImages.commands.join('\n');
   $('server-editors').replaceChildren(); $('command-editors').replaceChildren(); saved.servers.forEach(addServer);
   $('feature-editors').replaceChildren();
   for (const [key, [title, hint]] of Object.entries(features)) {
@@ -568,6 +571,31 @@ function readOfficialSettings() {
   return {enabled:$('qq-provider').value === 'official', app_id:$('official-app-id').value.trim(),
     client_secret:$('official-client-secret').value, admins:splitIds($('official-admins').value), allow_active:$('official-allow-active').checked};
 }
+function readReplyImageSettings() {
+  const aliases = {help:'帮助', '/help':'帮助'};
+  return {enabled:$('reply-image-enabled').checked, commands:$('reply-image-commands').value.split(/\r?\n/)
+    .map(line => line.trim().replace(/\s+/g,' ')).filter(Boolean).map(key => Object.hasOwn(aliases,key) ? aliases[key] : key)};
+}
+for (const button of document.querySelectorAll('[data-add-image-command]')) button.onclick = () => {
+  const settings = readReplyImageSettings(), command = button.dataset.addImageCommand;
+  if (!settings.commands.includes(command)) settings.commands.push(command);
+  $('reply-image-commands').value = settings.commands.join('\n'); markDirty();
+};
+$('reply-image-preview').onclick = async () => {
+  const button = $('reply-image-preview'); button.disabled = true;
+  notice('reply-image-preview-notice','正在生成图片…');
+  try {
+    const data = await api('/api/reply-images/preview', {method:'POST', body:JSON.stringify({
+      command:$('reply-image-preview-command').value.trim(), text:$('reply-image-preview-text').value,
+    })});
+    $('reply-image-preview-result').replaceChildren(...data.pages.map((src, index) => {
+      const image = document.createElement('img'); image.src = src;
+      image.alt = '图片回复预览，第 ' + (index+1) + ' 页'; image.loading = 'lazy'; return image;
+    }));
+    notice('reply-image-preview-notice', '已生成 ' + data.pages.length + ' 页，仅预览，未发送 QQ。', 'success');
+  } catch (error) { $('reply-image-preview-result').replaceChildren(); notice('reply-image-preview-notice',error.message,'error'); }
+  finally { button.disabled = false; }
+};
 function renderQQProvider() {
   const official = $('qq-provider').value === 'official';
   $('legacy-connection-identity').hidden = $('legacy-connection-parameters').hidden = official;
@@ -912,6 +940,8 @@ function collect() {
   };
   const official = readOfficialSettings();
   if (saved.qq_official || official.enabled || official.app_id || official.client_secret || official.admins.length || official.allow_active) result.qq_official = official;
+  const replyImages = readReplyImageSettings();
+  if (saved.reply_images || replyImages.enabled || replyImages.commands.length) result.reply_images = replyImages;
   return result;
 }
 
@@ -1065,7 +1095,7 @@ $('owner-setup-form').addEventListener('submit', async event => {
 checkOwnerSetup().catch(() => notice('login-notice','暂时无法检查首次设置状态，请刷新页面重试。','error',{persistent:true}));
 for (const event of ['input', 'change']) $('content').addEventListener(event, e => {
   if (e.target.matches('input,textarea,select') && !e.target.readOnly && e.target.type !== 'search'
-      && e.target.closest('#view-app, #connection-dialog, #feature-editors, #server-editors, #command-editors')) markDirty();
+      && e.target.closest('#view-app, #connection-dialog, #feature-editors, #reply-image-settings, #server-editors, #command-editors')) markDirty();
 });
 document.querySelectorAll('[data-reveal]').forEach(btn => { btn.onclick = () => {
   const input = $(btn.dataset.reveal); input.type = input.type === 'password' ? 'text' : 'password'; btn.textContent = input.type === 'password' ? '显示' : '隐藏';

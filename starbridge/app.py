@@ -1,4 +1,5 @@
 import asyncio
+from base64 import b64encode
 from copy import deepcopy
 from contextlib import suppress
 from pathlib import Path
@@ -14,6 +15,7 @@ from .bot import Bot, clean_text
 from .brand_icon import ICON_PNG
 from .qq_connection import QQConnection
 from .qq_identity import OFFICIAL_DEFAULTS, user_id
+from .reply_images import RenderError, command_key
 from .storage import Store
 from .settings import ConfigConflict, ConfigFile, runtime_config
 from .players import PLAYER_ACTIONS, management_state, player_records
@@ -56,6 +58,25 @@ async def body(request):
     if not isinstance(data, dict):
         raise web.HTTPBadRequest(text="请求必须是 JSON 对象")
     return data
+
+
+async def reply_image_preview(request):
+    state = request.app[STATE]
+    authorized(request, state['config']['app']['admin_token'])
+    data = await body(request)
+    if data.keys() - {'command', 'text'}:
+        raise web.HTTPBadRequest(text='图片预览包含未知字段')
+    key = command_key(data.get('command'))
+    if not key or len(key) > 100:
+        raise web.HTTPBadRequest(text='请填写 1–100 字符的预览指令名称')
+    try:
+        pages = await state['onebot'].renderer.render(data.get('text'), key)
+    except RenderError as error:
+        raise web.HTTPBadRequest(text=str(error)) from None
+    except Exception as error:
+        state['store'].audit('error', '图片预览失败：' + type(error).__name__)
+        raise web.HTTPServiceUnavailable(text='图片渲染暂不可用，请检查依赖与字体') from None
+    return web.json_response({'pages': ['data:image/png;base64,' + b64encode(png).decode('ascii') for png in pages]}, headers={'Cache-Control': 'no-store'})
 
 
 def bridge(request):
@@ -155,7 +176,7 @@ async def tick(request):
                     row = state["operations"].application(job["application_id"])
                     queue.put_nowait((server, {"kind":"whitelist_result", "application":row}))
             elif job.get("kind") == "command":
-                queue.put_nowait((server, {**result, "kind": "result", "group": job["reply_group"]}))
+                queue.put_nowait((server, {**result, "kind": "result", "group": job["reply_group"], "reply_command": job.get('reply_command', '')}))
             elif job.get("kind") == "player_action":
                 detail = clean_text(result.get("detail", ""), 1500)
                 if state["store"].complete_player_action(sid, result["id"], result["ok"], detail):
@@ -181,7 +202,7 @@ async def game_worker(state):
                 label = "已执行" if event["ok"] else "执行失败"
                 detail = clean_text(event.get("detail", ""), 1500)
                 state["store"].audit("command", f"{server['id']} {label}: {detail}")
-                await state["onebot"].send_group(event["group"], f"[{server['name']}] {label}\n{detail}")
+                await state["bot"].reply(event["group"], f"[{server['name']}] {label}\n{detail}", event.get('reply_command', ''))
             else:
                 await state["bot"].relay_game(server, event)
         except Exception as exc:
@@ -623,6 +644,7 @@ def create_app(cfg, config_path=None, restart_event=None):
         web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),
         web.get("/api/config", admin_config), web.put("/api/config", save_config),
+        web.post('/api/reply-images/preview', reply_image_preview),
         web.post("/api/restart", restart_service),
         web.post("/api/player-actions", player_action), web.get("/api/plugin", plugin_download),
         web.get("/api/plugin/catalog", game_bridge_catalog),

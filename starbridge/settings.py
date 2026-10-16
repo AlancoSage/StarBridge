@@ -8,6 +8,7 @@ import re
 import tempfile
 import tomllib
 from .qq_identity import OFFICIAL_DEFAULTS, official_parts
+from .reply_images import validate as validate_reply_images
 
 FEATURES = ("qq_to_mc", "mc_to_qq", "join_quit", "unbind_on_leave", "set_group_card")
 
@@ -36,7 +37,9 @@ def ids(value, label, official=False):
 
 def validate(value):
     cfg = deepcopy(value)
-    table(cfg, ("app", "onebot", "qq_official", "features", "replies", "servers"), "配置")
+    table(cfg, ("app", "onebot", "qq_official", "reply_images", "features", "replies", "servers"), "配置")
+    if "reply_images" in cfg:
+        cfg["reply_images"] = validate_reply_images(cfg["reply_images"])
     try:
         app, ob = cfg["app"], cfg["onebot"]
         table(app, ("host", "port", "database", "admin_token"), "主程序设置")
@@ -132,7 +135,7 @@ def serialize(cfg):
     lines = ["# 由Myrinbot管理面板保存；修改前一版位于同目录 .bak 文件。"]
     if not cfg["servers"]:
         lines.append("servers = []")
-    for section in ("app", "onebot", "qq_official", "features", "replies"):
+    for section in ("app", "onebot", "qq_official", "reply_images", "features", "replies"):
         if section not in cfg:
             continue
         lines.extend(["", f"[{section}]"])

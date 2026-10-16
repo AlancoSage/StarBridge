@@ -1,9 +1,17 @@
 import asyncio
+from base64 import b64encode
 import json
 import secrets
 import uuid
 
 from aiohttp import WSMsgType, web
+from .reply_images import validate_png
+
+
+class OneBotActionError(RuntimeError):
+    def __init__(self, action, response):
+        super().__init__(f"OneBot {action} 失败，retcode={response.get('retcode')}")
+        self.rejected = response.get('status') == 'failed'
 
 
 class OneBot:
@@ -77,7 +85,7 @@ class OneBot:
             await self.ws.send_json({"action": action, "params": params, "echo": echo})
             response = await asyncio.wait_for(future, timeout=10)
             if response.get("status") != "ok" or response.get("retcode") != 0:
-                raise RuntimeError(f"OneBot {action} 失败，retcode={response.get('retcode')}")
+                raise OneBotActionError(action, response)
             return response.get("data")
         finally:
             self.pending.pop(echo, None)
@@ -92,3 +100,15 @@ class OneBot:
         return await self.call("send_private_msg", {
             "user_id": int(user), "message": [{"type": "text", "data": {"text": text[:3500]}}],
         })
+
+    async def send_group_image(self, group, png):
+        validate_png(png)
+        try:
+            return await self.call("send_group_msg", {
+                "group_id": int(group),
+                "message": [{"type": "image", "data": {"file": "base64://" + b64encode(png).decode('ascii')}}],
+            })
+        except OneBotActionError as error:
+            if error.rejected:
+                raise
+            raise ConnectionError('OneBot 图片发送结果未确定，不重复发送') from None

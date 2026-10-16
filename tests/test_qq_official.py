@@ -1,4 +1,5 @@
 import asyncio
+from base64 import b64decode
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -18,6 +19,7 @@ from starbridge.qq_identity import official_id, official_parts
 from starbridge.qq_official import QQOfficial
 from starbridge.settings import validate, runtime_config, serialize, ConfigFile
 from starbridge.storage import Store
+from starbridge.reply_images import render_pages
 from test_settings import full_config
 
 
@@ -77,11 +79,14 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
         self.store = Store(":memory:"); self.events = asyncio.Queue(maxsize=256)
         self.tokens = []; self.messages = []; self.identify = asyncio.Queue(); self.sockets = []
         self.vendor_error = None
+        self.uploads = []; self.file_info = 'fixture-file-info'
+        self.media_error = None
         app = web.Application()
         app.router.add_post("/app/getAppAccessToken", self.issue_token)
         app.router.add_get("/gateway", self.gateway)
         app.router.add_get("/socket", self.socket)
         app.router.add_post("/v2/{kind:groups|users}/{openid}/messages", self.message)
+        app.router.add_post('/v2/groups/{openid}/files', self.upload)
         self.server = TestServer(app); await self.server.start_server()
         self.base = str(self.server.make_url("/")).rstrip("/")
         self.api_patch = patch.object(QQOfficial, "API_BASE", self.base); self.api_patch.start()
@@ -120,8 +125,69 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
 
     async def message(self, request):
         self.assertEqual(request.headers["Authorization"], "QQBot fixture-access-token")
-        self.messages.append({"kind":request.match_info["kind"],"openid":request.match_info["openid"],"body":await request.json()})
+        body = await request.json()
+        self.messages.append({"kind":request.match_info["kind"],"openid":request.match_info["openid"],"body":body})
+        if body.get('msg_type') == 7 and self.media_error:
+            if self.media_error == 'invalid': return web.Response(text='invalid response')
+            return web.json_response({'code':40034090}, status=self.media_error)
         return web.json_response({"id":"fixture-outgoing"})
+
+    async def upload(self, request):
+        self.assertEqual(request.headers['Authorization'], 'QQBot fixture-access-token')
+        data = await request.json(); self.uploads.append(data)
+        self.assertEqual(data['file_type'], 1); self.assertIs(data['srv_send_msg'], False)
+        self.assertNotIn('url', data)
+        self.assertTrue(b64decode(data['file_data']).startswith(b'\x89PNG\r\n\x1a\n'))
+        return web.json_response({'file_info':self.file_info, 'ttl':3600})
+
+    async def test_group_image_upload_and_quoted_media_share_message_sequence(self):
+        self.transport.dispatch(*self.event('在线', mid='image1'))
+        png = render_pages('服务器在线', '在线')[0]
+        await self.transport.send_group_image(official_id('qg', APP, GROUP), png)
+        body = self.messages[-1]['body']
+        self.assertEqual(body, {'content':'', 'msg_type':7, 'media':{'file_info':'fixture-file-info'}, 'msg_id':'image1', 'msg_seq':1})
+        self.assertEqual(b64decode(self.uploads[0]['file_data']), png)
+        await self.transport.send_group(official_id('qg', APP, GROUP), '继续文字')
+        self.assertEqual(self.messages[-1]['body']['msg_seq'], 2)
+
+    async def test_image_upload_requires_matching_app_reply_context_and_valid_file_info(self):
+        png = render_pages('服务器在线', '在线')[0]
+        with self.assertRaises(RuntimeError): await self.transport.send_group_image(official_id('qg', APP, GROUP), png)
+        with self.assertRaises(ConnectionError): await self.transport.send_group_image(official_id('qg', '102002', GROUP), png)
+        self.assertEqual(self.uploads, [])
+        self.transport.dispatch(*self.event('在线')); self.file_info = None
+        with self.assertRaises(RuntimeError): await self.transport.send_group_image(official_id('qg', APP, GROUP), png)
+        self.assertEqual(self.messages, [])
+
+    async def test_config_change_after_image_upload_does_not_send_media(self):
+        self.transport.dispatch(*self.event('在线'))
+        request = self.transport._json
+        async def changed(method, path, payload=None, authenticated=True):
+            data = await request(method, path, payload, authenticated)
+            if path.endswith('/files'): self.transport.generation += 1
+            return data
+        with patch.object(self.transport, '_json', new=changed):
+            with self.assertRaises(ConnectionError):
+                await self.transport.send_group_image(official_id('qg', APP, GROUP), render_pages('服务器在线', '在线')[0])
+        self.assertEqual(len(self.uploads), 1); self.assertEqual(self.messages, [])
+
+    async def test_uncertain_media_response_does_not_repeat_text(self):
+        cfg = official_config(); cfg['reply_images'] = {'enabled':True, 'commands':['在线']}
+        connection = QQConnection(cfg, self.store); connection.official = self.transport
+        for error in [500, 408, 'invalid']:
+            self.media_error = error; self.transport.dispatch(*self.event('在线', mid=str(error)))
+            with self.subTest(error=error), self.assertRaises(ConnectionError):
+                await connection.send_reply(official_id('qg', APP, GROUP), '服务器在线', '在线')
+        self.assertEqual(len(self.messages), 3)
+        self.assertTrue(all(message['body']['msg_type'] == 7 for message in self.messages))
+
+    async def test_explicit_media_rejection_falls_back_to_text(self):
+        cfg = official_config(); cfg['reply_images'] = {'enabled':True, 'commands':['在线']}
+        connection = QQConnection(cfg, self.store); connection.official = self.transport
+        self.media_error = 200; self.transport.dispatch(*self.event('在线'))
+        await connection.send_reply(official_id('qg', APP, GROUP), '服务器在线', '在线')
+        self.assertEqual([message['body']['msg_type'] for message in self.messages], [7, 0])
+        self.assertEqual(self.messages[-1]['body']['content'], '服务器在线')
 
     def event(self, content="在线", private=False, mid="m1"):
         data = {"id":mid,"content":content,"author":{"user_openid" if private else "member_openid":PRIVATE if private else USER}}

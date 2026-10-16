@@ -300,6 +300,8 @@ body:is([data-view="players"], [data-view="extensions"], [data-view="accounts"],
 .connection-dialog-footer .hint { margin: 0; }
 .connection-dialog-footer .player-dialog-actions { margin-top: 15px; }
 body:has(#connection-dialog[open]) { overflow: hidden; }
+.reply-image-preview { display: grid; gap: 16px; max-width: 540px; margin-top: 16px; }
+.reply-image-preview img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); }
 
 /* Tables, logs and server settings. */
 .table-wrap { overflow: auto; max-width: 100%; border: 1px solid var(--border); border-radius: 11px; overscroll-behavior-x: contain; }

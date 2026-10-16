@@ -2,7 +2,7 @@
 
 项目名称为 **Myrinbot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.16**，配套 Bukkit 游戏插件 **0.5.3** 与 Forge / NeoForge / Fabric 模组 **0.1.1**。修复管理面板“有尚未保存的更改”误报：按实际配置差异判断，改回原值会自动清除提示。QQ 官方机器人可在面板选择 AppID / AppSecret 鉴权与官方 WebSocket Gateway。支持群 @消息、单聊事件及文字回复，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网使用黑白 M 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.17**，配套 Bukkit 游戏插件 **0.5.3** 与 Forge / NeoForge / Fabric 模组 **0.1.1**。新增[指定指令图片回复](docs/image-replies.md)：在面板选择指令，将群内回复本地排版为中文 PNG，支持分页预览、OneBot 与 QQ 官机图片发送。QQ 官方机器人可在面板选择 AppID / AppSecret 鉴权与官方 WebSocket Gateway。支持群 @消息、单聊事件及文字回复，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 Myrinbot 名称分发，面板和官网使用黑白 M 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
@@ -35,6 +35,7 @@
 - 查询绑定、主动解绑、可选退群解绑、可选绑定后改群名片。
 - 查询在线玩家与服务器连接状态。
 - 配置式关键词回复。
+- [指定指令图片回复](docs/image-replies.md)：按名单选择基础指令、预设指令和扩展回复，其他消息保持文字；本地中文排版与分页预览，渲染失败回退文字。
 - JSON 规则插件：在面板「扩展」导入、启用／停用、重新加载和修改设置；扩展群命令、文本模板与进退服通知，无需代码执行或新增依赖。
 - 指定 QQ 管理员调用预设控制台命令；插件再次检查完整命令白名单，并回传文本输出。
 - 多台服务器，每个群关联一台服务器；一台服务器可以关联多个群。
@@ -64,7 +65,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.16 的完整部署包为 `Myrinbot-Windows-0.6.16.zip`，独立官网包为 `Myrinbot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.16.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.17 的完整部署包为 `Myrinbot-Windows-0.6.17.zip`，独立官网包为 `Myrinbot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.17.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -186,7 +187,7 @@ groups = ["你的QQ群号"]
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.16 配套通用插件：当前源码构建输出 `bridge/target/Myrinbot-0.5.3.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.3.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.17 配套通用插件：当前源码构建输出 `bridge/target/Myrinbot-0.5.3.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.3.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。

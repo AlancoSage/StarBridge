@@ -48,6 +48,13 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 | multidict | 6.9.1 | [Apache-2.0](https://github.com/aio-libs/multidict/blob/master/LICENSE) |
 | propcache | 0.5.4 | [Apache-2.0](https://github.com/aio-libs/propcache/blob/master/LICENSE)，附 `NOTICE` |
 | yarl | 1.25.1 | [Apache-2.0](https://github.com/aio-libs/yarl/blob/master/LICENSE)，附 `NOTICE` |
+| Pillow | 12.3.0 | [MIT-CMU](https://github.com/python-pillow/Pillow/blob/main/LICENSE)，其 wheel 内其他组件许可随依赖保留 |
+
+## 图片回复字体
+
+`starbridge/reply_font.py` 嵌入未修改的 **Noto Sans SC Regular** 字体，仅采用可逆的 LZMA / Base85 包装，以兼容现有升级器允许的文件类型。上游为 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf)，固定提交 `f8d157532fbfaeda587e826d4cd5b21a49186f7c`，原始字体 SHA256 为 `faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9`。
+
+字体自身的版权、名称与许可元数据完整保留，采用 **SIL Open Font License 1.1**，完整许可见 [noto-font-license.md](https://github.com/AlancoSage/StarBridge/blob/main/docs/noto-font-license.md)。生成脚本为 `scripts/build_reply_font.py`。该字体继续适用 OFL，与项目 AGPL 许可证分别声明。
 
 ## 构建工具及运行环境提供的 API
 

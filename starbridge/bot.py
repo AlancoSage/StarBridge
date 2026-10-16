@@ -89,6 +89,12 @@ class Bot:
             finally:
                 self.onebot.events.task_done()
 
+    async def reply(self, group, text, command):
+        sender = getattr(self.onebot, 'send_reply', None)
+        if sender:
+            return await sender(group, text, command)
+        return await self.onebot.send_group(group, text)
+
     async def handle_event(self, event):
         group, qq = str(event.get("group_id", "")), str(event.get("user_id", ""))
         valid_user = getattr(self.onebot, "valid_user", lambda value: value.isdigit())
@@ -102,7 +108,7 @@ class Bot:
             reply = f"Myrinbot 官机接入信息\n你的用户身份：{qq}"
             if event.get("message_type") == "group":
                 reply += f"\n本群身份：{group}\n将本群身份填写到服务器关联群；管理员填写对应用户身份。"
-                await self.onebot.send_group(group, reply)
+                await self.reply(group, reply, '接入信息')
             elif event.get("message_type") == "private":
                 await self.onebot.send_private(qq, reply + "\n群内身份与单聊身份分别管理，不会自动关联普通 QQ 号。")
             return
@@ -195,7 +201,7 @@ class Bot:
                 reply = "桥接离线，命令未提交。"
             else:
                 try:
-                    self.store.enqueue(sid, {"kind": "command", "command": server["commands"][arg], "reply_group": group})
+                    self.store.enqueue(sid, {"kind": "command", "command": server["commands"][arg], "reply_group": group, "reply_command": '执行 ' + arg})
                     self.store.audit("command", f"{qq} 请求 {sid} 预设命令 {arg}")
                     reply = f"已提交「{arg}」，等待服务器执行。"
                 except ValueError as exc:
@@ -214,7 +220,7 @@ class Bot:
             except ValueError as exc:
                 self.store.audit("error", str(exc))
         if reply is not None:
-            await self.onebot.send_group(group, reply)
+            await self.reply(group, reply, '执行 ' + arg if command == '执行' else command)
 
     async def relay_game(self, server, data):
         if self.plugins:

@@ -1,5 +1,6 @@
 """QQ Open Platform group/C2C transport, using documented REST and Gateway APIs."""
 import asyncio
+from base64 import b64encode
 from collections import OrderedDict
 from contextlib import suppress
 from copy import deepcopy
@@ -11,6 +12,15 @@ from urllib.parse import urlsplit, quote
 from aiohttp import ClientSession, ClientTimeout, WSMsgType
 
 from .qq_identity import OFFICIAL_DEFAULTS, official_id, official_parts
+from .reply_images import validate_png
+
+
+class QQAPIError(RuntimeError):
+    def __init__(self, message, status, code):
+        super().__init__(message)
+        self.rejected = ((400 <= status < 500 and status != 408)
+                         or (200 <= status < 300 and isinstance(code, (int, str))
+                             and str(code).isdigit() and int(code) != 0))
 
 
 class QQOfficial:
@@ -88,7 +98,7 @@ class QQOfficial:
             if not 200 <= response.status < 300 or code not in (0, "0", None):
                 safe_code = str(code) if isinstance(code, (int, str)) and re.fullmatch(r"[0-9]{1,12}", str(code)) else "未知"
                 # Never expose vendor response bodies or headers containing credentials.
-                raise RuntimeError(f"QQ 官机接口请求失败（HTTP {response.status}，错误码 {safe_code}）")
+                raise QQAPIError(f"QQ 官机接口请求失败（HTTP {response.status}，错误码 {safe_code}）", response.status, code)
             return data
 
     async def token(self):
@@ -276,3 +286,42 @@ class QQOfficial:
 
     async def send_private(self, user, text):
         return await self.send(user, text, ("qup",), "/v2/users/{openid}/messages")
+
+    async def send_group_image(self, group, png):
+        validate_png(png)
+        parts = official_parts(group, ("qg",))
+        if not parts or parts[1] != self.cfg["app_id"]:
+            raise ConnectionError("官机图片目标不属于当前应用或群聊场景")
+        if not self.connected:
+            raise ConnectionError("QQ 官机尚未连接")
+        generation = self.generation
+        async with self.send_lock:
+            if generation != self.generation or parts[1] != self.cfg["app_id"] or not self.connected:
+                raise ConnectionError("QQ 官机配置或连接已经变更，图片未发送")
+            context = self.contexts.get(group)
+            if not (context and time.monotonic() < context['expires']) and not self.cfg['allow_active']:
+                raise RuntimeError("QQ 官机缺少有效回复消息，请先 @机器人")
+            endpoint = '/v2/groups/' + quote(parts[2], safe='')
+            uploaded = await self._json('POST', endpoint + '/files', {
+                'file_type': 1, 'file_data': b64encode(png).decode('ascii'), 'srv_send_msg': False,
+            })
+            if generation != self.generation or not self.connected:
+                raise ConnectionError("QQ 官机配置或连接已经变更，图片未发送")
+            file_info = uploaded.get('file_info')
+            if not isinstance(file_info, str) or not 1 <= len(file_info) <= 65536:
+                raise RuntimeError("QQ 官机图片上传返回无效的文件信息")
+            payload = {'content': '', 'msg_type': 7, 'media': {'file_info': file_info}}
+            context = self.contexts.get(group)
+            if context and time.monotonic() < context['expires']:
+                context['sequence'] += 1
+                payload.update(msg_id=context['id'], msg_seq=context['sequence'])
+            elif not self.cfg['allow_active']:
+                raise RuntimeError("QQ 官机图片上传后回复消息已过期，请重新 @机器人")
+            try:
+                return await self._json('POST', endpoint + '/messages', payload)
+            except QQAPIError as error:
+                if error.rejected:
+                    raise
+                raise ConnectionError('QQ 官机图片发送结果未确定，不重复发送') from None
+            except RuntimeError:
+                raise ConnectionError('QQ 官机图片发送响应无效，不重复发送') from None
