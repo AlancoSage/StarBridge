@@ -528,7 +528,7 @@ async function downloadPlugin(card, platform = 'bukkit') {
 }
 
 function pendingBanner(fields, error = '') {
-  const labels = {host: '监听地址', port: '端口', database: '数据库路径'};
+  const labels = {host: '监听地址', port: '端口', database: '数据库路径', mysql:'数据库连接'};
   const banner = $('restart-banner'); banner.replaceChildren(); banner.hidden = !fields.length && !error;
   if (error) banner.append(node('p', error));
   if (fields.length) {
@@ -543,6 +543,7 @@ function renderConfig(data) {
   $('admins').value = saved.onebot.admins.join('\n');
   $('onebot-token').value = saved.onebot.token;
   for (const key of ['host', 'port', 'database']) $(key).value = saved.app[key];
+  renderDatabaseSettings(saved);
   $('admin-token').value = saved.app.admin_token;
   $('onebot-url').value = location.origin.replace(/^http/, 'ws') + '/onebot/ws';
   const official = saved.qq_official || {enabled:false, app_id:'', client_secret:'', admins:[], allow_active:false};
@@ -945,6 +946,8 @@ function collect() {
   if (saved.qq_official || official.enabled || official.app_id || official.client_secret || official.admins.length || official.allow_active) result.qq_official = official;
   const replyImages = readReplyImageSettings();
   if (saved.reply_images || replyImages.enabled || replyImages.commands.length) result.reply_images = replyImages;
+  const mysql = readMySQLSettings();
+  if (saved.mysql || configSignature(mysql) !== configSignature(mysqlDefaults)) result.mysql = mysql;
   return result;
 }
 

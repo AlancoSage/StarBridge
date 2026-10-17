@@ -44,7 +44,7 @@ async def serve(path):
             if fallback is None:
                 raise
             cfg, fallback = fallback, None
-            error = "新配置启动失败，已恢复原连接地址和数据库。请检查端口占用、监听地址和数据库路径后重新保存。"
+            error = "新配置启动失败，已恢复原连接地址和数据库。请检查端口、数据库连接及访问权限后重新保存。"
             logging.exception("新配置启动失败，恢复原运行设置")
             continue
         logging.info("管理面板已启动：http://%s:%s", cfg["app"]["host"], cfg["app"]["port"])
@@ -83,7 +83,7 @@ def main():
         parser.exit(1, f"配置错误：{exc}\n首次使用请运行 python -m starbridge init\n")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if args.command == 'run':
-        from scripts.update_runtime import supervise
+        from scripts.mysql_runtime import supervise
         print("Myrinbot已启动；面板使用用户名和密码登录。首次无服主账号时，点击“创建服主账号”，使用本地 config.toml 的 app.admin_token 完成首次授权并设置账号。")
         raise SystemExit(supervise(path))
     try:

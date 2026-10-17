@@ -18,6 +18,7 @@ import zipfile
 
 import aiohttp
 from scripts import update_runtime as runtime
+from scripts.mysql_runtime import CAPABILITY as MYSQL_CAPABILITY, supports_mysql, same_database_target
 from . import __version__
 from .registration import RegistrationError
 from .github_updates import DEFAULT_SETTINGS, GitHubReleases, update_settings
@@ -105,8 +106,12 @@ class Updates:
         history_path = runtime.safe(self.root, '.runtime/updates/history.json')
         history = runtime.read_json(history_path) if history_path.exists() else []
         config = self.config(); config['github_token_configured'] = bool(config['settings']['github_token']); config['settings']['github_token'] = ''
+        mysql = self.state['config'].get('mysql', {}).get('enabled', False)
+        mysql_ready = os.environ.get(MYSQL_CAPABILITY) == '1'
         return config | {'version': __version__, 'protocol': runtime.PROTOCOL, 'busy': self.busy, 'progress': self.progress,
-                'can_apply': bool(self.state.get('restart_event')) and os.environ.get('STARBRIDGE_SUPERVISED') == '1',
+                'can_apply': bool(self.state.get('restart_event')) and os.environ.get('STARBRIDGE_SUPERVISED') == '1' and (not mysql or mysql_ready),
+                'database_backend': 'mysql' if mysql else 'sqlite', 'mysql_supervisor_ready': mysql_ready,
+                'database_notice': '首次使用 MySQL 前请完整退出并重新启动软件，以启用远程数据库安全快照与升级回退。' if mysql and not mysql_ready else '',
                 'prepared': {k: self.prepared[k] for k in ('id', 'version', 'sha256', 'size')} if self.prepared else None, 'history': list(reversed(history)), 'max_upload_bytes': MAX_PACKAGE}
 
     def require_idle(self):
@@ -196,6 +201,8 @@ class Updates:
     def verify(self, stage):
         package = stage / 'package'; package.mkdir()
         manifest = extract_package(stage / 'upload.zip', package)
+        if self.state['config'].get('mysql', {}).get('enabled', False) and not supports_mysql(package):
+            raise ValueError('目标版本不支持 MySQL；请先离线迁移至 SQLite 再升级')
         runtime.atomic(package / 'scripts/update_runtime.py', (self.root / 'scripts/update_runtime.py').read_bytes())
         pins = []
         for line in (package / 'requirements.lock.txt').read_text().splitlines():
@@ -223,11 +230,19 @@ class Updates:
     async def apply(self, data, rollback=False):
         self.require_idle()
         if os.environ.get('STARBRIDGE_SUPERVISED') != '1' or self.state['restart_event'] is None: raise RegistrationError('请用Myrinbot.bat（或旧入口）或 python -m starbridge run 启动，才能在线升级', 503)
+        self.state['backups'].check_local(self.state['config_file'].read()[0])
+        mysql = self.state['config'].get('mysql', {}).get('enabled', False)
+        if mysql and os.environ.get(MYSQL_CAPABILITY) != '1':
+            raise RegistrationError('此监督进程尚不支持 MySQL 安全升级，请完整退出软件后重新启动', 503)
         if data.keys() != {'id'} or not isinstance(data['id'], str): raise RegistrationError('请选择已准备的版本')
         if rollback:
             source = runtime.folder(self.root, data['id'])
             history = self.listing()['history']; item = next((i for i in history if i['id'] == data['id'] and i['status'] == 'success'), None)
             if not item or not (source / 'rollback/capture.json').is_file(): raise RegistrationError('回退副本不可用', 404)
+            if mysql and not supports_mysql(source / 'rollback/code'):
+                raise RegistrationError('此历史版本不支持 MySQL；请先离线迁移至 SQLite 再回退', 409)
+            if not same_database_target(self.state['config_file'].path, source / 'rollback/state/config.toml'):
+                raise RegistrationError('历史副本使用不同数据库目标；请先离线核对并迁移后再回退', 409)
             stage = runtime.folder(self.root, uuid.uuid4().hex); stage.mkdir()
             version = item['previous_version']
         else:

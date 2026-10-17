@@ -7,6 +7,21 @@ port = 5800
 database = "data/starbridge.db"
 admin_token = "CHANGE-ME-admin"
 
+# 可选 MySQL：默认仍使用 app.database 的 SQLite 文件。
+# 切换连接不自动迁移数据；已有数据见 docs/mysql.md。
+[mysql]
+enabled = false
+host = "127.0.0.1"
+port = 3306
+database = "myrinbot"
+user = "myrinbot"
+password = ""
+connect_timeout = 5
+read_timeout = 5
+write_timeout = 5
+tls = false
+ssl_ca = ""
+
 [onebot]
 # NapCat 等实现端配置反向 WebSocket：ws://127.0.0.1:5800/onebot/ws
 token = "CHANGE-ME-onebot"

@@ -60,6 +60,8 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 
 ## 构建工具及运行环境提供的 API
 
+Bot 的可选 MySQL 连接使用 [PyMySQL](https://github.com/PyMySQL/PyMySQL)（MIT），其 RSA / caching_sha2_password 认证依赖 [cryptography](https://github.com/pyca/cryptography)（Apache-2.0 OR BSD-3-Clause）、[cffi](https://github.com/python-cffi/cffi)（MIT-0）和 [pycparser](https://github.com/eliben/pycparser)（BSD-3-Clause）。这些组件通过 Python 依赖安装，保留各自软件包附带的许可证，不打入游戏端 JAR。MySQL 服务端不随部署包分发。
+
 以下是构建或运行环境使用的主要第三方组件，除上面明确列出的 Gson 和 Gradle Wrapper 外，其实现不被复制进 Myrinbot JAR：
 
 | 组件 | 用途 / 声明位置 | 上游许可证 |

@@ -141,7 +141,7 @@ class Operations:
 
     def tasks(self):
         self.expire()
-        return {"tasks": [self.task(r[0]) for r in self.db.execute("SELECT id FROM scheduled_tasks ORDER BY rowid DESC")],
+        return {"tasks": [self.task(r[0]) for r in self.db.execute("SELECT id FROM scheduled_tasks ORDER BY next_run,id")],
                 "runs": [dict(r) for r in self.db.execute("SELECT * FROM schedule_runs ORDER BY started DESC LIMIT 30")], "timezone": "Asia/Shanghai",
                 "plugin": self.scheduler_plugin(), "plugin_revision": self.state['plugins'].revision,
                 "servers": [{key: server[key] for key in ('id','name','groups','commands')} for server in self.bot.servers.values()]}

@@ -30,6 +30,7 @@ from .registration import Registration, validate_settings as validate_registrati
 from .website import validate_settings as validate_website
 from .settings import ConfigFile, runtime_config, serialize, validate
 from .storage import Store
+from .mysql_settings import MYSQL_DEFAULTS
 
 MIB = 1024 * 1024
 MAX_ARCHIVE, MAX_DATABASE, MAX_TOTAL = 64 * MIB, 128 * MIB, 144 * MIB
@@ -41,6 +42,10 @@ FILES = {"config.toml": 256 * 1024, "database.sqlite3": MAX_DATABASE,
          "data/website-settings.json": 32 * 1024}
 REQUIRED = {"config.toml", "database.sqlite3"}
 TRANSIENT = ("codes", "jobs", "seen", "registration_challenges", "registration_sessions", "password_challenges", "native_password_proofs")
+OPTIONAL_TABLES = {"operations_settings", "scheduled_tasks", "schedule_runs", "whitelist_applications",
+                   "admin_users", "admin_owner", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
+                   "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages",
+                   "sanctions", "sanction_targets", "native_password_settings", "native_password_proofs"}
 
 
 class BackupError(ValueError):
@@ -115,13 +120,25 @@ def copy_database(source, destination):
         original.backup(target, pages=128, progress=progress, sleep=0.01)
 
 
+def snapshot_database(config, destination):
+    """Export the configured store as the same portable SQLite backup format."""
+    mysql = config.get("mysql", {})
+    if mysql.get("enabled", False):
+        from .database import connect
+        with closing(connect(config["app"]["database"], mysql=mysql)) as db:
+            db.export_sqlite(destination, max_bytes=MAX_DATABASE)
+        check_database(destination)
+    else:
+        copy_database(config["app"]["database"], destination)
+
+
 def schema(db):
     return [(kind, name, table, " ".join(sql.split()) if sql else None)
             for kind, name, table, sql in db.execute("SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name")]
 
 
 def operations_revision(db):
-    tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+    tables = db.tables() if hasattr(db, "tables") else {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
     settings = [list(row) for row in db.execute("SELECT * FROM operations_settings ORDER BY key")] if "operations_settings" in tables else []
     tasks = [list(row) for row in db.execute("SELECT id,definition,revision FROM scheduled_tasks ORDER BY id")] if "scheduled_tasks" in tables else []
     extra = {table:[list(row) for row in db.execute('SELECT * FROM '+table+' ORDER BY 1')]
@@ -148,12 +165,8 @@ def check_database(path):
     db = readonly_database(path)
     try:
         actual, expected = schema(db), trusted_schema()
-        optional = {"operations_settings", "scheduled_tasks", "schedule_runs", "whitelist_applications",
-                    "admin_users", "admin_owner", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
-                    "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages", "sanctions", "sanction_targets",
-                    "native_password_settings", "native_password_proofs"}
         present = {entry[1] for entry in actual}
-        compatible = [entry for entry in expected if entry[2] not in optional or entry[2] in present]
+        compatible = [entry for entry in expected if entry[2] not in OPTIONAL_TABLES or entry[2] in present]
         if actual != compatible:
             raise BackupError("数据库结构与当前Myrinbot版本不兼容，或包含未知表、视图、触发器")
         if db.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
@@ -411,7 +424,7 @@ class Backups:
             raise BackupError("最多保留 100 份备份，请删除不需要的旧备份", 409)
         with tempfile.TemporaryDirectory(prefix=".snapshot-", dir=self.root) as directory:
             folder = Path(directory); database = folder / "database.sqlite3"
-            copy_database(self.state["config"]["app"]["database"], database)
+            snapshot_database(self.state["config"], database)
             archive_path = folder / "snapshot.zip"
             manifest = write_archive(files, database, archive_path, reason)
             os.replace(archive_path, target)
@@ -455,6 +468,7 @@ class Backups:
             self.check_local(cfg)
             incoming, _ = check_settings(folder / "incoming")
             incoming["app"] = deepcopy(cfg["app"]); validate(incoming)
+            preserve_database_settings(incoming, cfg)
             (folder / "incoming/config.toml").write_text(serialize(incoming), encoding="utf-8")
             check_settings(folder / "incoming")
             values = {"preview_id": folder.name, "expires": time.time() + 300, "fingerprint": self.fingerprint(),
@@ -476,9 +490,12 @@ class Backups:
         finally: self.busy = False
 
     def check_local(self, cfg):
-        local = runtime_config(cfg, self.config.path)["app"]
+        resolved = runtime_config(cfg, self.config.path)
+        local = resolved["app"]
         if any(local[key] != self.state["config"]["app"][key] for key in ("host", "port", "database")):
             raise BackupError("当前有尚未重启的连接或数据库设置，请先重启后恢复", 409)
+        if {**MYSQL_DEFAULTS, **resolved.get("mysql", {})} != {**MYSQL_DEFAULTS, **self.state["config"].get("mysql", {})}:
+            raise BackupError("当前有尚未重启的 MySQL 设置，请先重启后恢复", 409)
 
     async def restore(self, preview_id):
         self.require()
@@ -536,9 +553,43 @@ def write_file(path, content):
         if os.path.exists(name): os.unlink(name)
 
 
-def replace_database(source, target):
-    with closing(readonly_database(source)) as original, closing(sqlite3.connect(target, timeout=10)) as destination:
-        original.backup(destination, pages=128)
+def replace_database(source, target, mysql=None):
+    if mysql and mysql.get("enabled", False):
+        from .database import connect
+        check_database(source)
+        with closing(connect(target, mysql=mysql)) as destination:
+            destination.restore_sqlite(source, max_bytes=MAX_DATABASE)
+    else:
+        with closing(readonly_database(source)) as original, closing(sqlite3.connect(target, timeout=10)) as destination:
+            original.backup(destination, pages=128)
+
+
+def preserve_database_settings(incoming, current):
+    """An uploaded archive may supply records, never a remote database target."""
+    if "mysql" in current:
+        incoming["mysql"] = deepcopy(current["mysql"])
+    else:
+        incoming.pop("mysql", None)
+
+
+def revoke_transient(database):
+    """Invalidate copied authority and pending work before restore or migration."""
+    with closing(sqlite3.connect(database)) as db, db:
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+        for table in TRANSIENT:
+            if table in tables:
+                db.execute("DELETE FROM " + table)
+        db.execute("UPDATE player_actions SET status='cancelled',detail='备份恢复或数据库迁移，待执行操作已撤销' WHERE status='pending'")
+        if "admin_sessions" in tables:
+            db.execute('DELETE FROM admin_sessions')
+        if "scheduled_tasks" in tables:
+            for task_id, definition in db.execute("SELECT id,definition FROM scheduled_tasks").fetchall():
+                value = json.loads(definition); value["enabled"] = False
+                db.execute("UPDATE scheduled_tasks SET definition=?,status='paused',detail='恢复或迁移后已暂停，请确认设置后启用',revision=revision+1 WHERE id=?", (json.dumps(value), task_id))
+        if "schedule_runs" in tables:
+            db.execute("UPDATE schedule_runs SET status='interrupted',detail='恢复或迁移，未完成执行已撤销' WHERE status IN ('running','submitted')")
+        if "whitelist_applications" in tables:
+            db.execute("UPDATE whitelist_applications SET status='cancelled',review='恢复或迁移，下发已撤销；请核对游戏白名单后重试',revision=revision+1 WHERE status='submitted'")
 
 
 def load_job(config_path):
@@ -568,7 +619,7 @@ def rollback_restore(config_path, message="恢复失败，已恢复操作前的�
         for name, path in paths.items():
             if name in existing: write_file(path, safe_path(rollback, name).read_bytes())
             elif path.exists(): path.unlink()
-        replace_database(rollback / "database.sqlite3", database)
+        replace_database(rollback / "database.sqlite3", database, cfg.get("mysql"))
     atomic_json(safe_path(base, "data/last-restore.json"), {"status": "rolled_back", "message": message,
                 "time": datetime.now(timezone.utc).isoformat(), "safety_backup": job["safety_backup"]})
     journal.unlink()
@@ -594,16 +645,18 @@ def apply_pending_restore(config_path):
         current = validate(tomllib.loads(files["config.toml"].decode("utf-8")))
         cfg = validate(tomllib.loads((incoming / "config.toml").read_text(encoding="utf-8")))
         cfg["app"] = deepcopy(current["app"]); validate(cfg)
+        preserve_database_settings(cfg, current)
         (incoming / "config.toml").write_text(serialize(cfg), encoding="utf-8")
         check_settings(incoming)
         rollback = folder / "rollback"; rollback.mkdir(exist_ok=True)
         for name, content in files.items(): write_file(safe_path(rollback, name), content)
-        database = runtime_config(current, config_path)["app"]["database"]
+        current_runtime = runtime_config(current, config_path)
+        database = current_runtime["app"]["database"]
+        snapshot_database(current_runtime, rollback / "database.sqlite3")
         if "operations_revision" in job:
-            with closing(readonly_database(database)) as db:
+            with closing(readonly_database(rollback / "database.sqlite3")) as db:
                 if operations_revision(db) != job["operations_revision"]:
                     raise BackupError("定时任务或申请设置在恢复前变化，已取消恢复")
-        copy_database(database, rollback / "database.sqlite3")
         # Refresh the safety snapshot after all HTTP / QQ work has drained. It includes
         # commits made between the confirmation and the service shutting down.
         safety = safe_path(base, "data/backups/" + job["safety_backup"] + ".zip")
@@ -612,28 +665,13 @@ def apply_pending_restore(config_path):
         os.replace(safety_temporary, safety)
         job.update(phase="applying", original_files=list(files))
         atomic_json(journal, job)
-        with closing(sqlite3.connect(incoming / "database.sqlite3")) as db, db:
-            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
-            for table in TRANSIENT:
-                if table in tables:
-                    db.execute("DELETE FROM " + table)
-            db.execute("UPDATE player_actions SET status='cancelled',detail='备份恢复，待执行操作已撤销' WHERE status='pending'")
-            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
-            if "admin_sessions" in tables: db.execute('DELETE FROM admin_sessions')
-            if "scheduled_tasks" in tables:
-                for task_id, definition in db.execute("SELECT id,definition FROM scheduled_tasks").fetchall():
-                    value = json.loads(definition); value["enabled"] = False
-                    db.execute("UPDATE scheduled_tasks SET definition=?,status='paused',detail='备份恢复后已暂停，请确认设置后启用',revision=revision+1 WHERE id=?", (json.dumps(value),task_id))
-            if "schedule_runs" in tables:
-                db.execute("UPDATE schedule_runs SET status='interrupted',detail='备份恢复，未完成执行已撤销' WHERE status IN ('running','submitted')")
-            if "whitelist_applications" in tables:
-                db.execute("UPDATE whitelist_applications SET status='cancelled',review='备份恢复，下发已撤销；请核对游戏白名单后重试',revision=revision+1 WHERE status='submitted'")
+        revoke_transient(incoming / "database.sqlite3")
         paths = {**current_paths, **{name: config_path if name == "config.toml" else safe_path(base, name)
                  for name in manifest["files"] if name != "database.sqlite3"}}
         for name, path in paths.items():
             if name in manifest["files"]: write_file(path, safe_path(incoming, name).read_bytes())
             elif path.exists(): path.unlink()
-        replace_database(incoming / "database.sqlite3", database)
+        replace_database(incoming / "database.sqlite3", database, current.get("mysql"))
         job["phase"] = "applied"; atomic_json(journal, job)
         return True
     except (OSError, ValueError, sqlite3.Error):

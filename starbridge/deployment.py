@@ -27,6 +27,8 @@ class Deployment:
         cfg, _ = self.state['config_file'].read()
         cfg['app']['admin_token'] = '<保留本机令牌>'
         cfg['onebot']['token'] = '<保留本机令牌>'
+        if 'mysql' in cfg:
+            cfg['mysql']['password'] = '<保留本机数据库密码>'
         if 'qq_official' in cfg:
             cfg['qq_official']['client_secret'] = '<保留本机官机密钥>'
         for server in cfg['servers']: server['token'] = '<自动生成或保留>'
@@ -63,6 +65,10 @@ class Deployment:
             if not isinstance(candidate, dict) or not isinstance(candidate.get('onebot'), dict) or not isinstance(candidate.get('servers'), list): raise RegistrationError('配置缺少 QQ 设置或服务器列表')
             old = {s['id']: s for s in current['servers']}
             candidate['app'] = deepcopy(current['app']); candidate['onebot']['token'] = current['onebot']['token']
+            if 'mysql' in current:
+                candidate['mysql'] = deepcopy(current['mysql'])
+            else:
+                candidate.pop('mysql', None)
             if 'qq_official' in current:
                 candidate['qq_official'] = deepcopy(current['qq_official'])
             else:

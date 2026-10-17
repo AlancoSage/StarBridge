@@ -166,7 +166,20 @@
 <section class="view" id="view-app" hidden><div class="panel"><h2>主程序设置</h2><div class="grid">
 <div class="field"><label for="host">监听地址</label><input id="host" placeholder="127.0.0.1"><p class="hint">127.0.0.1 仅本机；0.0.0.0 接受外部连接。保存后需重启。</p></div>
 <div class="field"><label for="port">监听端口</label><input id="port" type="number" min="1" max="65535"><p class="hint">修改后通过新端口访问面板，并同步 QQ / 游戏连接地址。</p></div>
-<div class="field full"><label for="database">数据库路径</label><input id="database"><p class="hint">相对路径以配置文件目录为基准。重启后切换到所选数据库；已有数据不会自动迁移，原文件会保留。</p></div>
+<div class="field full"><label for="database-backend">数据存储</label><select id="database-backend"><option value="sqlite">SQLite · 本地文件（默认）</option><option value="mysql">MySQL · 独立数据库</option></select><p id="database-running" class="hint"></p></div>
+<div class="field full" id="sqlite-settings"><label for="database">SQLite 数据库路径</label><input id="database"><p class="hint">相对路径以配置文件目录为基准。保存后重启切换；原文件会保留。</p></div>
+<div class="field full" id="mysql-settings" hidden><div class="grid">
+<div class="field"><label for="mysql-host">MySQL 主机</label><input id="mysql-host" autocomplete="off" spellcheck="false"></div>
+<div class="field"><label for="mysql-port">MySQL 端口</label><input id="mysql-port" type="number" min="1" max="65535"></div>
+<div class="field"><label for="mysql-database">数据库名</label><input id="mysql-database" autocomplete="off" spellcheck="false"></div>
+<div class="field"><label for="mysql-user">数据库用户名</label><input id="mysql-user" autocomplete="off" spellcheck="false"></div>
+<div class="field full"><label for="mysql-password">数据库密码</label><div class="secret"><input id="mysql-password" type="password" autocomplete="new-password"><button class="secondary small" data-reveal="mysql-password">显示</button></div></div>
+<div class="field full switch-row"><label for="mysql-tls">启用 TLS<p class="hint">校验证书与主机名。使用自签名证书时请填写 CA 文件。</p></label><input id="mysql-tls" type="checkbox"></div>
+<div class="field full" id="mysql-ca-field" hidden><label for="mysql-ssl_ca">CA 证书路径</label><input id="mysql-ssl_ca" placeholder="留空使用系统信任证书"><p class="hint">相对路径以配置文件目录为基准。</p></div>
+<div class="field"><label for="mysql-connect_timeout">连接超时（秒）</label><input id="mysql-connect_timeout" type="number" min="1" max="30"></div>
+<div class="field"><label for="mysql-read_timeout">读取超时（秒）</label><input id="mysql-read_timeout" type="number" min="1" max="30"></div>
+<div class="field"><label for="mysql-write_timeout">写入超时（秒）</label><input id="mysql-write_timeout" type="number" min="1" max="30"></div>
+</div><p class="hint">支持 MySQL 8.0.17+ / 8.4。请预先创建 Myrinbot 专用数据库并授权建表、读写；仅切换连接不会迁移旧数据。已有数据请先停止软件，再使用 scripts/migrate_database.py 迁移。</p><div class="extension-actions"><button id="mysql-test" class="secondary">检测连接</button></div><div id="mysql-test-notice" class="notice" role="status"></div><p id="mysql-supervisor-hint" class="hint" hidden>当前仍由旧版启动器运行。启用 MySQL 前请完全退出软件，再通过启动脚本重新启动。</p></div>
 <div class="field full"><label for="admin-token">服主授权信息</label><div class="secret"><input id="admin-token" type="password" autocomplete="off"><button class="secondary small" data-reveal="admin-token">显示</button><button class="secondary small" data-generate="admin-token">生成随机授权信息</button><button class="secondary small" data-copy="admin-token">复制</button></div><p class="hint">用于首次创建服主账号及管理 API 授权。修改后立即生效，请妥善保存并同步依赖此凭据的接入。</p></div>
 </div></div><div class="panel"><div class="section-head"><h2>应用运行设置</h2><button id="restart" class="secondary">重启主程序</button></div><p class="muted">保存所有更改后重启。重启会短暂断开 QQ 和游戏连接；若新地址或数据库无法启动，将恢复原运行设置。</p><div id="restart-result" class="notice" role="status"></div></div></section>
 <section class="view" id="view-schedules" hidden>
@@ -259,6 +272,7 @@
 </dialog>
 <dialog id="plugin-version-dialog" class="player-dialog" aria-labelledby="plugin-version-title"><div class="section-head"><h2 id="plugin-version-title">插件版本</h2><button id="plugin-version-close" type="button" class="secondary small">关闭</button></div><p id="plugin-version-changelog" class="hint"></p><div id="plugin-version-list"></div></dialog>
 <script src="/mod-bridge-panel.js"></script>
+<script src="/database-panel.js"></script>
 <script src="/dashboard.js"></script>
 <dialog id="extension-dialog" class="player-dialog" aria-labelledby="extension-title">
 <form id="extension-form"><div class="section-head"><div><h2 id="extension-title">插件设置</h2><p id="extension-subtitle" class="muted"></p></div><button id="extension-close" type="button" class="secondary small" aria-label="关闭插件设置">×</button></div>

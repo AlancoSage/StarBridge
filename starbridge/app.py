@@ -3,8 +3,11 @@ from base64 import b64encode
 from copy import deepcopy
 from contextlib import suppress
 from pathlib import Path
+import logging
+import os
 import re
 import secrets
+import sqlite3
 import time
 from tempfile import TemporaryDirectory
 import uuid
@@ -36,6 +39,8 @@ from .enhancement_api import setup_routes as enhancement_routes
 from .community_api import setup_routes as community_routes
 from .deployment_api import setup_routes as deployment_routes
 from .update_api import setup_routes as update_routes
+from .database_api import setup_routes as database_routes
+from .mysql_settings import MYSQL_DEFAULTS
 
 
 STATE = web.AppKey("state", dict)
@@ -245,10 +250,17 @@ async def extension_script(request):
     return web.FileResponse(Path(__file__).parent / "extension-panel.js", headers={"Cache-Control": "no-cache"})
 
 
+async def database_script(request):
+    return web.FileResponse(Path(__file__).parent / "database-panel.js", headers={"Cache-Control": "no-cache"})
+
+
 def restart_fields(state, saved):
     resolved = runtime_config(saved, state["config_file"].path)
-    return [key for key in ("host", "port", "database")
-            if resolved["app"][key] != state["config"]["app"].get(key)]
+    fields = [key for key in ("host", "port", "database")
+              if resolved["app"][key] != state["config"]["app"].get(key)]
+    if resolved.get('mysql', MYSQL_DEFAULTS) != state['config'].get('mysql', MYSQL_DEFAULTS):
+        fields.append('mysql')
+    return fields
 
 
 def settings_response(state, cfg, revision):
@@ -311,6 +323,11 @@ async def commit_config(state, payload, recheck=lambda: None):
         updated = runtime_config(cfg, state["config_file"].path)
         for key in ("host", "port", "database"):
             updated["app"][key] = current["app"][key]
+        # Persisting a database target must not switch a live connection.
+        if 'mysql' in current:
+            updated['mysql'] = deepcopy(current['mysql'])
+        else:
+            updated.pop('mysql', None)
         ob_changed = (any(current["onebot"].get(k) != updated["onebot"].get(k) for k in ("token", "self_id"))
                       or current.get("qq_official", OFFICIAL_DEFAULTS) != updated.get("qq_official", OFFICIAL_DEFAULTS))
         servers = {s["id"]: s for s in updated["servers"]}
@@ -617,8 +634,22 @@ async def lifecycle(app):
         state["plugin_temp"].cleanup()
 
 
+@web.middleware
+async def database_errors(request, handler):
+    try:
+        return await handler(request)
+    except sqlite3.Error as exc:
+        # Never expose native driver errors, SQL parameters or credentials.
+        logging.getLogger(__name__).warning('数据库请求失败：%s', type(exc).__name__)
+        return web.json_response({'error': '数据库暂时不可用，请检查数据库服务、网络和访问权限。操作未自动重试。'},
+                                 status=503, headers={'Cache-Control': 'no-store'})
+
+
 def create_app(cfg, config_path=None, restart_event=None):
-    store = Store(cfg["app"]["database"])
+    if (cfg.get('mysql', {}).get('enabled') and os.environ.get('STARBRIDGE_SUPERVISED') == '1'
+            and os.environ.get('MYRINBOT_MYSQL_SUPERVISOR') != '1'):
+        raise ValueError('启用 MySQL 前请完全退出软件，再通过启动脚本重新启动，以启用 MySQL 升级备份支持')
+    store = Store(cfg["app"]["database"], cfg.get('mysql'))
     catalog = Catalog(store)
     onebot = QQConnection(cfg, store)
     bot = Bot(cfg, store, onebot)
@@ -633,7 +664,7 @@ def create_app(cfg, config_path=None, restart_event=None):
     bot.authentication = authentication
     native_passwords = NativePasswords(bot)
     bot.native_passwords = native_passwords
-    app = web.Application(client_max_size=256 * 1024)
+    app = web.Application(client_max_size=256 * 1024, middlewares=[database_errors])
     app[STATE] = {"config": deepcopy(cfg), "store": store, "catalog": catalog, "onebot": onebot, "bot": bot, "plugins": plugins, "registration": registration, "authentication": authentication, "native_passwords": native_passwords,
                   "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
                   "config_file": ConfigFile(config_path) if config_path else None, "restart_event": restart_event, "plugin_temp": plugin_temp}
@@ -651,10 +682,12 @@ def create_app(cfg, config_path=None, restart_event=None):
     community_routes(app, STATE, body)
     deployment_routes(app, STATE, body, commit_config, authorized)
     update_routes(app, STATE, body)
+    database_routes(app, STATE, authorized, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
         web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),
+        web.get("/database-panel.js", database_script),
         web.get("/api/config", admin_config), web.put("/api/config", save_config),
         web.post('/api/reply-images/preview', reply_image_preview),
         web.post("/api/restart", restart_service),

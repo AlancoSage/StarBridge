@@ -1,17 +1,16 @@
 import json
 from pathlib import Path
 import secrets
-import sqlite3
 import time
 import uuid
+from .database import connect
 
 
 class Store:
-    def __init__(self, path):
-        if path != ":memory:":
+    def __init__(self, path, mysql=None):
+        if path != ":memory:" and not (mysql or {}).get("enabled"):
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path)
-        self.db.row_factory = sqlite3.Row
+        self.db = connect(path, mysql)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS bindings (
