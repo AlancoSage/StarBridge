@@ -1,6 +1,6 @@
 # 消息同步
 
-适用于 Myrinbot Bot **0.6.24** 与 Paper / Spigot / Folia 游戏插件 **0.5.4**；模组服需安装对应版本的游戏端。
+适用于 Myrinbot Bot **0.6.25** 与 Paper / Spigot / Folia 游戏插件 **0.5.4**；模组服需安装对应版本的游戏端。
 
 ## 用途
 

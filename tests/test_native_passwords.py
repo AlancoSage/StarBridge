@@ -432,6 +432,23 @@ class NativePasswordTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn(code, repr(self.qq.send_group.await_args_list))
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 0)
 
+    def test_concurrent_receipts_are_delivered_in_bounded_batches_without_dropping_requests(self):
+        for index in range(9):
+            player_uuid, name, qq = str(uuid.uuid4()), "Recovery" + str(index), str(123456780 + index)
+            code = self.store.issue_code("survival", player_uuid, name)
+            self.recovery.record_code("survival", player_uuid, name, code, "bukkit", "authme", f"{index:064x}")
+            self.recovery.verify_binding(qq, "survival", code)
+            token = self.challenge(qq)
+            self.recovery.private_command(qq, "/确认重置", token + " " + PASSWORD)
+        first = self.tick()["jobs"]
+        self.assertEqual(len(first), 8)
+        self.assertEqual(sum(request["state"] == "pending" for request in self.recovery.requests.values()), 1)
+        second = self.tick()["jobs"]
+        self.assertEqual(len(second), 1)
+        self.assertEqual(len({job["id"] for job in first + second}), 9)
+        self.assertEqual({job["id"] for job in first + second}, self.recovery.requests.keys())
+        self.assertEqual(self.tick()["jobs"], [])
+
     async def test_private_confirmation_dedupes_message_and_never_echoes_password(self):
         self.bind()
         token = self.challenge()

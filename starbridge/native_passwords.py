@@ -334,6 +334,8 @@ class NativePasswords:
         jobs = []
         if enabled:
             for request in self.requests.values():
+                if len(jobs) >= 8:
+                    break
                 if (request["server"] == sid and request["instance"] == instance
                         and request["state"] == "pending" and self._valid(request)):
                     jobs.append({key: request[key] for key in ("id", "uuid", "player", "password", "expires", "engine", "instance", "account")})
