@@ -1,6 +1,6 @@
 # Fabric 游戏端
 
-**当前版本：Myrinbot Bot 0.6.18 · Fabric 游戏端模组 0.1.1。** Fabric 服务端使用独立 Myrinbot 模组，连接同一台 Bot 即可接入 QQ 聊天、玩家管理、白名单与游戏登录。Paper / Spigot、Forge 和 NeoForge 的 JAR 继续按各自文档安装。Bot 0.6.4 已提供前五个 Fabric 版本；新增版本从 0.6.5 起提供。
+**当前版本：Myrinbot Bot 0.6.19 · Fabric 游戏端模组 0.1.1。** Fabric 服务端使用独立 Myrinbot 模组，连接同一台 Bot 即可接入 QQ 聊天、玩家管理、白名单与游戏登录。Paper / Spigot、Forge 和 NeoForge 的 JAR 继续按各自文档安装。Bot 0.6.4 已提供前五个 Fabric 版本；新增版本从 0.6.5 起提供。
 
 ## 选择 Minecraft 与 Java
 
