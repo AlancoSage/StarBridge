@@ -29,14 +29,23 @@ class GlassReplyTests(unittest.TestCase):
                 self.assertLessEqual(image.height, 1600)
 
     def test_original_background_is_embedded_and_legacy_updater_managed(self):
-        from starbridge.reply_backdrop import BACKDROP_JPEG, SOURCE_SHA256
+        from starbridge.reply_backdrop import BACKDROP_JPEG, SOURCE_ASSET, SOURCE_SHA256
         from scripts.update_runtime import managed
         root = Path(__file__).resolve().parent.parent
-        self.assertEqual(hashlib.sha256((root/'assets/reply-glass-background-v1.png').read_bytes()).hexdigest(), SOURCE_SHA256)
+        self.assertEqual(hashlib.sha256((root/SOURCE_ASSET).read_bytes()).hexdigest(), SOURCE_SHA256)
         self.assertTrue(managed('starbridge/reply_backdrop.py'))
         with Image.open(BytesIO(BACKDROP_JPEG)) as image:
             self.assertEqual(image.format, 'JPEG')
             self.assertGreaterEqual(image.width, 1080)
+
+    def test_bold_font_is_pinned_and_compatible_with_existing_updater(self):
+        from PIL import ImageFont
+        from scripts.update_runtime import managed
+        from starbridge.reply_bold_font import SHA256, font_data
+        data = font_data()
+        self.assertEqual(hashlib.sha256(data).hexdigest(), SHA256)
+        self.assertEqual(ImageFont.truetype(BytesIO(data), 32).getname(), ('Noto Sans SC', 'Bold'))
+        self.assertTrue(managed('starbridge/reply_bold_font.py'))
 
     def test_status_zero_players_offline_and_empty_servers(self):
         for view in [status(), status(['Steve', '张三']), status(['STALE'], False),
@@ -52,7 +61,7 @@ class GlassReplyTests(unittest.TestCase):
         self.images(render_pages('在线玩家', '在线', status(['Player_'+str(n) for n in range(50)])))
         self.images(render_pages('在线玩家', '状态', status(['很长的玩家名称'*12, 'W'*100])))
         with self.assertRaises(RenderError):
-            render_pages('在线玩家', '在线', status(['Player_'+str(n) for n in range(100)]))
+            render_pages('在线玩家', '在线', status(['Player_'+str(n) for n in range(200)]))
 
     def test_invalid_structured_data_fails_before_sending(self):
         values = [{}, {'type': 'unknown'}, status(['\U0001f600']), status(['line\nbreak']), status(['x'*101])]
@@ -67,8 +76,8 @@ class GlassReplyTests(unittest.TestCase):
 class ConcurrentGlassReplyTests(unittest.IsolatedAsyncioTestCase):
     async def test_two_four_page_renders_and_busy_rejection(self):
         renderer = ReplyRenderer()
-        view = status(['Player_%02d' % number for number in range(64)])
-        view['servers'][0]['max_players'] = 100
+        view = status(['Player_%03d' % number for number in range(144)])
+        view['servers'][0]['max_players'] = 200
         entered, release = threading.Event(), threading.Event()
         lock, count = threading.Lock(), 0
 

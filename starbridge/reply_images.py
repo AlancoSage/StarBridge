@@ -2,6 +2,7 @@
 import asyncio
 from bisect import bisect_right
 from copy import deepcopy
+import hashlib
 from io import BytesIO
 import math
 from threading import local
@@ -57,15 +58,19 @@ def _check_characters(value):
             raise RenderError("回复包含字体不支持的字符，请使用文字回复")
 
 
-def _font(size):
+def _font(size, bold=False):
     from PIL import ImageFont
-    from .reply_font import font_data
+    if bold:
+        from .reply_bold_font import font_data
+    else:
+        from .reply_font import font_data
     cache = getattr(_fonts, 'current', None)
-    if cache is not None and size in cache:
-        return cache[size]
+    key = (size, bold)
+    if cache is not None and key in cache:
+        return cache[key]
     font = ImageFont.truetype(BytesIO(font_data()), size, layout_engine=ImageFont.Layout.BASIC)
     if cache is not None:
-        cache[size] = font
+        cache[key] = font
     return font
 
 
@@ -94,34 +99,43 @@ def _fit(value, font, width):
 
 
 def _label(image, xy, value, size=28, bold=False, fill='white'):
-    from PIL import ImageDraw
-    draw = ImageDraw.Draw(image)
+    from PIL import Image, ImageDraw, ImageFilter
+    font = _font(size, bold)
     x, y = xy
-    stroke = 1 if bold else 0
-    draw.text((x+1, y+2), value, font=_font(size), fill=(9, 18, 35, 210), stroke_width=stroke)
-    draw.text((x, y), value, font=_font(size), fill=fill, stroke_width=stroke)
+    box = font.getbbox(value, anchor='lt')
+    shadow = Image.new('RGBA', (max(1, math.ceil(font.getlength(value))+16), max(1, box[3]-box[1]+20)))
+    ImageDraw.Draw(shadow).text((8, 10), value, font=font, fill=(0, 0, 0, 105), anchor='lt')
+    image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(2)), (int(x)-8, int(y)-8))
+    ImageDraw.Draw(image).text(xy, value, font=font, fill=fill, anchor='lt')
 
 
 def _canvas(height):
     from PIL import Image, ImageOps
     from .reply_backdrop import BACKDROP_JPEG
     with Image.open(BytesIO(BACKDROP_JPEG)) as source:
-        image = ImageOps.fit(source.convert('RGB'), (1080, height), centering=(0.55, 0.40)).convert('RGBA')
-    image.alpha_composite(Image.new('RGBA', image.size, (12, 24, 45, 102)))
+        image = ImageOps.fit(source.convert('RGB'), (1080, height), centering=(0.5, 0)).convert('RGBA')
+    image.alpha_composite(Image.new('RGBA', image.size, (10, 15, 25, 112)))
     return image
 
 
-def _glass(image, box, radius=26, tint=24):
+def _glass(image, box, radius=30, tint=14, border=62, shade=0):
     from PIL import Image, ImageDraw, ImageFilter
     x1, y1, x2, y2 = box
     size = (x2-x1, y2-y1)
-    pane = image.crop(box).filter(ImageFilter.GaussianBlur(12))
-    pane.alpha_composite(Image.new('RGBA', size, (235, 244, 255, tint)))
+    pane = image.crop(box).filter(ImageFilter.GaussianBlur(1.4))
+    pane.alpha_composite(Image.new('RGBA', size, (255, 255, 255, tint)))
+    if shade:
+        pane.alpha_composite(Image.new('RGBA', size, (0, 0, 0, shade)))
     mask = Image.new('L', size)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, size[0]-1, size[1]-1), radius=radius, fill=255)
     image.paste(pane, (x1, y1), mask)
-    ImageDraw.Draw(image).rounded_rectangle((x1, y1, x2-1, y2-1), radius=radius,
-                                            outline=(244, 249, 255, 108), width=2)
+    rim = Image.new('RGBA', size)
+    draw = ImageDraw.Draw(rim)
+    draw.rounded_rectangle((0, 0, size[0]-1, size[1]-1), radius=radius,
+                           outline=(255, 255, 255, border), width=1)
+    draw.rounded_rectangle((2, 2, size[0]-3, size[1]-3), radius=max(1, radius-2),
+                           outline=(255, 255, 255, border//4), width=1)
+    image.alpha_composite(rim, (x1, y1))
 
 
 def _encode(image):
@@ -136,8 +150,8 @@ def _encode(image):
 
 
 def _footer(image, page, total):
-    _label(image, (44, image.height-46), f'MYRINBOT  ·  {page} / {total}', 19,
-           fill=(233, 242, 255, 225))
+    if total > 1:
+        _label(image, (44, image.height-30), f'{page} / {total}', 17)
 
 
 def _text_pages(text, title):
@@ -150,7 +164,7 @@ def _text_pages(text, title):
         height = max(720, 350+len(rows)*step)
         image = _canvas(height)
         _label(image, (44, 40), 'MYRINBOT / REPLY', 23, fill=(215, 238, 255, 255))
-        _label(image, (44, 90), _fit(title, _font(58), 990), 58, True)
+        _label(image, (44, 90), _fit(title, _font(58, True), 990), 58, True)
         _label(image, (46, 176), '指令回复  ·  '+time.strftime('%H:%M'), 22)
         _glass(image, (42, 234, 1038, height-68))
         for index, line in enumerate(rows):
@@ -184,55 +198,76 @@ def _status_view(view):
     return servers
 
 
+def _avatar(name):
+    """Local voxel-style placeholder, never presented as a fetched player skin."""
+    from PIL import Image, ImageDraw
+    seed = hashlib.sha256(name.encode('utf-8')).digest()
+    palettes = [('#ba9678', '#674631', '#e3d4bc', '#6662a2'),
+                ('#a87956', '#4b3024', '#ddd0b6', '#4565a4'),
+                ('#9cbdc8', '#083d59', '#d8f2f6', '#00b7dc')]
+    skin, hair, eyes, iris = palettes[seed[0] % len(palettes)]
+    image = Image.new('RGB', (8, 8), skin); draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, 7, 1), fill=hair)
+    draw.rectangle((0, 2, seed[1] % 3, 2), fill=hair)
+    draw.rectangle((7, 2, 7, 3), fill=hair)
+    draw.rectangle((1, 4, 2, 4), fill=eyes); draw.rectangle((5, 4, 6, 4), fill=eyes)
+    draw.point((2, 4), fill=iris); draw.point((5, 4), fill=iris)
+    draw.rectangle((3, 5, 4, 5), fill=hair)
+    draw.rectangle((2, 7, 5, 7), fill=hair)
+    return image.resize((50, 50), Image.Resampling.NEAREST)
+
+
 def _player(image, x, y, name):
-    from PIL import ImageDraw
-    _glass(image, (x, y, x+450, y+78), radius=19, tint=34)
-    # Local initials avoid sending player names or identities to avatar services.
-    palette = [(75, 133, 179), (116, 106, 167), (57, 135, 139), (128, 112, 151)]
-    color = palette[sum(map(ord, name)) % len(palette)]
-    ImageDraw.Draw(image).rounded_rectangle((x+10, y+10, x+68, y+68), radius=13, fill=color)
-    initial = name[0].upper()
-    if len(initial) != 1:
-        initial = name[0]
-    left = x+39-_font(30).getlength(initial)/2
-    _label(image, (left, y+15), initial, 30, True)
-    _label(image, (x+84, y+19), _fit(name, _font(25), 352), 25, True)
+    from PIL import Image, ImageDraw
+    _glass(image, (x, y, x+308, y+72), radius=17, tint=56, border=110)
+    mask = Image.new('L', (50, 50))
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, 49, 49), radius=7, fill=255)
+    image.paste(_avatar(name), (x+10, y+10), mask)
+    _label(image, (x+73, y+25), _fit(name, _font(23, True), 224), 23, True)
 
 
-def _server_card(image, y, server, players, continuation):
-    rows = (len(players)+1)//2
-    height = 136+rows*94
-    _glass(image, (42, y, 1038, y+height), radius=28)
+def _card_height(players, details):
+    rows = (len(players)+2)//3
+    return 106+(32 if details else 0)+(rows*80-8 if rows else 0)
+
+
+def _server_card(image, y, server, players, continuation, details):
+    height = _card_height(players, details)
+    _glass(image, (42, y, 1038, y+height), radius=30)
     name = server['name'] + (' · 续' if continuation else '')
-    _label(image, (66, y+22), _fit(name, _font(35), 710), 35, True)
-    badge = f"{len(server['players'])} 人在线" if server['online'] else '桥接离线'
-    _glass(image, (824, y+24, 1014, y+78), radius=12, tint=10)
-    _label(image, (842, y+32), badge, 23, True)
-    if not server['online']:
+    badge = f"{len(server['players'])} 人在线" if server['online'] else '离线'
+    badge_font = _font(20, True)
+    badge_width = max(111, math.ceil(badge_font.getlength(badge))+28)
+    badge_left = 1014-badge_width
+    _label(image, (66, y+30), _fit(name, _font(32, True), badge_left-90), 32, True)
+    _glass(image, (badge_left, y+22, 1014, y+67), radius=8, tint=0, border=70, shade=36)
+    _label(image, (badge_left+(badge_width-badge_font.getlength(badge))/2, y+35), badge, 20, True)
+    if details:
         detail = '等待游戏服务器连接'
-    else:
-        detail = (f"{len(server['players'])} / {server['max_players']} 位玩家" if server['max_players']
-                  else f"{len(server['players'])} 位玩家")
-        if server['version']:
-            detail += '  ·  '+server['version']
-        if not server['players']:
-            detail += '  ·  暂无玩家在线'
-    _label(image, (68, y+82), _fit(detail, _font(22), 925), 22, fill=(228, 239, 255, 255))
+        if server['online']:
+            detail = (f"{len(server['players'])} / {server['max_players']} 位玩家" if server['max_players']
+                      else f"{len(server['players'])} 位玩家")
+            if server['version']:
+                detail += '  ·  '+server['version']
+        _label(image, (66, y+76), _fit(detail, _font(20), 945), 20)
     for index, name in enumerate(players):
-        _player(image, 66+(index % 2)*474, y+124+(index//2)*94, name)
+        _player(image, 66+(index % 3)*324, y+84+(32 if details else 0)+(index//3)*80, name)
     return height
 
 
 def _status_pages(view, title):
     servers = _status_view(view)
+    details = command_key(title) != '在线'
     batches, current, used = [], [], 0
     for server in servers:
-        chunks = [server['players'][i:i+16] for i in range(0, len(server['players']), 16)] or [[]]
+        chunks = [server['players'][i:i+36] for i in range(0, len(server['players']), 36)] or [[]]
         for index, players in enumerate(chunks):
-            height = 136+((len(players)+1)//2)*94
-            if current and used+height+18 > 1090:
+            height = _card_height(players, details)
+            if current and used+height+19 > 1228:
                 batches.append(current); current, used = [], 0
-            current.append((server, players, index > 0)); used += height+18
+            if current:
+                used += 19
+            current.append((server, players, index > 0)); used += height
     if current or not batches:
         batches.append(current)
     if len(batches) > MAX_PAGES:
@@ -248,28 +283,28 @@ def _status_pages(view, title):
         raise RenderError('更新时间无效') from exc
     pages = []
     for page, cards in enumerate(batches, 1):
-        body = sum(136+((len(players)+1)//2)*94+18 for _, players, _ in cards)
-        height = max(900, 354+body+50)
+        body = sum(_card_height(players, details) for _, players, _ in cards)+max(0, len(cards)-1)*19
+        height = max(560, 328+max(body, 106)+44)
         image = _canvas(height)
-        _label(image, (44, 40), 'MYRINBOT / SERVER', 23, fill=(215, 238, 255, 255))
+        _label(image, (42, 79), 'Myrinbot', 21, True, fill='#d6f3ee')
         heading = '服务器在线列表' if command_key(title) == '在线' else '服务器运行状态'
-        _label(image, (44, 100), heading, 57, True)
-        _glass(image, (864, 34, 1038, 204), radius=32, tint=26)
-        _label(image, (914, 50), '在线', 25, True)
+        _label(image, (42, 121), heading, 60, True)
+        _glass(image, (878, 44, 1038, 178), radius=32, tint=14)
+        _label(image, (958-_font(21, True).getlength('在线')/2, 64), '在线', 21, True)
         number = str(count) if online else '—'
-        size = 65 if len(number) <= 3 else 46
-        _label(image, (951-_font(size).getlength(number)/2, 90), number, size, True)
+        size = 64 if len(number) <= 3 else 44
+        _label(image, (958-_font(size, True).getlength(number)/2, 113), number, size, True)
         for index, (label, value) in enumerate([('服务器', str(len(servers))), ('更新时间', updated), ('状态', status)]):
-            x = 42+index*338
-            _glass(image, (x, 230, x+320, 332), radius=23, tint=18)
-            _label(image, (x+22, 243), label, 23)
-            _label(image, (x+22, 275), value, 32, True)
-        y = 354
+            x = (42, 380, 716)[index]
+            _glass(image, (x, 205, x+322, 304), radius=24, tint=12)
+            _label(image, (x+20, 228), label, 20, True)
+            _label(image, (x+20, 257), value, 32, True)
+        y = 328
         if not cards:
-            _glass(image, (42, y, 1038, y+136))
-            _label(image, (68, y+44), '暂无关联服务器', 30)
+            _glass(image, (42, y, 1038, y+106))
+            _label(image, (66, y+38), '暂无关联服务器', 28)
         for server, players, continuation in cards:
-            y += _server_card(image, y, server, players, continuation)+18
+            y += _server_card(image, y, server, players, continuation, details)+19
         _footer(image, page, len(batches))
         pages.append(_encode(image))
     return pages

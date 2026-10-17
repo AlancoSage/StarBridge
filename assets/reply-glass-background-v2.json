@@ -1,0 +1,9 @@
+{
+  "asset": "reply-glass-background-v2.png",
+  "mode": "built-in image_gen",
+  "intent": "edit",
+  "reference": "User-provided codex-clipboard-0f31b7db-e0d3-46e3-b510-4b56f5654ba5.png",
+  "description": "Cleaned reference background with UI removed. Illustration is reconstructed from the supplied reference; it is not an original-character generation.",
+  "prompt": "Use case: precise-object-edit. Edit target: the supplied screenshot of an anime-background server status card. Produce ONLY the clean underlying anime illustration, matching this exact composition, crop, character identity, pose, expression, white hair, turquoise-blue eyes, dark blue and cream costume, blue bow, the dark small fantasy creature on the left, pale blue/cream decorative background and overall original drawing style. Remove ALL overlaid UI: every Chinese or Latin letter, every number, logos/brand marks, all rounded card outlines, badges, avatar boxes, player heads and names, all frosted glass rectangles and all UI shadows. Reconstruct the illustration naturally behind those removed UI elements. Remove the global gray darkening overlay as well so the clean illustration has its original pale cream/periwinkle colors; the app will apply its own uniform dim overlay later. Preserve the placement and scale of the large character face in the upper right and the creature at upper-left/center. Do not replace the scene with another character, winter landscape, book, new props or another composition. No text, no interface, no borders, no watermark. Opaque full-bleed background image only, same square-ish landscape aspect as the source screenshot.",
+  "runtime_embedding": "scripts/build_reply_backdrop.py converts this image to a bundled JPEG. Runtime code applies dimming and draws all current server data."
+}

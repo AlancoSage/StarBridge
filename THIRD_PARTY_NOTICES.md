@@ -56,6 +56,8 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 
 字体自身的版权、名称与许可元数据完整保留，采用 **SIL Open Font License 1.1**，完整许可见 [noto-font-license.md](https://github.com/AlancoSage/StarBridge/blob/main/docs/noto-font-license.md)。生成脚本为 `scripts/build_reply_font.py`。该字体继续适用 OFL，与项目 AGPL 许可证分别声明。
 
+`starbridge/reply_bold_font.py` 以相同方式嵌入未修改的 **Noto Sans SC Bold** 字体，供图片标题、统计数字与名单使用。来源为相同固定提交下的 [NotoSansSC-Bold.otf](https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Bold.otf)，原始字体 SHA256 为 `c6cb5a93abaa9edc8ee7463b7ebb7f42d618d40e6ed2f7a5371c97b0b64767c0`。可复现生成脚本为 `scripts/build_reply_bold_font.py`；原始版权、名称与许可元数据保留，继续适用上述 SIL OFL 1.1。
+
 ## 构建工具及运行环境提供的 API
 
 以下是构建或运行环境使用的主要第三方组件，除上面明确列出的 Gson 和 Gradle Wrapper 外，其实现不被复制进 Myrinbot JAR：
