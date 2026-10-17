@@ -1,6 +1,6 @@
 # 账号绑定
 
-适用于 Myrinbot Bot **0.6.21** 与 Paper / Spigot / Folia 游戏插件 **0.5.3**。模组服请先安装[对应加载器的游戏端](mod-game-ends.md)。
+适用于 Myrinbot Bot **0.6.22** 与 Paper / Spigot / Folia 游戏插件 **0.5.3**。模组服请先安装[对应加载器的游戏端](mod-game-ends.md)。
 
 ## 用途
 

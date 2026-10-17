@@ -1,6 +1,6 @@
 # 玩家工单、申诉与跨服处罚
 
-当前文档对应 **Myrinbot Bot 0.6.21 / Bukkit 插件 0.5.3**；这些功能从 Bot 0.6.0 起提供。游戏插件需要具备 `managed_sanctions` 能力；从当前面板下载通用 JAR 更新到游戏服务器。仍使用 Java 8 通用构建。
+当前文档对应 **Myrinbot Bot 0.6.22 / Bukkit 插件 0.5.3**；这些功能从 Bot 0.6.0 起提供。游戏插件需要具备 `managed_sanctions` 能力；从当前面板下载通用 JAR 更新到游戏服务器。仍使用 Java 8 通用构建。
 
 ## 按需开启功能
 

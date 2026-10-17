@@ -93,60 +93,35 @@ def _fit(value, font, width):
     return value+'…'
 
 
-def _label(image, xy, value, size=28, bold=False, fill='#293548'):
+def _label(image, xy, value, size=28, bold=False, fill='white'):
     from PIL import ImageDraw
     draw = ImageDraw.Draw(image)
-    stroke = 1 if bold and size >= 64 else 0
-    draw.text(xy, value, font=_font(size), fill=fill, stroke_width=stroke)
+    x, y = xy
+    stroke = 1 if bold else 0
+    draw.text((x+1, y+2), value, font=_font(size), fill=(9, 18, 35, 210), stroke_width=stroke)
+    draw.text((x, y), value, font=_font(size), fill=fill, stroke_width=stroke)
 
 
 def _canvas(height):
-    from PIL import Image, ImageFilter, ImageOps
+    from PIL import Image, ImageOps
     from .reply_backdrop import BACKDROP_JPEG
     with Image.open(BytesIO(BACKDROP_JPEG)) as source:
-        image = ImageOps.fit(source.convert('RGB'), (1080, height), centering=(0.65, 0.4))
-    image = image.filter(ImageFilter.GaussianBlur(2)).convert('RGBA')
-    image.alpha_composite(Image.new('RGBA', image.size, (243, 246, 255, 148)))
+        image = ImageOps.fit(source.convert('RGB'), (1080, height), centering=(0.55, 0.40)).convert('RGBA')
+    image.alpha_composite(Image.new('RGBA', image.size, (12, 24, 45, 102)))
     return image
 
 
-def _cover(image, title, summary, number=None, caption=None):
-    from PIL import ImageDraw
-    _glass(image, (24, 18, 1056, 292), tint=140)
-    _glass(image, (818, 40, 1016, 96), tint=72)
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((44, 34, 88, 78), radius=12, fill='#e18a9e')
-    _label(image, (55, 37), 'M', 27, fill='white')
-    _label(image, (106, 30), 'MYRINBOT', 22, True)
-    _label(image, (106, 60), '群服简报' if number is not None else '指令回执', 16, fill='#52647a')
-    draw.ellipse((837, 63, 845, 71), fill='#ce7e99')
-    _label(image, (859, 53), '服务器快照' if number is not None else '指令回复', 20, fill='#52647a')
-    _label(image, (44, 102), _fit(title, _font(42), 948), 42, True)
-    if number is not None:
-        size = 70 if len(number) < 5 else 60
-        _label(image, (42, 150), number, size, True, fill='#b95b79')
-        x = 44+_font(size).getlength(number)+20
-        _label(image, (x, 195), caption or '玩家在线', 22, fill='#52647a')
-    else:
-        _label(image, (44, 182), '群内指令回复', 25, fill='#52647a')
-    _label(image, (44, 258), _fit(summary, _font(17), 948), 17, fill='#52647a')
-
-
-def _glass(image, box, tint=118):
+def _glass(image, box, radius=26, tint=24):
     from PIL import Image, ImageDraw, ImageFilter
     x1, y1, x2, y2 = box
     size = (x2-x1, y2-y1)
-    pane = image.crop(box).filter(ImageFilter.GaussianBlur(18))
-    pane.alpha_composite(Image.new('RGBA', size, (255, 255, 255, tint)))
+    pane = image.crop(box).filter(ImageFilter.GaussianBlur(12))
+    pane.alpha_composite(Image.new('RGBA', size, (235, 244, 255, tint)))
     mask = Image.new('L', size)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size[0]-1, size[1]-1), radius=16, fill=255)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size[0]-1, size[1]-1), radius=radius, fill=255)
     image.paste(pane, (x1, y1), mask)
-    rim = Image.new('RGBA', size)
-    draw = ImageDraw.Draw(rim)
-    draw.rounded_rectangle((0, 0, size[0]-1, size[1]-1), radius=16,
-                           outline=(255, 255, 255, 195), width=1)
-    draw.line((16, 1, size[0]-16, 1), fill=(255, 255, 255, 220), width=1)
-    image.alpha_composite(rim, (x1, y1))
+    ImageDraw.Draw(image).rounded_rectangle((x1, y1, x2-1, y2-1), radius=radius,
+                                            outline=(244, 249, 255, 108), width=2)
 
 
 def _encode(image):
@@ -161,25 +136,25 @@ def _encode(image):
 
 
 def _footer(image, page, total):
-    from PIL import ImageDraw
-    ImageDraw.Draw(image).line((44, image.height-53, 1036, image.height-53), fill='#c2cede', width=1)
-    _label(image, (44, image.height-41), 'MYRINBOT  /  群服相连', 17, fill='#40526b')
-    _label(image, (964, image.height-41), f'{page:02} / {total:02}', 17, fill='#40526b')
+    _label(image, (44, image.height-46), f'MYRINBOT  ·  {page} / {total}', 19,
+           fill=(233, 242, 255, 225))
 
 
 def _text_pages(text, title):
-    lines = _wrap(text, _font(30), 960)
-    per_page, step = 27, 42
+    lines = _wrap(text, _font(30), 904)
+    per_page, step = 27, 44
     pages = []
     total = (len(lines)+per_page-1)//per_page
     for page, offset in enumerate(range(0, len(lines), per_page), 1):
         rows = lines[offset:offset+per_page]
-        height = max(720, 424+len(rows)*step)
+        height = max(720, 350+len(rows)*step)
         image = _canvas(height)
-        _cover(image, title, '生成于 '+time.strftime('%H:%M'))
-        _glass(image, (32, 316, 1048, height-68))
+        _label(image, (44, 40), 'MYRINBOT / REPLY', 23, fill=(215, 238, 255, 255))
+        _label(image, (44, 90), _fit(title, _font(58), 990), 58, True)
+        _label(image, (46, 176), '指令回复  ·  '+time.strftime('%H:%M'), 22)
+        _glass(image, (42, 234, 1038, height-68))
         for index, line in enumerate(rows):
-            _label(image, (60, 336+index*step), line, 30)
+            _label(image, (86, 254+index*step), line, 30)
         _footer(image, page, total)
         pages.append(_encode(image))
     return pages
@@ -211,33 +186,28 @@ def _status_view(view):
 
 def _player(image, x, y, name):
     from PIL import ImageDraw
+    _glass(image, (x, y, x+450, y+78), radius=19, tint=34)
     # Local initials avoid sending player names or identities to avatar services.
-    palette = ['#d9e9f3', '#f3e0e8', '#e7e1f3', '#e0ece6']
+    palette = [(75, 133, 179), (116, 106, 167), (57, 135, 139), (128, 112, 151)]
     color = palette[sum(map(ord, name)) % len(palette)]
-    draw = ImageDraw.Draw(image)
-    draw.ellipse((x, y+10, x+40, y+50), fill=color)
-    draw.line((x+54, y+62, x+422, y+62), fill='#c2cede', width=1)
+    ImageDraw.Draw(image).rounded_rectangle((x+10, y+10, x+68, y+68), radius=13, fill=color)
     initial = name[0].upper()
     if len(initial) != 1:
         initial = name[0]
-    left = x+20-_font(22).getlength(initial)/2
-    _label(image, (left, y+12), initial, 22, True)
-    _label(image, (x+54, y+10), _fit(name, _font(25), 367), 25)
+    left = x+39-_font(30).getlength(initial)/2
+    _label(image, (left, y+15), initial, 30, True)
+    _label(image, (x+84, y+19), _fit(name, _font(25), 352), 25, True)
 
 
-def _server_card(image, y, server, players, continuation, index):
-    from PIL import ImageDraw
+def _server_card(image, y, server, players, continuation):
     rows = (len(players)+1)//2
-    height = 136+rows*72
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((56, y+26, 94, y+64), radius=9, fill='#f2dfe7')
-    number = f'{index:02}'
-    _label(image, (75-_font(18).getlength(number)/2, y+29), number, 18, True, fill='#9c506e')
+    height = 136+rows*94
+    _glass(image, (42, y, 1038, y+height), radius=28)
     name = server['name'] + (' · 续' if continuation else '')
-    _label(image, (110, y+18), _fit(name, _font(32), 700), 32, True)
-    draw.ellipse((900, y+40, 910, y+50), fill='#478d70' if server['online'] else '#b9855b')
-    _label(image, (920, y+26), '已连接' if server['online'] else '离线', 22,
-           fill='#356e57' if server['online'] else '#8a5c35')
+    _label(image, (66, y+22), _fit(name, _font(35), 710), 35, True)
+    badge = f"{len(server['players'])} 人在线" if server['online'] else '桥接离线'
+    _glass(image, (824, y+24, 1014, y+78), radius=12, tint=10)
+    _label(image, (842, y+32), badge, 23, True)
     if not server['online']:
         detail = '等待游戏服务器连接'
     else:
@@ -247,22 +217,22 @@ def _server_card(image, y, server, players, continuation, index):
             detail += '  ·  '+server['version']
         if not server['players']:
             detail += '  ·  暂无玩家在线'
-    _label(image, (110, y+70), _fit(detail, _font(21), 880), 21, fill='#52647a')
+    _label(image, (68, y+82), _fit(detail, _font(22), 925), 22, fill=(228, 239, 255, 255))
     for index, name in enumerate(players):
-        _player(image, 110+(index % 2)*464, y+116+(index//2)*72, name)
+        _player(image, 66+(index % 2)*474, y+124+(index//2)*94, name)
     return height
 
 
 def _status_pages(view, title):
     servers = _status_view(view)
     batches, current, used = [], [], 0
-    for number, server in enumerate(servers, 1):
+    for server in servers:
         chunks = [server['players'][i:i+16] for i in range(0, len(server['players']), 16)] or [[]]
         for index, players in enumerate(chunks):
-            height = 136+((len(players)+1)//2)*72
-            if current and used+height+12 > 1050:
+            height = 136+((len(players)+1)//2)*94
+            if current and used+height+18 > 1090:
                 batches.append(current); current, used = [], 0
-            current.append((server, players, index > 0, number)); used += height+12
+            current.append((server, players, index > 0)); used += height+18
     if current or not batches:
         batches.append(current)
     if len(batches) > MAX_PAGES:
@@ -278,24 +248,28 @@ def _status_pages(view, title):
         raise RenderError('更新时间无效') from exc
     pages = []
     for page, cards in enumerate(batches, 1):
-        body = sum(136+((len(players)+1)//2)*72+12 for _, players, _, _ in cards)
-        height = max(760, 354+max(body, 136)+68)
+        body = sum(136+((len(players)+1)//2)*94+18 for _, players, _ in cards)
+        height = max(900, 354+body+50)
         image = _canvas(height)
+        _label(image, (44, 40), 'MYRINBOT / SERVER', 23, fill=(215, 238, 255, 255))
+        heading = '服务器在线列表' if command_key(title) == '在线' else '服务器运行状态'
+        _label(image, (44, 100), heading, 57, True)
+        _glass(image, (864, 34, 1038, 204), radius=32, tint=26)
+        _label(image, (914, 50), '在线', 25, True)
         number = str(count) if online else '—'
-        heading = '此刻在线' if command_key(title) == '在线' else '运行概况'
-        summary = f'{updated} 更新  ·  {online} / {len(servers)} 台连接  ·  {status}'
-        _cover(image, heading, summary, number, '玩家在线' if online else '等待连接')
-        _label(image, (44, 313), '服务器概览', 22, True)
-        _label(image, (880, 316), f'{len(servers)} 台服务器', 19, fill='#52647a')
-        _glass(image, (32, 354, 1048, height-68))
+        size = 65 if len(number) <= 3 else 46
+        _label(image, (951-_font(size).getlength(number)/2, 90), number, size, True)
+        for index, (label, value) in enumerate([('服务器', str(len(servers))), ('更新时间', updated), ('状态', status)]):
+            x = 42+index*338
+            _glass(image, (x, 230, x+320, 332), radius=23, tint=18)
+            _label(image, (x+22, 243), label, 23)
+            _label(image, (x+22, 275), value, 32, True)
         y = 354
         if not cards:
-            _label(image, (60, y+42), '暂无关联服务器', 28, fill='#52647a')
-        for position, (server, players, continuation, index) in enumerate(cards):
-            y += _server_card(image, y, server, players, continuation, index)+12
-            if position < len(cards)-1:
-                from PIL import ImageDraw
-                ImageDraw.Draw(image).line((56, y-6, 1024, y-6), fill='#bccada', width=1)
+            _glass(image, (42, y, 1038, y+136))
+            _label(image, (68, y+44), '暂无关联服务器', 30)
+        for server, players, continuation in cards:
+            y += _server_card(image, y, server, players, continuation)+18
         _footer(image, page, len(batches))
         pages.append(_encode(image))
     return pages
