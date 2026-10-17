@@ -217,30 +217,32 @@ def _avatar(name):
     return image.resize((50, 50), Image.Resampling.NEAREST)
 
 
-def _player(image, x, y, name):
+def _player(image, x, y, name, height=72):
     from PIL import Image, ImageDraw
-    _glass(image, (x, y, x+308, y+72), radius=17, tint=56, border=110)
-    mask = Image.new('L', (50, 50))
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, 49, 49), radius=7, fill=255)
-    image.paste(_avatar(name), (x+10, y+10), mask)
-    _label(image, (x+73, y+25), _fit(name, _font(23, True), 224), 23, True)
+    _glass(image, (x, y, x+308, y+height), radius=17, tint=56, border=110)
+    avatar_size = height-22
+    mask = Image.new('L', (avatar_size, avatar_size))
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, avatar_size-1, avatar_size-1), radius=7, fill=255)
+    image.paste(_avatar(name).resize((avatar_size, avatar_size), Image.Resampling.NEAREST), (x+10, y+10), mask)
+    _label(image, (x+avatar_size+23, y+(height-22)//2), _fit(name, _font(23, True), 274-avatar_size), 23, True)
 
 
-def _card_height(players, details):
-    rows = (len(players)+2)//3
-    return 106+(32 if details else 0)+(rows*80-8 if rows else 0)
+def _card_height(players, details, columns=3, player_height=72):
+    rows = (len(players)+columns-1)//columns
+    return 106+(32 if details else 0)+(rows*(player_height+8)-8 if rows else 0)
 
 
-def _server_card(image, y, server, players, continuation, details):
-    height = _card_height(players, details)
-    _glass(image, (42, y, 1038, y+height), radius=30)
+def _server_card(image, y, server, players, continuation, details, left=42, width=996, columns=3, player_height=72):
+    height = _card_height(players, details, columns, player_height)
+    right = left+width
+    _glass(image, (left, y, right, y+height), radius=30)
     name = server['name'] + (' · 续' if continuation else '')
     badge = f"{len(server['players'])} 人在线" if server['online'] else '离线'
     badge_font = _font(20, True)
     badge_width = max(111, math.ceil(badge_font.getlength(badge))+28)
-    badge_left = 1014-badge_width
-    _label(image, (66, y+30), _fit(name, _font(32, True), badge_left-90), 32, True)
-    _glass(image, (badge_left, y+22, 1014, y+67), radius=8, tint=0, border=70, shade=36)
+    badge_left = right-24-badge_width
+    _label(image, (left+24, y+30), _fit(name, _font(32, True), badge_left-left-48), 32, True)
+    _glass(image, (badge_left, y+22, right-24, y+67), radius=8, tint=0, border=70, shade=36)
     _label(image, (badge_left+(badge_width-badge_font.getlength(badge))/2, y+35), badge, 20, True)
     if details:
         detail = '等待游戏服务器连接'
@@ -249,21 +251,41 @@ def _server_card(image, y, server, players, continuation, details):
                       else f"{len(server['players'])} 位玩家")
             if server['version']:
                 detail += '  ·  '+server['version']
-        _label(image, (66, y+76), _fit(detail, _font(20), 945), 20)
+        _label(image, (left+24, y+76), _fit(detail, _font(20), width-51), 20)
     for index, name in enumerate(players):
-        _player(image, 66+(index % 3)*324, y+84+(32 if details else 0)+(index//3)*80, name)
+        _player(image, left+24+(index % columns)*324,
+                y+84+(32 if details else 0)+(index//columns)*(player_height+8), name, player_height)
     return height
+
+
+def _online_summary(image, count, online, servers, updated, status):
+    _glass(image, (42, 44, 334, image.height-44), radius=30)
+    _label(image, (66, 70), 'Myrinbot', 21, True, fill='#d6f3ee')
+    _label(image, (66, 112), '服务器', 38, True)
+    _label(image, (66, 160), '在线列表', 46, True)
+    _glass(image, (62, 226, 314, 346), radius=24, tint=14)
+    _label(image, (82, 244), '当前在线', 20, True)
+    number = str(count) if online else '—'
+    size = 54 if len(number) <= 5 else 42
+    _label(image, (82, 278), number, size, True)
+    for index, (label, value) in enumerate([('服务器', str(servers)), ('更新时间', updated), ('状态', status)]):
+        y = 366+index*76
+        _glass(image, (62, y, 314, y+62), radius=18, tint=12)
+        _label(image, (82, y+23), label, 20, True)
+        _label(image, (294-_font(28, True).getlength(value), y+17), value, 28, True)
 
 
 def _status_pages(view, title):
     servers = _status_view(view)
     details = command_key(title) != '在线'
+    columns, player_height = (3, 72) if details else (2, 68)
+    body_limit = 1228 if details else 1512
     batches, current, used = [], [], 0
     for server in servers:
         chunks = [server['players'][i:i+36] for i in range(0, len(server['players']), 36)] or [[]]
         for index, players in enumerate(chunks):
-            height = _card_height(players, details)
-            if current and used+height+19 > 1228:
+            height = _card_height(players, details, columns, player_height)
+            if current and used+height+19 > body_limit:
                 batches.append(current); current, used = [], 0
             if current:
                 used += 19
@@ -283,7 +305,20 @@ def _status_pages(view, title):
         raise RenderError('更新时间无效') from exc
     pages = []
     for page, cards in enumerate(batches, 1):
-        body = sum(_card_height(players, details) for _, players, _ in cards)+max(0, len(cards)-1)*19
+        body = sum(_card_height(players, details, columns, player_height) for _, players, _ in cards)+max(0, len(cards)-1)*19
+        if not details:
+            image = _canvas(max(648, 44+max(body, 106)+44))
+            _online_summary(image, count, online, len(servers), updated, status)
+            y = 44
+            if not cards:
+                _glass(image, (358, y, 1038, y+106))
+                _label(image, (382, y+38), '暂无关联服务器', 28)
+            for server, players, continuation in cards:
+                y += _server_card(image, y, server, players, continuation, False,
+                                  left=358, width=680, columns=columns, player_height=player_height)+19
+            _footer(image, page, len(batches))
+            pages.append(_encode(image))
+            continue
         height = max(560, 328+max(body, 106)+44)
         image = _canvas(height)
         _label(image, (42, 79), 'Myrinbot', 21, True, fill='#d6f3ee')
