@@ -2,15 +2,19 @@ import asyncio
 from base64 import b64decode
 from copy import deepcopy
 import json
+from io import BytesIO
 from pathlib import Path
+import struct
 import tempfile
 import time
 import unittest
+import zlib
 from unittest.mock import patch
 from unittest.mock import AsyncMock
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
+from PIL import Image
 
 from starbridge.app import create_app, STATE
 from starbridge.bot import Bot
@@ -19,7 +23,7 @@ from starbridge.qq_identity import official_id, official_parts
 from starbridge.qq_official import QQOfficial
 from starbridge.settings import validate, runtime_config, serialize, ConfigFile
 from starbridge.storage import Store
-from starbridge.reply_images import render_pages
+from starbridge.reply_images import MAX_PNG, render_pages
 from test_settings import full_config
 
 
@@ -81,7 +85,9 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
         self.vendor_error = None
         self.uploads = []; self.file_info = 'fixture-file-info'
         self.media_error = None
-        app = web.Application()
+        self.heartbeat_interval = 10000
+        # A 2 MiB PNG grows to nearly 2.8 MiB inside JSON base64.
+        app = web.Application(client_max_size=4 * 1024 * 1024)
         app.router.add_post("/app/getAppAccessToken", self.issue_token)
         app.router.add_get("/gateway", self.gateway)
         app.router.add_get("/socket", self.socket)
@@ -112,7 +118,7 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
 
     async def socket(self, request):
         ws = web.WebSocketResponse(); await ws.prepare(request); self.sockets.append(ws)
-        await ws.send_json({"op":10,"d":{"heartbeat_interval":100}})
+        await ws.send_json({"op":10,"d":{"heartbeat_interval":self.heartbeat_interval}})
         identify = await ws.receive_json(); await self.identify.put(identify)
         if identify["op"] == 6:
             await ws.send_json({"op":0,"s":4,"t":"RESUMED","d":""})
@@ -149,6 +155,27 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(b64decode(self.uploads[0]['file_data']), png)
         await self.transport.send_group(official_id('qg', APP, GROUP), '继续文字')
         self.assertEqual(self.messages[-1]['body']['msg_seq'], 2)
+
+    async def test_maximum_png_upload_survives_base64_expansion_and_larger_files_are_rejected(self):
+        output = BytesIO()
+        Image.new('RGB', (1, 1), 'black').save(output, 'PNG')
+        png = output.getvalue()
+        # Add a valid ancillary text chunk before IEND to reach the precise upload boundary.
+        content = b'padding\x00' + b'x' * (MAX_PNG - len(png) - 20)
+        chunk = b'tEXt' + content
+        png = png[:-12] + struct.pack('>I', len(content)) + chunk + struct.pack('>I', zlib.crc32(chunk)) + png[-12:]
+        self.assertEqual(len(png), MAX_PNG)
+        with Image.open(BytesIO(png)) as image:
+            image.verify()
+        self.transport.dispatch(*self.event('在线', mid='maximum-image'))
+        await self.transport.send_group_image(official_id('qg', APP, GROUP), png)
+        self.assertEqual(b64decode(self.uploads[0]['file_data']), png)
+        self.assertGreater(len(json.dumps(self.uploads[0]).encode()), 1024 * 1024)
+        self.assertEqual(self.messages[-1]['body']['msg_type'], 7)
+        with self.assertRaises(ValueError):
+            await self.transport.send_group_image(official_id('qg', APP, GROUP), png + b'x')
+        self.assertEqual(len(self.uploads), 1)
+        self.assertEqual(len(self.messages), 1)
 
     async def test_image_upload_requires_matching_app_reply_context_and_valid_file_info(self):
         png = render_pages('服务器在线', '在线')[0]
@@ -201,7 +228,17 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.tokens, [{"appId":APP,"clientSecret":"fixture-private-secret"}])
         self.assertEqual(await asyncio.gather(*(self.transport.token() for _ in range(8))), ["fixture-access-token"]*8)
         self.assertEqual(len(self.tokens),1)
-        self.transport.token_expires = 0; await asyncio.sleep(.25)
+        # Reconnect with an explicit short interval for this heartbeat test;
+        # image-rendering tests should not depend on a 100 ms fake gateway clock.
+        self.heartbeat_interval = 1000
+        await self.sockets[-1].send_json({"op": 7})
+        resume = await asyncio.wait_for(self.identify.get(), 3)
+        self.assertEqual(resume["op"], 6)
+        self.transport.token_expires = 0
+        async def refreshed():
+            while len(self.tokens) < 2 or not self.transport.connected:
+                await asyncio.sleep(.02)
+        await asyncio.wait_for(refreshed(), 5)
         self.assertGreaterEqual(len(self.tokens),2); self.assertTrue(self.transport.connected)
 
     async def test_event_normalization_and_reply_message_reference(self):
@@ -249,6 +286,46 @@ class OfficialTransportTests(unittest.IsolatedAsyncioTestCase):
         await self.sockets[-1].send_json({"op":7})
         resume=await asyncio.wait_for(self.identify.get(),3)
         self.assertEqual(resume["op"],6); self.assertEqual(resume["d"]["seq"],3)
+
+    async def test_close_during_heartbeat_cleanup_preserves_parent_cancellation_and_never_reconnects(self):
+        await self.transport.close()
+        self.transport = QQOfficial(official_config()["qq_official"], self.store, self.events)
+        heartbeat_started, cleanup_entered, cleanup_release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        async def controlled_heartbeat(ws, interval):
+            heartbeat_started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cleanup_entered.set()
+                await cleanup_release.wait()
+
+        with patch.object(self.transport, "heartbeat", new=controlled_heartbeat):
+            await self.transport.start()
+            await asyncio.wait_for(self.wait_connected(), 3)
+            await asyncio.wait_for(heartbeat_started.wait(), 1)
+            await self.sockets[-1].send_json({"op": 7})
+            await asyncio.wait_for(cleanup_entered.wait(), 1)
+            # The connection is now awaiting a cancelled child heartbeat. Its own
+            # cancellation through close must not be mistaken for that child.
+            connections = len(self.sockets)
+            close_task = asyncio.create_task(self.transport.close())
+            try:
+                done, _ = await asyncio.wait({close_task}, timeout=2)
+                self.assertIn(close_task, done, "QQ close swallowed parent cancellation and kept reconnecting")
+                await close_task
+                self.assertIsNone(self.transport.task)
+                self.assertFalse(self.transport.connected)
+                await asyncio.sleep(1.1)
+                self.assertEqual(len(self.sockets), connections)
+            finally:
+                cleanup_release.set()
+                if not close_task.done():
+                    # Ensure a failed regression assertion cannot leave a reconnect
+                    # loop alive and hang unittest's event-loop shutdown.
+                    with patch.object(self.transport, "connect", new=AsyncMock(side_effect=asyncio.CancelledError)):
+                        close_task.cancel()
+                        await asyncio.wait_for(close_task, 3)
 
     async def test_binding_and_admin_commands_use_namespaced_identity(self):
         cfg=official_config(); cfg["app"]["database"]=":memory:"; cfg["onebot"]["admins"]=list(cfg["qq_official"]["admins"])

@@ -1,6 +1,6 @@
 # Bot 更新与回退
 
-当前文档对应 **Bot v0.6.23**；面板更新协议从 0.6.1 起可用。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。项目的公开源码和正式 Release 位于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。
+当前文档对应 **Bot v0.6.24**；面板更新协议从 0.6.1 起可用。进入 **设置 → 更新与回退**，只允许服主操作。默认使用 GitHub 正式版本，也可上传 ZIP 或选择自定义 HTTPS 更新源。项目的公开源码和正式 Release 位于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 [AGPL-3.0-or-later](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。
 
 v0.6.10 正式采用 `Myrinbot-*` 附件名称，同时为旧升级器保留内容相同的 `StarBridge-Windows-0.6.10.zip`。本版统一面板和官网的黑白 M 机器人图标，新安装的默认端口为 5800；更新不修改已有 `config.toml` 或端口。部署包内部的 `StarBridge/` 根目录、`update.json` 和受管理文件名保持原协议；历史附件名称也保持原记录。具体关系见 [项目名称与兼容说明](project-name.md)。
 
@@ -43,8 +43,8 @@ Windows 部署 ZIP 使用 `星桥.bat` 启动或重启，源码推荐 `Myrinbot.
 
 ```json
 {
-  "version": "0.6.23",
-  "url": "https://downloads.example.com/Myrinbot-Windows-0.6.23.zip",
+  "version": "0.6.24",
+  "url": "https://downloads.example.com/Myrinbot-Windows-0.6.24.zip",
   "sha256": "替换为部署包的64位小写SHA256",
   "notes": "本次更新说明"
 }

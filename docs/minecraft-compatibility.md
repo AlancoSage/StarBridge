@@ -1,6 +1,6 @@
 # Minecraft 版本兼容与 Java 选择
 
-Myrinbot Bot **0.6.23** 配套游戏桥接插件 **0.5.3** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
+Myrinbot Bot **0.6.24** 配套游戏桥接插件 **0.5.4** 采用**通用兼容构建**：Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.4.jar`，无需为 Folia 单独下载模组。插件最低 Java 8，游戏服务端仍使用自身要求的 Java。
 
 ## 安装与升级
 
@@ -9,11 +9,11 @@ Myrinbot Bot **0.6.23** 配套游戏桥接插件 **0.5.3** 采用**通用兼容�
 3. 保留 `plugins/StarBridge/config.yml` 的地址、服务器 ID 和令牌，重新启动游戏服务器。
 4. 在 Bot 面板确认桥接在线，检查聊天、`/qbind` 和玩家管理；开启游戏认证的服务器还需检查 `/l`、`/ql` 和未登录时的操作限制。
 
-无需修改 Bot 的 Python 环境，也不需要安装显卡驱动。Folia 至少使用 0.5.2 兼容构建，推荐当前 0.5.3；此前的 0.5.0 未提供 Folia 调度适配。
+无需修改 Bot 的 Python 环境，也不需要安装显卡驱动。Folia 至少使用 0.5.2 兼容构建，推荐当前 0.5.4；此前的 0.5.0 未提供 Folia 调度适配。
 
 ## Folia 接入
 
-1. 在 Bot 面板「接入空间 → 服务器」保存服务器 ID、连接令牌和关联群，下载 `Myrinbot-0.5.3.jar` 与这台服务器的 `config.yml`。
+1. 在 Bot 面板「接入空间 → 服务器」保存服务器 ID、连接令牌和关联群，下载 `Myrinbot-0.5.4.jar` 与这台服务器的 `config.yml`。
 2. 完整停止 Folia，把 JAR 放入 `plugins/`，配置放入 `plugins/StarBridge/config.yml`。只保留一份 Myrinbot 插件。
 3. 用该 Folia 构建要求的 Java 启动游戏服；本次实服验证为 **Folia 1.21.8 正式 build 6 / Java 21**。Java 8 字节码不表示 Folia 服务端能用 Java 8 启动。
 4. 在 Bot 面板确认桥接在线，检查玩家档案、双向聊天、`/qbind` 与管理回执。

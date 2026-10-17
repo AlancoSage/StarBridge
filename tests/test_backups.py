@@ -189,6 +189,56 @@ class BackupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 409, await response.text())
         self.assertFalse(self.state.get('maintenance'))
 
+    async def test_old_backup_without_native_recovery_tables_restores_with_recovery_disabled(self):
+        _, payload = await self.backup()
+        def old_schema(db):
+            db.execute('DROP TABLE native_password_settings')
+            db.execute('DROP TABLE native_password_proofs')
+        payload = self.changed_database_backup(payload, old_schema)
+        preview = await self.preview(payload)
+        await self.schedule(preview)
+        await self.client.close()
+        self.assertTrue(await asyncio.to_thread(apply_pending_restore, self.path))
+        self.client = TestClient(TestServer(create_app(load(self.path), self.path)))
+        await self.client.start_server()
+        self.state = self.client.app[STATE]
+        self.assertEqual(self.state['native_passwords'].settings, {'servers': {}})
+        self.assertEqual(self.state['store'].db.execute('SELECT count(*) FROM native_password_proofs').fetchone()[0], 0)
+        self.assertEqual(self.state['store'].binding('survival', '123456789')['uuid'], self.player)
+
+    async def test_native_password_restore_preserves_policy_but_requires_fresh_native_binding_proof(self):
+        recovery = self.state['native_passwords']
+        policy = {'servers': {'survival': {'platform': 'bukkit', 'engine': 'authme'}}}
+        recovery.save(policy, recovery.revision)
+        code = self.state['store'].issue_code('survival', self.player, 'Steve')
+        recovery.record_code('survival', self.player, 'Steve', code, 'bukkit', 'authme', 'a' * 64)
+        self.assertIsNotNone(recovery.renew('survival', '123456789', code))
+        self.assertEqual(self.state['store'].db.execute('SELECT count(*) FROM native_password_proofs').fetchone()[0], 1)
+        _, payload = await self.backup()
+        preview = await self.preview(payload)
+        await self.schedule(preview)
+        await self.client.close()
+        self.assertTrue(await asyncio.to_thread(apply_pending_restore, self.path))
+        self.client = TestClient(TestServer(create_app(load(self.path), self.path)))
+        await self.client.start_server()
+        self.state = self.client.app[STATE]
+        self.assertEqual(self.state['native_passwords'].settings, policy)
+        self.assertEqual(self.state['store'].db.execute('SELECT count(*) FROM native_password_proofs').fetchone()[0], 0)
+        self.assertIsNotNone(self.state['store'].binding('survival', '123456789'))
+        with self.assertRaises(ValueError):
+            self.state['native_passwords']._binding('survival', '123456789')
+
+    async def test_native_password_policy_change_invalidates_existing_restore_preview(self):
+        _, payload = await self.backup()
+        preview = await self.preview(payload)
+        recovery = self.state['native_passwords']
+        recovery.save({'servers': {'survival': {'platform': 'bukkit', 'engine': 'authme'}}}, recovery.revision)
+        response = await self.client.post('/api/backups/restore', headers=self.admin,
+                                         json={'preview_id': preview['preview_id']})
+        self.assertEqual(response.status, 409, await response.text())
+        self.assertFalse(self.state.get('maintenance'))
+        self.assertFalse((self.base / 'data/restore-job.json').exists())
+
     async def test_backup_owner_validation_rejects_reserved_team_id_and_username_collision(self):
         await self.state['admin_accounts'].save({'username': 'Helper', 'password': 'Helper-password-2026'})
         response = await self.client.post('/api/admin-auth/setup', headers=self.admin,

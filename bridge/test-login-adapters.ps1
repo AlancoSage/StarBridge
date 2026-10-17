@@ -16,7 +16,7 @@ $sources += Join-Path $PSScriptRoot 'src\login-test\java\org\bukkit\entity\Playe
 $sources += Join-Path $PSScriptRoot 'src\login-test\java\org\bukkit\World.java'
 & "$JavaHome\bin\javac.exe" --release 17 -encoding UTF-8 -cp "$gson;$api;$classes" -d $tests @sources
 if ($LASTEXITCODE -ne 0) { throw 'Login adapter fixture compilation failed' }
-foreach ($fixture in @('NLoginLinkCheck', 'LoginSecurityLinkCheck', 'LibreLoginLinkCheck')) {
+foreach ($fixture in @('NLoginLinkCheck', 'LoginSecurityLinkCheck', 'LibreLoginLinkCheck', 'PasswordResetCheck')) {
     & "$JavaHome\bin\java.exe" -ea -cp "$tests;$classes;$gson;$api" "cn.starbridge.$fixture"
     if ($LASTEXITCODE -ne 0) { throw "$fixture failed" }
 }

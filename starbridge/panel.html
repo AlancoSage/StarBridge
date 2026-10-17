@@ -153,6 +153,8 @@
 <div class="field"><label for="authentication-qq_cooldown">QQ 请求间隔（秒）</label><input id="authentication-qq_cooldown" type="number" min="15" max="300" required></div>
 </div><div class="registration-save"><p id="authentication-draft-label" class="hint">游戏登录设置单独保存。</p><button id="authentication-save" type="submit">保存游戏登录设置</button></div></form></div>
 <div class="panel"><h2>玩家如何登录</h2><p class="hint">密码方式：打开注册网页，验证邮箱并设置密码 → 进服输入 /login &lt;密码&gt; 或 /l &lt;密码&gt;。</p><p class="hint">QQ 方式：使用已有的游戏 QQ 绑定 → 进服输入 /qqlogin 或 /ql → 私聊机器人回复确认指令。确认过期、玩家重连或 QQ 拒绝时不会放行。</p><p class="hint">未登录时限制移动、传送、聊天、命令和物品操作；超时会断开连接。每次重新进服都需登录。认证服务断开时不会放行新的登录。</p><div class="extension-actions" style="margin-top:16px"><a href="/register" target="_blank" rel="noopener" class="link">注册网页 ↗</a><a href="/account-password" target="_blank" rel="noopener" class="link">设置 / 重置游戏登录密码 ↗</a><button type="button" id="authentication-download" class="secondary small">下载 Paper / Spigot / Folia 插件</button><label class="field">模组游戏端版本<select id="authentication-mod-version" aria-label="模组游戏端版本"><option value="forge/1.20.1">Forge 1.20.1 · Java 17</option></select></label><button type="button" id="authentication-forge-download" class="secondary small">下载所选模组</button><button type="button" id="authentication-forge-guide" class="secondary small">模组安装文档</button><button type="button" id="authentication-guide" class="secondary small">游戏登录接入文档</button></div></div>
+<div class="panel"><div class="section-head"><div><h2>找回原登录插件密码</h2><p class="muted">已验证绑定的玩家可在 QQ 私聊中重置自己的游戏密码。</p></div><button id="native-password-reload" class="secondary small" type="button">重新载入</button></div>
+<div id="native-password-notice" class="notice" role="status"></div><form id="native-password-form"><div id="native-password-servers" class="grid"></div><p class="hint">默认关闭。支持 AuthMe（Bukkit）、LibreLogin（Paper / Velocity）、LimboAuth（Velocity）。先完成原插件登录，输入 /qbind 后用自己的 QQ 私聊 /验证绑定 服务器ID 验证码；旧绑定也需验证，无需解绑。仅重置离线玩家，保留二次验证；AuthMe 需关闭原生 IP 会话登录。QQ 官机群与私聊身份不同，暂不开放此找回方式。</p><div class="registration-save"><p id="native-password-draft" class="hint">玩家私聊发送：/重置密码 服务器ID</p><button type="submit">保存密码找回设置</button></div></form><div class="extension-actions" style="margin-top:16px"><button id="native-password-velocity" type="button" class="secondary small">下载 Velocity 密码找回插件</button><button id="native-password-guide" type="button" class="secondary small">密码找回接入文档</button></div></div>
 </section>
 <section class="view" id="view-extensions" hidden>
 <div class="panel"><div class="section-head"><div><h2>社群回复与通知</h2><p class="muted">管理文字问答、定时工作与声明式消息规则。</p></div><div class="extension-actions"><button id="extension-refresh" class="secondary small">重新载入</button><button id="extension-scan" class="secondary small">扫描目录</button><button id="extension-import">＋ 导入插件</button></div></div>
@@ -271,6 +273,7 @@
 <script src="/operations-panel.js"></script>
 <script src="/registration-panel.js"></script>
 <script src="/authentication-panel.js"></script>
+<script src="/native-password-panel.js"></script>
 <script src="/backup-panel.js"></script>
 <script src="/website-panel.js"></script>
 <script src="/enhancement-panel.js"></script>

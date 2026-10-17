@@ -186,6 +186,40 @@ def validate_native_mod(path, item, mod_version, prefix='StarBridge'):
         raise ValueError(f'游戏端元数据或 JAR 无效：{path.name}') from error
 
 
+def proxy_assets(root):
+    """Only releases declaring the proxy module require its separately deployable JAR."""
+    source = root / 'starbridge/__init__.py'
+    try:
+        version = source_literal(source, '__velocity_version__')
+    except ValueError:
+        return []
+    if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        raise ValueError('Velocity 插件版本错误')
+    path = root / 'bridge/target' / f'{artifact_prefix(root)}-Velocity-{version}.jar'
+    if not path.is_file():
+        raise ValueError('请先构建 Velocity 密码找回插件：bridge-velocity/build.py')
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            metadata = json.loads(archive.read('velocity-plugin.json'))
+            if (len(names) != len(set(names)) or archive.testzip() is not None
+                    or metadata.get('id') != 'myrinbot-velocity' or metadata.get('version') != version
+                    or metadata.get('main') != 'cn.starbridge.velocity.MyrinbotVelocity'
+                    or not all('cn/starbridge/velocity/' + name + '.class' in names for name in (
+                        'MyrinbotVelocity', 'BridgeHttp', 'BridgeConfig', 'NativeAuth',
+                        'LimboAuthAdapter', 'LibreLoginAuth', 'Ownership'))
+                    or 'config.properties' not in names):
+                raise ValueError('Velocity 插件元数据或内容不一致')
+            for name in names:
+                if name.endswith('.class'):
+                    content = archive.read(name)
+                    if content[:4] != b'\xca\xfe\xba\xbe' or not 45 <= int.from_bytes(content[6:8], 'big') <= 61:
+                        raise ValueError('Velocity 插件需要兼容 Java 17')
+    except (KeyError, zipfile.BadZipFile, UnicodeError, json.JSONDecodeError, AttributeError) as error:
+        raise ValueError('Velocity 插件元数据或 JAR 无效') from error
+    return [path]
+
+
 def native_assets(root):
     """Return exactly the native assets declared by this release's source catalog."""
     catalog_file = root/'starbridge/game_bridges.py'
@@ -249,6 +283,7 @@ def build(root=ROOT):
     assets = [bot,website,bridge]
     # Read only this release's source catalog; historical checkouts stay complete.
     assets.extend(native_assets(root))
+    assets.extend(proxy_assets(root))
     # Existing GitHub clients look for the old Windows asset name. Keep identical
     # aliases for every download so installed integrations can still find them.
     if prefix != 'StarBridge':

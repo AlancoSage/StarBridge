@@ -52,6 +52,7 @@ class Bot:
         self.started = time.time()
         self.plugins = None
         self.authentication = None
+        self.native_passwords = None
         self.registration = None
         self.operations = None
 
@@ -146,6 +147,27 @@ class Bot:
                 except ValueError as exc:
                     reply = "[×] " + str(exc)
                 await self.onebot.send_private(qq, reply)
+            elif command in ("/重置密码", "/确认重置", "/验证绑定") and self.native_passwords:
+                # Keep full credential length here, never pass recovery input to logs or relay.
+                full = plain_message(event.get("message", ""))
+                if len(full) > 250:
+                    reply = "密码找回指令过长，请检查私聊格式。"
+                else:
+                    _, _, argument = full.partition(" ")
+                    try:
+                        if command == "/验证绑定":
+                            pieces = argument.split()
+                            if len(pieces) != 2:
+                                raise ValueError("请完整发送：/验证绑定 服务器ID 验证码")
+                            reply = self.native_passwords.verify_binding(qq, *pieces)
+                        else:
+                            reply = self.native_passwords.private_command(qq, command, argument)
+                    except ValueError as exc:
+                        reply = "[×] " + str(exc)
+                try:
+                    await self.onebot.send_private(qq, reply)
+                except (ConnectionError, RuntimeError, TimeoutError):
+                    self.store.audit("authentication", "密码找回私聊回复投递失败；未自动重试")
             return
         server = self.groups.get(group)
         if not server or not valid_user(qq) or qq == str(event.get("self_id")):
@@ -171,8 +193,18 @@ class Bot:
         command, _, arg = text.partition(" ")
         arg = arg.strip()
         reply = None
-        if command in ("帮助", "help", "/help"):
+        if re.match(r"^/?(?:重置密码|确认重置|验证绑定)", text) or (re.match(r"^/?绑定", text) and command != "绑定"):
+            private_binding = bool(re.match(r"^/?(?:验证绑定|绑定)", text))
+            if private_binding and self.native_passwords:
+                self.native_passwords.discard_exposed(text)
+            if private_binding:
+                reply = "绑定验证请私聊机器人。已在群里公开的验证码已作废，请在游戏重新输入 /qbind 获取，不要发群或转发。"
+            else:
+                reply = self.native_passwords.group_hint(sid) if self.native_passwords else "密码找回请使用私聊，请勿在群内发送密码。"
+        elif command in ("帮助", "help", "/help"):
             reply = HELP
+            if self.native_passwords and sid in self.native_passwords.settings["servers"]:
+                reply += "\n/重置密码 — 私聊找回本人已验证绑定账号的原生密码"
             if official:
                 reply = reply.replace("普通群消息会同步到游戏。", "平台下发的 @机器人群消息会同步到游戏。")
                 reply += "\n官机群内请先 @机器人；接入信息 — 查看本群和用户身份。\n注册请使用社区注册网页；群名片和成员退群事件不由官机提供。"
@@ -194,6 +226,8 @@ class Bot:
             else:
                 try:
                     row = self.store.bind(sid, qq, arg)
+                    if self.native_passwords:
+                        self.native_passwords.discard_code(sid, arg)
                     reply = f"绑定成功：{row['name']}（{server['name']}）"
                     self.store.audit("binding", f"{qq} 绑定 {sid}/{row['name']}")
                     if not official and self.cfg["features"].get("set_group_card"):
@@ -202,7 +236,11 @@ class Bot:
                         except (RuntimeError, ConnectionError, TimeoutError):
                             reply += "\n群名片更新失败，请确认机器人有管理员权限。"
                 except ValueError as exc:
+                    if self.native_passwords:
+                        self.native_passwords.discard_code(sid, arg)
                     reply = str(exc)
+            if self.native_passwords:
+                self.native_passwords.discard_exposed(text)
         elif command == "我的绑定":
             row = self.store.binding(sid, qq)
             reply = f"你的绑定：{row['name']}（{server['name']}）" if row else "尚未绑定，请在游戏中输入 /qbind。"

@@ -13,6 +13,7 @@ import sqlite3
 import stat
 import tempfile
 import time
+from types import SimpleNamespace
 import tomllib
 import uuid
 import zipfile
@@ -20,6 +21,7 @@ import zlib
 
 from . import __version__
 from .authentication import Authentication, validate_settings as validate_auth
+from .native_passwords import NativePasswords, validate_settings as validate_native_passwords
 from .catalog import Catalog
 from .extensions import (atomic_json, encode, invalid_constant, validate_plugin, setting_value,
                          IDENTIFIER, BUILTIN_PLUGINS, MAX_PLUGINS, MAX_FILE, MAX_STATE, permission_value)
@@ -38,7 +40,7 @@ FILES = {"config.toml": 256 * 1024, "database.sqlite3": MAX_DATABASE,
          "data/authentication-settings.json": 32 * 1024, "data/plugin-state.json": MAX_STATE,
          "data/website-settings.json": 32 * 1024}
 REQUIRED = {"config.toml", "database.sqlite3"}
-TRANSIENT = ("codes", "jobs", "seen", "registration_challenges", "registration_sessions", "password_challenges")
+TRANSIENT = ("codes", "jobs", "seen", "registration_challenges", "registration_sessions", "password_challenges", "native_password_proofs")
 
 
 class BackupError(ValueError):
@@ -123,7 +125,7 @@ def operations_revision(db):
     settings = [list(row) for row in db.execute("SELECT * FROM operations_settings ORDER BY key")] if "operations_settings" in tables else []
     tasks = [list(row) for row in db.execute("SELECT id,definition,revision FROM scheduled_tasks ORDER BY id")] if "scheduled_tasks" in tables else []
     extra = {table:[list(row) for row in db.execute('SELECT * FROM '+table+' ORDER BY 1')]
-             for table in ('runtime_settings','admin_users','admin_owner','plugin_versions') if table in tables}
+             for table in ('runtime_settings','admin_users','admin_owner','plugin_versions','native_password_settings') if table in tables}
     return hashlib.sha256(encode([settings, tasks, extra])).hexdigest()
 
 
@@ -136,6 +138,7 @@ def trusted_schema():
             Catalog(store)
             registration = Registration(directory, store)
             Authentication(directory, None, registration)
+            NativePasswords(SimpleNamespace(store=store))
             _trusted_schema = schema(store.db)
             store.close()
     return _trusted_schema
@@ -147,7 +150,8 @@ def check_database(path):
         actual, expected = schema(db), trusted_schema()
         optional = {"operations_settings", "scheduled_tasks", "schedule_runs", "whitelist_applications",
                     "admin_users", "admin_owner", "admin_sessions", "runtime_settings", "health_alerts", "server_samples",
-                    "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages", "sanctions", "sanction_targets"}
+                    "server_daily_players", "server_activity", "plugin_versions", "tickets", "ticket_messages", "sanctions", "sanction_targets",
+                    "native_password_settings", "native_password_proofs"}
         present = {entry[1] for entry in actual}
         compatible = [entry for entry in expected if entry[2] not in optional or entry[2] in present]
         if actual != compatible:
@@ -174,6 +178,11 @@ def check_database(path):
                 else:
                     from .github_updates import update_settings
                     update_settings(setting)
+        if "native_password_settings" in present:
+            for row in db.execute('SELECT id,value FROM native_password_settings'):
+                if row[0] != 1:
+                    raise BackupError('密码找回设置格式错误')
+                validate_native_passwords(json.loads(row[1]))
         if "runtime_settings" in present:
             from .runtime_features import validate_setting
             for key,value,revision in db.execute('SELECT * FROM runtime_settings'):
@@ -604,7 +613,10 @@ def apply_pending_restore(config_path):
         job.update(phase="applying", original_files=list(files))
         atomic_json(journal, job)
         with closing(sqlite3.connect(incoming / "database.sqlite3")) as db, db:
-            for table in TRANSIENT: db.execute("DELETE FROM " + table)
+            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+            for table in TRANSIENT:
+                if table in tables:
+                    db.execute("DELETE FROM " + table)
             db.execute("UPDATE player_actions SET status='cancelled',detail='备份恢复，待执行操作已撤销' WHERE status='pending'")
             tables = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
             if "admin_sessions" in tables: db.execute('DELETE FROM admin_sessions')

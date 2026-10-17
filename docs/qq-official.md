@@ -1,6 +1,6 @@
 # QQ 官方机器人接入
 
-适用于 Myrinbot Bot **0.6.23**。此适配器使用 QQ 开放平台的 AppID / AppSecret、官方 REST 接口和 WebSocket Gateway，接收群聊与 C2C 单聊事件。应用需要具备对应的平台权限；此版本没有 HTTP Webhook 回调适配器。
+适用于 Myrinbot Bot **0.6.24**。此适配器使用 QQ 开放平台的 AppID / AppSecret、官方 REST 接口和 WebSocket Gateway，接收群聊与 C2C 单聊事件。应用需要具备对应的平台权限；此版本没有 HTTP Webhook 回调适配器。
 
 ## 配置步骤
 

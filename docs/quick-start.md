@@ -1,6 +1,6 @@
 # 快速开始：完成第一次群服联动
 
-适用版本：Bot **0.6.23**，Paper / Spigot / Folia 插件 **0.5.3**。
+适用版本：Bot **0.6.24**，Paper / Spigot / Folia 插件 **0.5.4**。
 
 本页以 OneBot 接入为例。使用 QQ 官机时，Bot 与游戏端安装相同，QQ 连接部分改按 [QQ 官方机器人接入](qq-official.md) 操作；官机群内发送指令和联动消息需要先 @机器人。
 
@@ -45,10 +45,10 @@
 
 ### 3. 安装 Minecraft 游戏端
 
-Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.3.jar`：
+Paper / Spigot / Folia 使用同一个 `Myrinbot-0.5.4.jar`：
 
 1. 完整停止游戏服务器。
-2. 在服务器卡片展开「安装插件 · 下载连接配置」，点击「下载新版插件 JAR」；部署包中的路径为 `bridge/target/StarBridge-0.5.3.jar`。将 JAR 放入游戏服务器的 `plugins/`，替换旧版 Myrinbot JAR。
+2. 在服务器卡片展开「安装插件 · 下载连接配置」，点击「下载新版插件 JAR」；部署包中的路径为 `bridge/target/StarBridge-0.5.4.jar`。将 JAR 放入游戏服务器的 `plugins/`，替换旧版 Myrinbot JAR。
 3. 在同一卡片填写「主程序访问地址」。同机部署为 `http://127.0.0.1:5800`；分开部署填写游戏服可访问的 Bot 地址。
 4. 点击「下载插件 config.yml」，将下载的 `Myrinbot-survival-config.yml`（文件名随服务器 ID 变化）重命名为 `config.yml`，放到游戏服的 `plugins/StarBridge/`。目录不存在时先创建。
 5. 启动游戏服务器，回到面板「总览」，确认对应服务器显示「在线」。

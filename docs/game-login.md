@@ -1,6 +1,8 @@
 # Myrinbot 游戏登录
 
-适用：**Myrinbot Bot 0.6.10 · 游戏插件 0.5.3 通用兼容构建**。Spigot / Paper / Folia 使用同一个 JAR，插件最低 Java 8，服务端及第三方插件按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。Paper / Spigot 可选择下面列出的登录插件，LibreLogin 使用普通 Paper；Folia 使用 Myrinbot 内置登录。
+原登录插件的“忘记密码”请使用独立的[QQ 密码找回](native-password-reset.md)，支持 AuthMe、LimboAuth 和 LibreLogin，默认关闭。它与本页的进服登录开关分别配置。
+
+适用：**Myrinbot Bot 0.6.24 · 游戏插件 0.5.4 通用兼容构建**。Spigot / Paper / Folia 使用同一个 JAR，插件最低 Java 8，服务端及第三方插件按自身要求使用 Java。具体检查范围与差异见 [Minecraft 版本兼容](minecraft-compatibility.md)。Paper / Spigot 可选择下面列出的登录插件，LibreLogin 使用普通 Paper；Folia 使用 Myrinbot 内置登录。
 
 **Forge / NeoForge** 按 Minecraft 版本下载独立 JAR，放在 `mods/`，连接配置放在 `config/`。只支持内置或自动引擎；密码、QQ 确认与 `/l`、`/ql` 使用方式相同。支持版本、Java 要求和安装步骤见 [Forge 与 NeoForge 游戏端](mod-game-ends.md)。
 
@@ -98,7 +100,7 @@ Folia 的登录回复、策略变更与超时检查在玩家所属实体线程�
 
 ### AuthMe
 
-通过 [AuthMe 官方 API v3](https://github.com/AuthMe/AuthMeReloaded/blob/master/authme-core/src/main/java/fr/xephi/authme/api/v3/AuthMeApi.java) 接入；不打包 AuthMe、不读取或改写其已有密码。Myrinbot 确认密码或 QQ 后请求登录，并等待 `isAuthenticated` 变为真才放行，不能把异步调用已提交当成登录完成。
+通过 [AuthMe 官方 API v3](https://github.com/AuthMe/AuthMeReloaded/blob/5.7.0/src/main/java/fr/xephi/authme/api/v3/AuthMeApi.java) 接入；不打包 AuthMe、本节的登录流程不读取或改写其已有密码；单独启用的原生密码找回按本人私聊确认执行。Myrinbot 确认密码或 QQ 后请求登录，并等待 `isAuthenticated` 变为真才放行，不能把异步调用已提交当成登录完成。
 
 没有 AuthMe 账号的玩家，API 创建一个带随机内部凭证的 AuthMe 账号，再登录。用户日常输入的仍是 Myrinbot 密码，密码哈希保存在 Myrinbot 数据库；不会把 Myrinbot 密码复制到 AuthMe。
 
@@ -149,7 +151,7 @@ ui:
 
 使用 [LibreLogin 0.24.0 官方发行版](https://github.com/kyngs/LibreLogin/releases/tag/0.24.0) 的公开 API，仅接入安装在本游戏服的 Paper 插件，不接入代理端或 Folia。本次实服组合为 Paper 1.21.4 正式 build 232 / Java 21；LibreLogin 自带组件对其他 Minecraft 版本的兼容不能由 Myrinbot JAR 推断。
 
-首次使用先完成 Myrinbot 密码或 QQ，再按原插件提示用 `/librelogin:register` 注册新原生账号，或用 `/librelogin:login` 登录已有账号。Myrinbot 不设置或覆盖 LibreLogin 密码；原插件认证成功后建立可信关联。后续同一 UUID 且未启用 TOTP 的已关联账号，可以使用 Myrinbot 密码或 QQ 请求原插件授权。
+首次使用先完成 Myrinbot 密码或 QQ，再按原插件提示用 `/librelogin:register` 注册新原生账号，或用 `/librelogin:login` 登录已有账号。本节的登录流程不设置或覆盖 LibreLogin 密码；单独启用的原生密码找回按本人私聊确认执行；原插件认证成功后建立可信关联。后续同一 UUID 且未启用 TOTP 的已关联账号，可以使用 Myrinbot 密码或 QQ 请求原插件授权。
 
 启用 TOTP 的账号每次仍需 LibreLogin 原生密码及二次验证流程，Myrinbot 不会自动授权绕过它。本次检查的 LibreLogin 0.24.0 Paper 端没有可用 TOTP 校验器，带动态验证码密钥的账号会被拒绝；不能把原生授权标记当成已完成二次验证。待关联状态只允许原插件固定登录、注册与二次验证命令，不能借此执行管理指令。执行 `/logout` 会断开连接，重新进服后开始新的认证。
 

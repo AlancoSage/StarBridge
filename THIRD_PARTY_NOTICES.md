@@ -21,7 +21,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 - 原作者声明：`Copyright (C) 2008 Google Inc.`。
 - 来源：[Gson 2.13.2 LICENSE](https://github.com/google/gson/blob/gson-parent-2.13.2/LICENSE)。
 - 构建声明：`bridge/pom.xml` 与 `bridge/build.ps1`。
-- 打包位置：当前构建的 `Myrinbot-0.5.2.jar` 及其 `StarBridge-0.5.2.jar` 兼容副本中的 `cn/starbridge/lib/gson/`；历史 JAR 名称按对应版本保留。
+- 打包位置：当前构建的 `Myrinbot-0.5.4.jar` 及其 `StarBridge-0.5.4.jar` 兼容副本中的 `cn/starbridge/lib/gson/`；历史 JAR 名称按对应版本保留。
 - 修改说明：构建时将 `com.google.gson` 包名和对应类引用重定位为 `cn.starbridge.lib.gson`。
 - 随 JAR 保留的许可：`META-INF/licenses/Gson-LICENSE.txt`；对应仓库文件为 [Gson-LICENSE.txt](https://github.com/AlancoSage/StarBridge/blob/main/bridge/src/main/resources/META-INF/licenses/Gson-LICENSE.txt)。
 
@@ -65,6 +65,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 | 组件 | 用途 / 声明位置 | 上游许可证 |
 | --- | --- | --- |
 | Spigot / Bukkit API | `bridge/pom.xml` 中的 `provided` 依赖 | [GPL-3.0](https://github.com/SpigotMC/Spigot-API/blob/master/LICENCE.txt) |
+| Velocity API | `bridge-velocity/build.py` 的编译依赖，不随生产 JAR 打包 | [GPL-3.0](https://github.com/PaperMC/Velocity/blob/dev/3.0.0/LICENSE) |
 | Forge / NeoForge | 游戏端运行 API、Gradle 编译依赖 | [Forge LGPL-2.1](https://github.com/MinecraftForge/MinecraftForge/blob/1.20.x/LICENSE.txt)、[NeoForge LGPL-2.1](https://github.com/neoforged/NeoForge/blob/1.21.x/LICENSE.txt) |
 | Fabric Loader | `bridge-fabric/build.py` 的编译依赖 | [Apache-2.0](https://github.com/FabricMC/fabric-loader/blob/master/LICENSE) |
 | SpongePowered Mixin | Fabric / NeoForge 注入 API | [MIT](https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt) |
@@ -72,7 +73,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 | Brigadier 1.0.18 | Fabric 编译依赖 | [MIT](https://github.com/Mojang/brigadier/blob/master/LICENSE) |
 | JUnit Jupiter 5.10.2 | Forge / NeoForge 测试依赖 | [EPL-2.0](https://github.com/junit-team/junit5/blob/r5.10.2/LICENSE.md) |
 
-`bridge/src/*-test/java/` 下使用第三方包名的类是测试替身，不进入生产 JAR。AuthMe、LibreLogin、LoginSecurity 与 nLogin 通过已安装插件的 API 接入，其插件实现不随 Myrinbot 分发。`starbridge-website/sdk/starbridge.js` 是 Myrinbot 的浏览器 API 客户端，适用项目许可证。
+`bridge/src/*-test/java/` 下使用第三方包名的类是测试替身，不进入生产 JAR。AuthMe、LimboAuth、LibreLogin、LoginSecurity 与 nLogin 通过已安装插件的 API 接入，其插件实现不随 Myrinbot 分发。`bridge-velocity` 仅包含本项目代码及与 Bukkit 同版、同许可的重定位 Gson；测试期间使用的 Velocity、LimboAuth、LimboAPI、LibreLogin、H2 等正式 JAR 不进入生产附件。`starbridge-website/sdk/starbridge.js` 是 Myrinbot 的浏览器 API 客户端，适用项目许可证。
 
 ## Apache License 2.0
 

@@ -210,6 +210,10 @@ class QQOfficial:
                     with suppress(asyncio.CancelledError):
                         await heartbeat
                 self.ws = None
+                # A parent cancellation can arrive while we await the cancelled
+                # heartbeat. Do not consume it as if it came only from that child.
+                if asyncio.current_task().cancelling():
+                    raise asyncio.CancelledError
 
     async def heartbeat(self, ws, interval):
         while True:

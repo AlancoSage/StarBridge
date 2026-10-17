@@ -50,9 +50,14 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private ScheduledExecutorService io;
     private ThreadPoolExecutor identities;
     private String base, token;
+    private String serverId;
     private volatile JsonObject snapshot = new JsonObject();
     private long lastWarning;
     private GameLogin login;
+    private PasswordReset passwordReset;
+    private PasswordReset.Startup passwordResetStartup = PasswordReset.Startup.disabled();
+
+    @Override public void onLoad() { passwordResetStartup = PasswordReset.Startup.capture(this); }
 
     @Override public void onEnable() {
         stopping = false;
@@ -73,11 +78,14 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             return;
         }
         base = endpoint + "/bridge/" + sid;
+        serverId = sid;
         allowedCommands = Collections.unmodifiableSet(new HashSet<>(getConfig().getStringList("allowed-commands")));
         io = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r, "Myrinbot-HTTP"); t.setDaemon(true); return t; });
         identities = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(64),
             r -> { Thread t = new Thread(r, "Myrinbot-Identity"); t.setDaemon(true); return t; });
         login = new GameLogin(this, this::post);
+        try { passwordReset = new PasswordReset(this, this::post, passwordResetStartup); }
+        catch (java.io.IOException unavailable) { getLogger().warning("原生密码重置证明文件不可用，已停用密码重置与绑定。请检查游戏端数据目录。"); }
         Bukkit.getPluginManager().registerEvents(this, this);
         Objects.requireNonNull(getCommand("qbind")).setExecutor(this);
         for (OfflinePlayer p : Bukkit.getOfflinePlayers()) knownPlayers.put(BukkitCompatibility.identity(p), p);
@@ -97,12 +105,14 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             inFlight.clear();
         }
         if (login != null) login.close();
+        if (passwordReset != null) passwordReset.close();
         if (io != null) io.shutdownNow();
         if (identities != null) identities.shutdownNow();
         BridgeScheduler.cancel(this);
     }
 
     private void updateSnapshot() {
+        if (passwordReset != null) passwordReset.refresh();
         if (BridgeScheduler.isFolia()) { updateFoliaSnapshot(); return; }
         JsonObject value = new JsonObject();
         JsonArray players = new JsonArray();
@@ -246,7 +256,8 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     }
 
     private JsonObject post(String route, JsonObject data) throws Exception {
-        BridgeHttp.Response response = BridgeHttp.request(base + route, token, gson.toJson(data), route.equals("/auth") ? 16000 : 6000);
+        BridgeHttp.Response response = BridgeHttp.request(base + route, token, gson.toJson(data),
+            route.equals("/auth") ? 16000 : route.equals("/password-reset/claim") ? 3000 : 6000);
         if (response.status != 200) {
             if (route.equals("/auth")) {
                 try {
@@ -288,6 +299,10 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
                     try { BukkitCompatibility.runTask(this, () -> execute(job)); }
                     catch (RuntimeException exception) { inFlight.remove(id); throw exception; }
                 }
+            }
+            if (passwordReset != null) {
+                try { passwordReset.tick(); }
+                catch (Exception unavailable) { /* Optional older bot endpoints fail closed; never log provider/password data. */ }
             }
         } catch (Exception ex) {
             if (System.currentTimeMillis() - lastWarning > 30000) {
@@ -619,6 +634,10 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             player.sendMessage("此服务器没有启用Myrinbot游戏登录。"); return true;
         }
         if (login.locked(player)) { player.sendMessage("请先完成游戏登录，再获取绑定码。"); return true; }
+        if (passwordReset == null) { player.sendMessage("绑定的原生账号核验不可用，请联系管理员检查游戏端数据目录。"); return true; }
+        final PasswordReset.Proof resetProof;
+        try { resetProof = passwordReset.bindingProof(player); }
+        catch (Exception | LinkageError unavailable) { player.sendMessage("请先完成原登录插件的认证，再获取绑定码；若已登录，请联系管理员检查登录插件兼容性。"); return true; }
         UUID playerId = BukkitCompatibility.identity(player);
         String connectionNonce = login.nonce(player);
         long now = System.currentTimeMillis();
@@ -630,8 +649,13 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             String message;
             try {
                 JsonObject data = new JsonObject(); data.addProperty("uuid", playerId.toString()); data.addProperty("player", name); data.addProperty("nonce", connectionNonce);
-                String code = post("/bind-code", data).get("code").getAsString();
-                message = "请在服务器 QQ 群发送：绑定 " + code + "（5 分钟有效，请勿转发给他人）";
+                if (resetProof != null) resetProof.addTo(data);
+                JsonObject binding = post("/bind-code", data);
+                String code = binding.get("code").getAsString();
+                if (resetProof != null)
+                    message = "密码找回验证请私聊 QQ 机器人发送：/验证绑定 " + serverId + " " + code
+                        + "（5 分钟有效，原绑定无需解绑，请勿转发）。仅做普通绑定（如 QQ 官机），可在服务器群发送：绑定 " + code + "；不会开放改密权限。";
+                else message = "请在服务器 QQ 群发送：绑定 " + code + "（5 分钟有效，请勿转发给他人）";
             } catch (Exception ex) { message = "获取验证码失败，请联系管理员检查Myrinbot连接。"; }
             String result = message;
             if (isEnabled()) BukkitCompatibility.runPlayer(this, player, () -> {

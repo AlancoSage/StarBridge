@@ -55,6 +55,11 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: ./bridge-forge/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Build Velocity password recovery bridge and test
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: |
+          python bridge-velocity/build.py --java-home "$env:JAVA_HOME"
       - name: Build Java 8 Forge 1.7.10 / 1.12.2 / 1.16.5 bridges
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
@@ -82,6 +87,10 @@ jobs:
         if: steps.version.outputs.needed == 'true'
         shell: pwsh
         run: ./bridge-neoforge/build.ps1 -JavaHome $env:JAVA_HOME
+      - name: Verify Velocity native authentication APIs
+        if: steps.version.outputs.needed == 'true'
+        shell: pwsh
+        run: python bridge-velocity/test.py --java-home "$env:JAVA_HOME"
       - name: Build and publish complete release
         if: steps.version.outputs.needed == 'true'
         env:

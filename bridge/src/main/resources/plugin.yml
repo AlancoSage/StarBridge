@@ -1,5 +1,5 @@
 name: StarBridge
-version: 0.5.3
+version: 0.5.4
 main: cn.starbridge.StarBridgePlugin
 # Intentionally uses Bukkit's legacy loader so pre-1.13 servers can load the same JAR.
 # All version-sensitive calls are isolated in BukkitCompatibility.

@@ -894,7 +894,7 @@ async function downloadPluginJar() {
     const response = await fetch('/api/plugin', {headers: {Authorization: 'Bearer ' + token}, signal: AbortSignal.timeout(30000), cache: 'no-store'});
     if (!response.ok) throw Error('插件下载失败：' + response.status);
     const url = URL.createObjectURL(await response.blob()), link = node('a');
-    link.href = url; link.download = 'Myrinbot-0.5.3.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.href = url; link.download = 'Myrinbot-0.5.4.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     latestPlayerActionId = null;
     notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版游戏端 JAR，然后重启游戏服务器。', 'success');
   } catch (error) { notice('player-notice', error.message, 'error'); selectTab('players'); }

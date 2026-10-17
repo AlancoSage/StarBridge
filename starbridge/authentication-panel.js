@@ -1,6 +1,6 @@
 'use strict';
 let authenticationConfig=null, authenticationDirty=false, authenticationLoading=false, authenticationSaving=false, authenticationEpoch=0;
-window.authenticationHasDraft=()=>authenticationDirty;
+window.authenticationHasDraft=()=>authenticationDirty||window.nativePasswordHasDraft?.();
 function authenticationPopulate(data){
   authenticationConfig=data;
   modBridgeSelect($('authentication-mod-version'), $('authentication-mod-version').value || 'forge/1.20.1').catch(error=>notice('authentication-notice',error.message,'error'));
@@ -22,6 +22,7 @@ function authenticationPopulate(data){
   notice('authentication-error',data.error || '', 'error', {persistent:true});
 }
 window.loadAuthentication=async function(force=false){
+  window.loadNativePasswords?.(force);
   if(!token || authenticationLoading || authenticationSaving || authenticationDirty&&!force)return;
   authenticationLoading=true;const epoch=authenticationEpoch;
   try{
@@ -49,11 +50,11 @@ $('authentication-form').onsubmit=async event=>{
   }catch(error){notice('authentication-notice',error.message,'error');}
   finally{controls.forEach((el,index)=>el.disabled=disabled[index]);authenticationSaving=false;}
 };
-$('authentication-reload').onclick=()=>{if(!authenticationDirty||confirm('放弃未保存的游戏登录设置并重新载入？'))window.loadAuthentication(true);};
+$('authentication-reload').onclick=()=>{if(!window.authenticationHasDraft()||confirm('放弃未保存的游戏登录和密码找回设置并重新载入？'))window.loadAuthentication(true);};
 $('authentication-download').onclick=async()=>{
   try{
     const response=await fetch('/api/plugin',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
-    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-0.5.3.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-0.5.4.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };
 $('authentication-guide').onclick=async()=>{

@@ -8,7 +8,7 @@ import json
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from starbridge import __version__, __bridge_version__
+from starbridge import __version__, __bridge_version__, __velocity_version__
 from starbridge.branding import ARTIFACT_PREFIX, artifact_path
 from starbridge.game_bridges import bridge_catalog
 from scripts.update_runtime import managed
@@ -27,6 +27,7 @@ def build(output):
     # The deployed supervisor accepts these legacy paths. Use current artifacts as
     # their contents without changing the existing update protocol or ZIP root.
     downloads = [f'bridge/target/{ARTIFACT_PREFIX}-{__bridge_version__}.jar',
+                 f'bridge/target/{ARTIFACT_PREFIX}-Velocity-{__velocity_version__}.jar',
                  *(f'bridge/target/{item["filename"]}' for item in bridge_catalog()),
                  f'dist/{ARTIFACT_PREFIX}-website.zip']
     for name in downloads:

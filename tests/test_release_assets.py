@@ -7,7 +7,7 @@ from unittest.mock import patch
 import zipfile
 
 from scripts import release
-from scripts.release import FABRIC_CORE, FABRIC_MIXINS, NEOFORGE_CORE, NEOFORGE_MIXINS, native_assets, native_filename, validate_native_mod
+from scripts.release import FABRIC_CORE, FABRIC_MIXINS, NEOFORGE_CORE, NEOFORGE_MIXINS, native_assets, native_filename, proxy_assets, validate_native_mod
 from starbridge.game_bridges import GAME_BRIDGES
 
 
@@ -277,3 +277,81 @@ class NativeReleaseAssetTests(unittest.TestCase):
         self.assertEqual({line.split()[1] for line in checksums}, {path.name for path in assets[:-1]})
         for path in assets[:-1]:
             self.assertIn(release.digest(path) + '  ' + path.name, checksums)
+
+
+class ProxyReleaseAssetTests(unittest.TestCase):
+    CORE = ('MyrinbotVelocity', 'BridgeHttp', 'BridgeConfig', 'NativeAuth', 'LimboAuthAdapter', 'LibreLoginAuth', 'Ownership')
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        (self.root / 'starbridge').mkdir()
+        (self.root / 'bridge/target').mkdir(parents=True)
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX='Myrinbot'\n", encoding='utf-8')
+        self.version_file = self.root / 'starbridge/__init__.py'
+        self.version_file.write_text("__version__='0.6.24'\n__velocity_version__='0.1.0'\n", encoding='utf-8')
+
+    def artifact(self, *, metadata=None, missing=None, major=61, duplicate=False, prefix='Myrinbot'):
+        path = self.root / 'bridge/target' / f'{prefix}-Velocity-0.1.0.jar'
+        values = {'id': 'myrinbot-velocity', 'version': '0.1.0', 'main': 'cn.starbridge.velocity.MyrinbotVelocity'}
+        values.update(metadata or {})
+        with zipfile.ZipFile(path, 'w') as archive:
+            archive.writestr('velocity-plugin.json', json.dumps(values))
+            if missing != 'config.properties':
+                archive.writestr('config.properties', 'enabled=false\n')
+            for name in self.CORE:
+                if name != missing:
+                    archive.writestr('cn/starbridge/velocity/' + name + '.class',
+                                     b'\xca\xfe\xba\xbe\x00\x00' + major.to_bytes(2, 'big'))
+            if duplicate:
+                with self.assertWarns(UserWarning):
+                    archive.writestr('velocity-plugin.json', json.dumps(values))
+        return path
+
+    def test_old_source_without_proxy_module_remains_buildable(self):
+        self.version_file.write_text("__version__='0.6.23'\n", encoding='utf-8')
+        self.assertEqual(proxy_assets(self.root), [])
+
+    def test_declared_proxy_module_requires_current_branded_artifact(self):
+        self.artifact(prefix='StarBridge')
+        with self.assertRaises(ValueError): proxy_assets(self.root)
+        current = self.artifact()
+        self.assertEqual(proxy_assets(self.root), [current])
+
+    def test_metadata_identity_version_and_entrypoint_must_match_source(self):
+        for change in ({'id': 'other'}, {'version': '0.0.9'}, {'main': 'example.Unrelated'}):
+            with self.subTest(change=change):
+                self.artifact(metadata=change)
+                with self.assertRaises(ValueError): proxy_assets(self.root)
+
+    def test_proxy_release_requires_every_recovery_adapter_and_configuration_resource(self):
+        for missing in self.CORE + ('config.properties',):
+            with self.subTest(missing=missing):
+                self.artifact(missing=missing)
+                with self.assertRaises(ValueError): proxy_assets(self.root)
+
+    def test_java17_compatibility_is_checked_in_every_class(self):
+        self.artifact()
+        self.assertEqual(len(proxy_assets(self.root)), 1)
+        for major in (44, 62, 65):
+            with self.subTest(major=major):
+                self.artifact(major=major)
+                with self.assertRaises(ValueError): proxy_assets(self.root)
+        path = self.artifact()
+        with zipfile.ZipFile(path, 'a') as archive:
+            archive.writestr('cn/starbridge/velocity/UnsupportedHelper.class', b'\xca\xfe\xba\xbe\x00\x00\x00\x41')
+        with self.assertRaises(ValueError): proxy_assets(self.root)
+
+    def test_duplicate_or_corrupt_jar_is_rejected(self):
+        self.artifact(duplicate=True)
+        with self.assertRaises(ValueError): proxy_assets(self.root)
+        path = self.artifact()
+        path.write_bytes(b'not a jar')
+        with self.assertRaises(ValueError): proxy_assets(self.root)
+
+    def test_declared_proxy_version_cannot_be_used_as_a_path(self):
+        for version in ('../other', '0.1.0-SNAPSHOT', '', 1):
+            with self.subTest(version=version):
+                self.version_file.write_text('__velocity_version__=' + repr(version) + '\n', encoding='utf-8')
+                with self.assertRaises(ValueError): proxy_assets(self.root)

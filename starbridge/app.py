@@ -25,6 +25,8 @@ from .registration import Registration
 from .registration_api import setup_routes as registration_routes
 from .authentication import Authentication
 from .authentication_api import setup_routes as authentication_routes
+from .native_passwords import NativePasswords
+from .native_password_api import setup_routes as native_password_routes
 from .backup_api import setup_routes as backup_routes
 from .operations_api import setup_routes as operations_routes
 from .website_api import setup_routes as website_routes
@@ -108,6 +110,8 @@ async def bind_code(request):
     if not state["authentication"].allowed(server["id"], player_uuid, data.get("nonce"), name):
         raise web.HTTPForbidden(text="请先完成游戏登录，再获取 QQ 绑定码")
     code = state["store"].issue_code(server["id"], player_uuid, name)
+    state["native_passwords"].record_code(server["id"], player_uuid, name, code,
+        data.get("password_reset_platform"), data.get("password_reset_engine"), data.get("password_reset_account"))
     return web.json_response({"code": code, "expires_in": 300})
 
 
@@ -597,7 +601,7 @@ async def lifecycle(app):
     state = app[STATE]
     await state["plugins"].start()
     await state["onebot"].start()
-    workers = [asyncio.create_task(state["bot"].worker()), asyncio.create_task(game_worker(state)), asyncio.create_task(state["operations"].worker()), asyncio.create_task(state["runtime"].worker())]
+    workers = [asyncio.create_task(state["bot"].worker()), asyncio.create_task(game_worker(state)), asyncio.create_task(state["operations"].worker()), asyncio.create_task(state["runtime"].worker()), asyncio.create_task(state["native_passwords"].worker())]
     yield
     await state["onebot"].close()
     for task in workers:
@@ -627,13 +631,16 @@ def create_app(cfg, config_path=None, restart_event=None):
     bot.registration = registration
     authentication = Authentication(base, bot, registration)
     bot.authentication = authentication
+    native_passwords = NativePasswords(bot)
+    bot.native_passwords = native_passwords
     app = web.Application(client_max_size=256 * 1024)
-    app[STATE] = {"config": deepcopy(cfg), "store": store, "catalog": catalog, "onebot": onebot, "bot": bot, "plugins": plugins, "registration": registration, "authentication": authentication,
+    app[STATE] = {"config": deepcopy(cfg), "store": store, "catalog": catalog, "onebot": onebot, "bot": bot, "plugins": plugins, "registration": registration, "authentication": authentication, "native_passwords": native_passwords,
                   "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
                   "config_file": ConfigFile(config_path) if config_path else None, "restart_event": restart_event, "plugin_temp": plugin_temp}
     app.cleanup_ctx.append(lifecycle)
     registration_routes(app, STATE, authorized, body)
     authentication_routes(app, STATE, authorized, body, bridge)
+    native_password_routes(app, STATE, authorized, body, bridge)
     backup_routes(app, STATE, authorized, body)
     operations_routes(app, STATE, authorized, body)
     website_routes(app, STATE, authorized, body)
