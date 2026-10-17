@@ -1,0 +1,8 @@
+{
+  "asset": "reply-glass-background-v1.png",
+  "mode": "built-in image_gen",
+  "intent": "generate",
+  "reference_role": "The user screenshot informed the glass card layout; its illustration was not copied into this asset.",
+  "prompt": "Use case: illustration for a software-rendered server status card background. Create one original anime illustration ONLY, with NO interface, NO panels, NO text, NO numbers, NO logos, NO watermark. Square 1536 by 1536 composition suitable for cropping to portrait cards. A serene original adult fantasy librarian character with shoulder-length silver-lavender hair and a navy winter coat with icy teal accents stands on the RIGHT third, holding a small dark blue book. An elegant winter woodland and pale floral branches, drifting snow and soft translucent botanical shapes fill the scene; large calm negative space on the LEFT and upper left for a later overlay of bold white Chinese text and translucent glass cards. Soft detailed 2D anime rendering, pastel periwinkle, slate blue, icy cyan, cream, with restrained luminous highlights and rich midnight-blue shadows. Character face is on the upper-right, composition stays readable behind frosted glass. Refined and atmospheric, full-bleed finished artwork, no ornamental border. Entirely original character and setting, not a recreation of an existing franchise character. Background illustration only; all typography and UI will be drawn later by code.",
+  "runtime_embedding": "scripts/build_reply_backdrop.py converts the source to a bundled JPEG in starbridge/reply_backdrop.py; the renderer draws all text and UI from current data."
+}

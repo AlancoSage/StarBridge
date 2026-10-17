@@ -1,6 +1,6 @@
 # Forge 与 NeoForge 游戏端
 
-**适用：Myrinbot Bot 0.6.17 · 游戏端模组 0.1.1。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入 Myrinbot。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.3](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
+**适用：Myrinbot Bot 0.6.18 · 游戏端模组 0.1.1。** 在管理面板选择 Minecraft 版本，下载对应 JAR 和连接配置，即可将模组服接入 Myrinbot。Paper / Spigot / Folia 使用另一份 [通用 Bukkit 插件 0.5.3](minecraft-compatibility.md)；多个不同版本服务器可以连接同一台 Bot。原六版 Forge 与 NeoForge 1.21.1 从 Bot 0.6.3 起提供，新增六版 NeoForge 从 0.6.6 起提供，NeoForge 1.20.6 从 0.6.7 起提供。
 
 Fabric **1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 1.21.8 / 1.21.11 / 26.1 / 26.2 / 26.3** 使用另一套独立 JAR 与配置，安装步骤见 [Fabric 游戏端](fabric-game-ends.md)。下文专门说明 Forge 与 NeoForge。
 

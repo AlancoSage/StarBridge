@@ -3,6 +3,8 @@ from collections import defaultdict, deque
 import re
 import time
 
+from .reply_images import command_key
+
 
 HELP = """Myrinbot · Minecraft 群助手
 帮助 — 查看命令
@@ -78,6 +80,20 @@ class Bot:
             text += "\n在线玩家：" + ("、".join(snap["players"]) or "暂无玩家")
         return text
 
+    def status_view(self, server):
+        """Public render data for one explicitly selected server, never its config."""
+        online = self.online(server['id'])
+        snapshot = self.snapshots.get(server['id'], {}) if online else {}
+        return {
+            'type': 'server_status', 'updated': time.time(),
+            'servers': [{
+                'id': server['id'], 'name': server['name'], 'online': online,
+                'players': list(snapshot.get('players', [])),
+                'max_players': snapshot.get('max_players', 0),
+                'version': snapshot.get('version', ''),
+            }],
+        }
+
     async def worker(self):
         while True:
             event = await self.onebot.events.get()
@@ -92,6 +108,9 @@ class Bot:
     async def reply(self, group, text, command):
         sender = getattr(self.onebot, 'send_reply', None)
         if sender:
+            server = self.groups.get(group)
+            if server is not None and command_key(command) in ('在线', '状态'):
+                return await sender(group, text, command, view=self.status_view(server))
             return await sender(group, text, command)
         return await self.onebot.send_group(group, text)
 

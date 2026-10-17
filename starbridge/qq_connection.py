@@ -1,5 +1,6 @@
 """Keep the existing OneBot contract while selecting QQ's official transport."""
 from copy import deepcopy
+import hashlib
 from aiohttp import web
 
 from .onebot import OneBot
@@ -19,6 +20,15 @@ class QQConnection:
         self.renderer = ReplyRenderer()
         self.image_config = {**deepcopy(IMAGE_DEFAULTS), **deepcopy(cfg.get('reply_images', {}))}
         self.generation = 0
+        self.routes = self._routes(cfg)
+
+    @staticmethod
+    def _routes(cfg):
+        # Freeze only routing identities; never retain another copy of raw tokens.
+        return frozenset(
+            (group, server['id'], hashlib.sha256(server.get('token', '').encode('utf-8')).digest())
+            for server in cfg.get('servers', []) for group in server.get('groups', [])
+        )
 
     @property
     def provider(self):
@@ -81,8 +91,11 @@ class QQConnection:
             await self.legacy.ws.close()
 
     async def reconfigure(self, cfg, reconnect):
-        if reconnect:
+        routes = self._routes(cfg)
+        if reconnect or routes != self.routes:
             self.generation += 1
+        self.routes = routes
+        if reconnect:
             await self.official.close()
             if self.legacy.connected:
                 await self.legacy.ws.close(code=1000, message=b"Configuration updated")
@@ -105,14 +118,14 @@ class QQConnection:
     async def send_private(self, user, text):
         return await self.current.send_private(user, text)
 
-    async def send_reply(self, group, text, command):
+    async def send_reply(self, group, text, command, view=None):
         key = command_key(command)
         settings = deepcopy(self.image_config)
         if not settings['enabled'] or key not in settings['commands']:
             return await self.send_group(group, text)
         generation = self.generation
         try:
-            pages = await self.renderer.render(text, key)
+            pages = await self.renderer.render(text, key, view) if view is not None else await self.renderer.render(text, key)
         except Exception as error:
             # Log only the error type; reply bodies may contain private account data.
             self.store.audit('error', '图片回复渲染失败，回退文字：' + type(error).__name__)

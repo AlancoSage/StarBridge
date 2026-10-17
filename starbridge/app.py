@@ -64,13 +64,18 @@ async def reply_image_preview(request):
     state = request.app[STATE]
     authorized(request, state['config']['app']['admin_token'])
     data = await body(request)
-    if data.keys() - {'command', 'text'}:
+    if data.keys() - {'command', 'text', 'server'}:
         raise web.HTTPBadRequest(text='图片预览包含未知字段')
     key = command_key(data.get('command'))
     if not key or len(key) > 100:
         raise web.HTTPBadRequest(text='请填写 1–100 字符的预览指令名称')
+    sid = data.get('server', '')
+    if not isinstance(sid, str) or (sid and sid not in state['bot'].servers):
+        raise web.HTTPBadRequest(text='请选择已配置的服务器')
+    view = state['bot'].status_view(state['bot'].servers[sid]) if sid and key in ('在线', '状态') else None
     try:
-        pages = await state['onebot'].renderer.render(data.get('text'), key)
+        renderer = state['onebot'].renderer
+        pages = await renderer.render(data.get('text'), key, view) if view is not None else await renderer.render(data.get('text'), key)
     except RenderError as error:
         raise web.HTTPBadRequest(text=str(error)) from None
     except Exception as error:

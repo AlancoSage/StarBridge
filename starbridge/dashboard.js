@@ -553,6 +553,9 @@ function renderConfig(data) {
   const replyImages = saved.reply_images || {enabled:false, commands:[]};
   $('reply-image-enabled').checked = replyImages.enabled;
   $('reply-image-commands').value = replyImages.commands.join('\n');
+  const previewServer = $('reply-image-preview-server'), selectedPreviewServer = previewServer.value;
+  previewServer.replaceChildren(new Option('使用下方示例文字', ''), ...saved.servers.map(server => new Option(server.name || server.id, server.id)));
+  if (saved.servers.some(server => server.id === selectedPreviewServer)) previewServer.value = selectedPreviewServer;
   $('server-editors').replaceChildren(); $('command-editors').replaceChildren(); saved.servers.forEach(addServer);
   $('feature-editors').replaceChildren();
   for (const [key, [title, hint]] of Object.entries(features)) {
@@ -586,7 +589,7 @@ $('reply-image-preview').onclick = async () => {
   notice('reply-image-preview-notice','正在生成图片…');
   try {
     const data = await api('/api/reply-images/preview', {method:'POST', body:JSON.stringify({
-      command:$('reply-image-preview-command').value.trim(), text:$('reply-image-preview-text').value,
+      command:$('reply-image-preview-command').value.trim(), text:$('reply-image-preview-text').value, server:$('reply-image-preview-server').value,
     })});
     $('reply-image-preview-result').replaceChildren(...data.pages.map((src, index) => {
       const image = document.createElement('img'); image.src = src;
