@@ -164,6 +164,12 @@ class BillingHTTPTests(unittest.IsolatedAsyncioTestCase):
                 await AdapterClient(replies).login()
             self.assertNotIn(SECRET, str(caught.exception))
 
+    def test_amount_rejects_unbounded_exponent_expansion_and_invalid_values(self):
+        for value in ("1e-999999999", "0e-999999999", "NaN", "Infinity", "-1", "1e1000", True, "1" * 129):
+            with self.subTest(value=value), self.assertRaises(BillingAPIError):
+                MofangClient._amount(value)
+        self.assertEqual(MofangClient._amount("12.30"), "12.30")
+
     async def test_constructor_rejects_non_public_or_non_https_providers(self):
         for url in ("http://example.com", "https://127.0.0.1", "https://localhost", "https://example.com/v1"):
             with self.subTest(url=url), self.assertRaises(BillingAPIError):

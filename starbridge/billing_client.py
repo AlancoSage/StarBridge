@@ -139,8 +139,11 @@ class MofangClient:
         try:
             if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
                 raise ValueError()
+            if len(str(value)) > 128:
+                raise ValueError()
             number = Decimal(str(value))
-            if not number.is_finite() or number < 0 or number > Decimal("1000000000000"):
+            if (not number.is_finite() or number < 0 or number > Decimal("1000000000000")
+                    or number.as_tuple().exponent < -12):
                 raise ValueError()
             return format(number, "f")
         except (ValueError, InvalidOperation):
