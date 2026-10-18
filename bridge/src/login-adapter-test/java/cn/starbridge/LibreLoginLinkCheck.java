@@ -162,7 +162,7 @@ public final class LibreLoginLinkCheck {
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
-        data = Files.createTempDirectory(Path.of(".tools/login-adapters"), "libre-proof-check-");
+        data = Files.createTempDirectory(Files.createDirectories(Path.of(".tools/login-adapters")), "libre-proof-check-");
         PluginManager manager = proxy(PluginManager.class, (self, method, values) -> defaultValue(method));
         server = proxy(Server.class, (self, method, values) -> switch (method.getName()) {
             case "getPluginManager" -> manager;

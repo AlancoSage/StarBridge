@@ -181,7 +181,7 @@ public final class PasswordResetCheck {
         };
     }
     public static void main(String[] arguments) throws Exception {
-        directory = Files.createTempDirectory(Path.of(".tools/login-adapters"), "password-reset-");
+        directory = Files.createTempDirectory(Files.createDirectories(Path.of(".tools/login-adapters")), "password-reset-");
         PluginManager manager = proxy(PluginManager.class, (self, method, values) -> method.getName().equals("getPlugin") ? plugins.get(values[0]) : zero(method));
         BukkitScheduler scheduler = proxy(BukkitScheduler.class, (self, method, values) -> {
             if (method.getName().equals("scheduleSyncDelayedTask")) { ((Runnable) values[1]).run(); return 1; }
