@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 config.toml
+billing.toml
 *.toml.bak
 .starbridge-*.tmp
 data/

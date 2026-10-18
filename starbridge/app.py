@@ -41,6 +41,7 @@ from .deployment_api import setup_routes as deployment_routes
 from .update_api import setup_routes as update_routes
 from .database_api import setup_routes as database_routes
 from .mysql_settings import MYSQL_DEFAULTS
+from .billing import Billing
 
 
 STATE = web.AppKey("state", dict)
@@ -629,6 +630,7 @@ async def lifecycle(app):
     await state["registration"].close()
     await state["backups"].close()
     await state["updates"].close()
+    await state["billing"].close()
     state["store"].close()
     if state.get("plugin_temp"):
         state["plugin_temp"].cleanup()
@@ -664,9 +666,11 @@ def create_app(cfg, config_path=None, restart_event=None):
     bot.authentication = authentication
     native_passwords = NativePasswords(bot)
     bot.native_passwords = native_passwords
+    billing = Billing(base, bot)
+    bot.billing = billing
     app = web.Application(client_max_size=256 * 1024, middlewares=[database_errors])
     app[STATE] = {"config": deepcopy(cfg), "store": store, "catalog": catalog, "onebot": onebot, "bot": bot, "plugins": plugins, "registration": registration, "authentication": authentication, "native_passwords": native_passwords,
-                  "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
+                  "billing": billing, "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
                   "config_file": ConfigFile(config_path) if config_path else None, "restart_event": restart_event, "plugin_temp": plugin_temp}
     app.cleanup_ctx.append(lifecycle)
     registration_routes(app, STATE, authorized, body)

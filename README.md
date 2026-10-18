@@ -2,7 +2,7 @@
 
 项目名称为 **VexBot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.28**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.29**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
@@ -17,6 +17,8 @@
 指令、文字问答与消息规则分别使用对应的编辑流程，具体设计约定见 [交互设计说明](docs/interaction-design.md)。
 
 ## 已实现
+
+- [魔方财务商品与付款机器人](docs/mofang-billing.md)：Python / OneBot 11 私聊绑定服务商 API 账号，浏览两级分组与商品详情，确认下单并返回付款二维码或链接，默认关闭。
 
 - Folia 游戏端：与 Paper / Spigot 共用 `VexBot-0.5.5.jar`，自动选择全局与玩家实体调度，支持聊天、档案、绑定、白名单、处罚回执和内置密码 / QQ 登录；接入方式与验证范围见 [Minecraft 兼容说明](docs/minecraft-compatibility.md#folia-接入)。
 - Forge / NeoForge 游戏端：Forge 1.7.10、1.12.2、1.16.5、1.18.2、1.19.2、1.20.1，以及 NeoForge 1.20.4、1.20.6、1.21.1、1.21.4、1.21.8、1.21.11、26.1.2、26.2，接入聊天、玩家管理、白名单、绑定与密码 / QQ 登录，详见 [模组安装说明](docs/mod-game-ends.md)。NeoForge 仅提供正式构建。

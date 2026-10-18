@@ -1,6 +1,7 @@
 # 运行 python -m starbridge init 自动生成带随机令牌的 config.toml。
 # 所有 QQ 号、群号均使用字符串。推荐通过面板修改并保存设置。
 # 面板保存业务设置后立即生效；监听地址、端口、数据库路径需要在面板中重启。
+# 可选魔方财务：另建同目录 billing.toml，见 docs/mofang-billing.md。
 [app]
 host = "127.0.0.1"
 port = 5800

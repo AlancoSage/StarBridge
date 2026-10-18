@@ -49,6 +49,8 @@ VexBot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.com
 | propcache | 0.5.4 | [Apache-2.0](https://github.com/aio-libs/propcache/blob/master/LICENSE)，附 `NOTICE` |
 | yarl | 1.25.1 | [Apache-2.0](https://github.com/aio-libs/yarl/blob/master/LICENSE)，附 `NOTICE` |
 | Pillow | 12.3.0 | [MIT-CMU](https://github.com/python-pillow/Pillow/blob/main/LICENSE)，其 wheel 内其他组件许可随依赖保留 |
+| qrcode | 8.2 | [BSD-3-Clause](https://github.com/lincolnloop/python-qrcode/blob/v8.2/LICENSE)，用于本地生成付款二维码 |
+| colorama | 0.4.6（Windows） | [BSD-3-Clause](https://github.com/tartley/colorama/blob/0.4.6/LICENSE.txt)，qrcode 的 Windows 终端依赖 |
 
 ## 图片回复字体
 
@@ -61,6 +63,8 @@ VexBot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.com
 ## 构建工具及运行环境提供的 API
 
 Bot 的可选 MySQL 连接使用 [PyMySQL](https://github.com/PyMySQL/PyMySQL)（MIT），其 RSA / caching_sha2_password 认证依赖 [cryptography](https://github.com/pyca/cryptography)（Apache-2.0 OR BSD-3-Clause）、[cffi](https://github.com/python-cffi/cffi)（MIT-0）和 [pycparser](https://github.com/eliben/pycparser)（BSD-3-Clause）。这些组件通过 Python 依赖安装，保留各自软件包附带的许可证，不打入游戏端 JAR。MySQL 服务端不随部署包分发。
+
+可选魔方财务模块也使用上述 cryptography 的 Fernet 加密账号 API 凭据及待确认的商品参数，使用 qrcode 与 Pillow 在本机生成 PNG 付款二维码。
 
 以下是构建或运行环境使用的主要第三方组件，除上面明确列出的 Gson 和 Gradle Wrapper 外，其实现不被复制进 VexBot JAR：
 

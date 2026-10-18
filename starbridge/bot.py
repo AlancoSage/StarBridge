@@ -55,6 +55,7 @@ class Bot:
         self.native_passwords = None
         self.registration = None
         self.operations = None
+        self.billing = None
 
     def allow(self, key, count=12, period=10):
         now = time.monotonic()
@@ -120,6 +121,8 @@ class Bot:
         valid_user = getattr(self.onebot, "valid_user", lambda value: value.isdigit())
         official = getattr(self.onebot, "provider", "onebot") == "official"
         text = plain_message(event.get("message", ""))[:2000]
+        if self.billing and await self.billing.handle_event(event):
+            return
         if (official and event.get("post_type") == "message" and valid_user(qq) and text in ("接入信息", "/接入信息")
                 and event.get("self_id") == self.onebot.self_id and not event.get("anonymous")):
             mid = event.get("message_id")
@@ -203,6 +206,8 @@ class Bot:
                 reply = self.native_passwords.group_hint(sid) if self.native_passwords else "密码找回请使用私聊，请勿在群内发送密码。"
         elif command in ("帮助", "help", "/help"):
             reply = HELP
+            if self.billing and self.billing.settings["enabled"]:
+                reply += "\n/财务帮助 — 私聊绑定魔方财务账号、查询商品与下单"
             if self.native_passwords and sid in self.native_passwords.settings["servers"]:
                 reply += "\n/重置密码 — 私聊找回本人已验证绑定账号的原生密码"
             if official:
