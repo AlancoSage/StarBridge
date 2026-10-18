@@ -1,11 +1,7 @@
+import { useMotionPreference } from "@/components/MotionPreference";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import {
-  AnimatePresence,
-  MotionConfig,
-  motion,
-  useReducedMotion,
-} from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -59,10 +55,11 @@ function currentPage(): Page {
 }
 
 export default function App() {
-  const reduced = Boolean(useReducedMotion());
+  const { reduced, enabled, toggleMotion } = useMotionPreference();
+  // A single-frame target interrupts an in-flight animation with the same endpoint.
   const pageMotion = {
     initial: { opacity: reduced ? 1 : 0, y: reduced ? 0 : 16 },
-    animate: { opacity: 1, y: 0 },
+    animate: { opacity: reduced ? [1] : 1, y: reduced ? [0] : 0 },
     transition: { duration: reduced ? 0 : 0.42, ease: "easeOut" as const },
   };
   const [page, setPage] = useState<Page>(currentPage);
@@ -124,7 +121,7 @@ export default function App() {
   });
 
   return (
-    <MotionConfig reducedMotion="user">
+    <>
       <a
         className="skip-link"
         href="#workspace"
@@ -151,6 +148,20 @@ export default function App() {
             交互预览
           </Badge>
           <div className="header-actions">
+            <Button
+              variant="ghost"
+              className="motion-toggle"
+              aria-label="动画效果"
+              aria-pressed={enabled}
+              title={enabled ? "关闭动画" : "开启动画"}
+              onClick={toggleMotion}
+            >
+              <Sparkles />
+              <span className="motion-toggle-label">动画</span>
+              <span className="motion-toggle-state" aria-hidden="true">
+                {enabled ? "开" : "关"}
+              </span>
+            </Button>
             <a
               href="https://github.com/AlancoSage/StarBridge"
               target="_blank"
@@ -188,7 +199,11 @@ export default function App() {
                       y: reduced ? 0 : -8,
                       scale: reduced ? 1 : 0.97,
                     }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    animate={{
+                      opacity: reduced ? [1] : 1,
+                      y: reduced ? [0] : 0,
+                      scale: reduced ? [1] : 1,
+                    }}
                     exit={{ opacity: 0, y: reduced ? 0 : -6 }}
                     transition={{ duration: reduced ? 0 : 0.18 }}
                   >
@@ -293,8 +308,8 @@ export default function App() {
           data-page="servers"
           initial={false}
           animate={{
-            opacity: page === "servers" ? 1 : 0,
-            y: page === "servers" || reduced ? 0 : 16,
+            opacity: page === "servers" ? (reduced ? [1] : 1) : 0,
+            y: reduced ? [0] : page === "servers" ? 0 : 16,
           }}
           transition={pageMotion.transition}
         >
@@ -306,8 +321,8 @@ export default function App() {
           data-page="commands"
           initial={false}
           animate={{
-            opacity: page === "commands" ? 1 : 0,
-            y: page === "commands" || reduced ? 0 : 16,
+            opacity: page === "commands" ? (reduced ? [1] : 1) : 0,
+            y: reduced ? [0] : page === "commands" ? 0 : 16,
           }}
           transition={pageMotion.transition}
         >
@@ -363,7 +378,7 @@ export default function App() {
             className="preview-toast"
             role="status"
             initial={{ opacity: 0, y: reduced ? 0 : 14 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: reduced ? [1] : 1, y: reduced ? [0] : 0 }}
             exit={{ opacity: 0, y: reduced ? 0 : 8 }}
             transition={{ duration: reduced ? 0 : 0.22 }}
           >
@@ -375,7 +390,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-    </MotionConfig>
+    </>
   );
 }
 
@@ -390,7 +405,7 @@ function Overview({
 }) {
   const [range, setRange] = useState(7);
   const [tab, setTab] = useState("activity");
-  const reduced = Boolean(useReducedMotion());
+  const { reduced } = useMotionPreference();
   const metrics = [
     {
       title: "在线玩家",
@@ -475,6 +490,7 @@ function Overview({
             size="sm"
             className="replay-motion"
             onClick={replay}
+            disabled={reduced}
           >
             <RotateCcw />
             重播动画
@@ -491,7 +507,7 @@ function Overview({
               key={title}
               className="metric-card"
               initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 22 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: reduced ? [1] : 1, y: reduced ? [0] : 0 }}
               transition={{
                 duration: reduced ? 0 : 0.48,
                 delay: reduced ? 0 : 0.08 + index * 0.09,
@@ -531,7 +547,7 @@ function Overview({
         key={tab}
         className="overview-tab-content"
         initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: reduced ? [1] : 1, y: reduced ? [0] : 0 }}
         transition={{ duration: reduced ? 0 : 0.35 }}
       >
         {tab === "activity" ? (
@@ -772,7 +788,7 @@ function Overview({
 
 function ActivityChart({ range }: { range: number }) {
   const [hover, setHover] = useState(false);
-  const reduced = Boolean(useReducedMotion());
+  const { reduced } = useMotionPreference();
   const main =
     range === 7
       ? "M0 148 C28 148 31 175 65 158 S108 72 143 94 S181 142 215 108 S258 105 288 70 S328 113 358 75 S408 94 438 41 S487 67 518 30 S552 62 580 25"
@@ -823,7 +839,7 @@ function ActivityChart({ range }: { range: number }) {
               d={main + " L580 206 L0 206 Z"}
               fill="url(#area-fill)"
               initial={{ opacity: reduced ? 1 : 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: reduced ? [1] : 1 }}
               transition={{
                 duration: reduced ? 0 : 0.8,
                 delay: reduced ? 0 : 0.2,
@@ -835,7 +851,7 @@ function ActivityChart({ range }: { range: number }) {
               stroke="#10b981"
               strokeWidth="2"
               initial={{ pathLength: reduced ? 1 : 0 }}
-              animate={{ pathLength: 1 }}
+              animate={{ pathLength: reduced ? [1] : 1 }}
               transition={{
                 duration: reduced ? 0 : 1.15,
                 ease: "easeInOut",
@@ -848,7 +864,7 @@ function ActivityChart({ range }: { range: number }) {
               stroke="currentColor"
               strokeWidth="2.5"
               initial={{ pathLength: reduced ? 1 : 0 }}
-              animate={{ pathLength: 1 }}
+              animate={{ pathLength: reduced ? [1] : 1 }}
               transition={{ duration: reduced ? 0 : 1.15, ease: "easeInOut" }}
             />
           </motion.g>

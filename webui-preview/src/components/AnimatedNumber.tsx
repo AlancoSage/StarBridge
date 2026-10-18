@@ -1,9 +1,5 @@
-import {
-  animate,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-} from "motion/react";
+import { useMotionPreference } from "@/components/MotionPreference";
+import { animate, useInView, useMotionValue } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 const formatter = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
@@ -16,7 +12,7 @@ export function AnimatedNumber({
   className?: string;
 }) {
   const target = Number.isFinite(value) ? Math.round(value) : 0;
-  const reduceMotion = useReducedMotion();
+  const { reduced: reduceMotion } = useMotionPreference();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const amount = useMotionValue(0);

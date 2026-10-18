@@ -1131,30 +1131,28 @@ a:focus-visible {
     background-color 180ms ease,
     box-shadow 180ms ease;
 }
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  [data-slot="button"]:not(:disabled):hover {
+@media (hover: hover) {
+  :root[data-motion="full"] [data-slot="button"]:not(:disabled):hover {
     transform: translateY(-1px);
   }
-  .quick-action:hover > span {
+  :root[data-motion="full"] .quick-action:hover > span {
     transform: translateY(-2px) rotate(-5deg);
   }
-  .quick-action:hover > svg {
+  :root[data-motion="full"] .quick-action:hover > svg {
     transform: translateX(3px);
   }
-  .connection-tile:hover {
+  :root[data-motion="full"] .connection-tile:hover {
     transform: translateY(-3px);
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  [data-slot="button"]:not(:disabled):active {
-    transform: scale(0.97);
-  }
-  .page-heading .status-dot {
-    animation: status-breathe 2.4s ease-in-out infinite;
-  }
-  .bottom-grid {
-    animation: section-enter 500ms 150ms ease-out both;
-  }
+:root[data-motion="full"] [data-slot="button"]:not(:disabled):active {
+  transform: scale(0.97);
+}
+:root[data-motion="full"] .page-heading .status-dot {
+  animation: status-breathe 2.4s ease-in-out infinite;
+}
+:root[data-motion="full"] .bottom-grid {
+  animation: section-enter 500ms 150ms ease-out both;
 }
 @keyframes status-breathe {
   0%,
@@ -1175,14 +1173,44 @@ a:focus-visible {
     transform: translateY(0);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+:root[data-motion="reduced"],
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.header-actions .motion-toggle {
+  width: auto;
+  height: 30px;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.header-actions .motion-toggle[aria-pressed="true"] {
+  color: var(--foreground);
+}
+.motion-toggle-state {
+  font-size: 10px;
+  opacity: 0.65;
+}
+@media (max-width: 767px) {
+  .header-actions .motion-toggle {
+    min-width: 48px;
+    gap: 4px;
+    padding-inline: 6px;
+    margin-right: 5px;
   }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  .motion-toggle-label {
+    display: none;
+  }
+}
+@media (max-width: 420px) {
+  .header-inner > .preview-badge {
+    display: none;
   }
 }

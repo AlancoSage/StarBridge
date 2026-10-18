@@ -1,6 +1,7 @@
+import { useMotionPreference } from "@/components/MotionPreference";
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import {
   ArrowUpRight,
@@ -84,7 +85,7 @@ const initialCommands: BotCommand[] = [
 const MotionButton = motion.create(Button);
 
 function GlassReply() {
-  const reduceMotion = useReducedMotion();
+  const { reduced: reduceMotion } = useMotionPreference();
   const worlds = [
     {
       name: "VexBot 生存服",
@@ -128,7 +129,10 @@ function GlassReply() {
       <div className="grid gap-4 sm:grid-cols-[0.8fr_1.5fr]">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{
+            opacity: reduceMotion ? [1] : 1,
+            y: reduceMotion ? [0] : 0,
+          }}
           transition={{ duration: reduceMotion ? 0 : 0.5 }}
           className="flex flex-col justify-between rounded-[20px] border border-white/20 bg-white/[0.08] p-5 backdrop-blur-xl"
         >
@@ -174,7 +178,10 @@ function GlassReply() {
             <motion.div
               key={world.name}
               initial={reduceMotion ? false : { opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
+              animate={{
+                opacity: reduceMotion ? [1] : 1,
+                x: reduceMotion ? [0] : 0,
+              }}
               transition={{
                 duration: reduceMotion ? 0 : 0.45,
                 delay: reduceMotion ? 0 : 0.1 + index * 0.075,
@@ -258,10 +265,10 @@ export default function CommandsPage({
 }: {
   notify: (message: string) => void;
 }) {
-  const reduceMotion = useReducedMotion();
+  const { reduced: reduceMotion } = useMotionPreference();
   const enter = (index = 0) => ({
     initial: reduceMotion ? (false as const) : { opacity: 0, y: 18 },
-    whileInView: { opacity: 1, y: 0 },
+    whileInView: { opacity: reduceMotion ? [1] : 1, y: reduceMotion ? [0] : 0 },
     viewport: { once: true, amount: 0.1 },
     exit: {
       opacity: 0,
@@ -697,7 +704,10 @@ export default function CommandsPage({
                 <motion.div
                   key={`${preview.id}-${preview.image ? "image" : "text"}`}
                   initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{
+                    opacity: reduceMotion ? [1] : 1,
+                    y: reduceMotion ? [0] : 0,
+                  }}
                   exit={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
                   transition={{ duration: reduceMotion ? 0 : 0.24 }}
                 >

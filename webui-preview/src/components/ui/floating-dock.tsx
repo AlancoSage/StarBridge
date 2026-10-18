@@ -1,3 +1,4 @@
+import { useMotionPreference } from "@/components/MotionPreference";
 // Adapted from linux-do/cdk; added accessible names and active-page state. MIT license in third-party/.
 /**
  * Note: Use position fixed according to your needs
@@ -12,7 +13,6 @@ import {
   type MotionValue,
   motion,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -71,7 +71,7 @@ const FloatingDockMobile = memo(
     buttonClassName?: string;
   }) => {
     const [open, setOpen] = useState(false);
-    const reduceMotion = useReducedMotion();
+    const { reduced: reduceMotion } = useMotionPreference();
 
     const toggleOpen = useCallback(() => {
       setOpen((prev) => !prev);
@@ -82,7 +82,7 @@ const FloatingDockMobile = memo(
         <AnimatePresence>
           {open && (
             <motion.div
-              layoutId="nav"
+              layoutId={reduceMotion ? undefined : "nav"}
               className="absolute inset-x-0 bottom-full mb-2 flex flex-col gap-1"
             >
               {items.map((item, idx) => {
@@ -100,17 +100,20 @@ const FloatingDockMobile = memo(
                     exit={{
                       opacity: 0,
                       y: reduceMotion ? 0 : 10,
-                      transition: {
-                        delay: reduceMotion ? 0 : idx * 0.04,
-                      },
+                      transition: reduceMotion
+                        ? { duration: 0, delay: 0 }
+                        : { delay: idx * 0.04 },
                     }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 26,
-                      duration: reduceMotion ? 0 : undefined,
-                      delay: reduceMotion ? 0 : (items.length - 1 - idx) * 0.04,
-                    }}
+                    transition={
+                      reduceMotion
+                        ? { duration: 0, delay: 0 }
+                        : {
+                            type: "spring",
+                            stiffness: 380,
+                            damping: 26,
+                            delay: (items.length - 1 - idx) * 0.04,
+                          }
+                    }
                   >
                     {item.customComponent ? (
                       <div
@@ -291,7 +294,7 @@ const IconContainer = memo(
     active?: boolean;
   }) => {
     const ref = useRef<HTMLDivElement>(null);
-    const reduceMotion = useReducedMotion();
+    const { reduced: reduceMotion } = useMotionPreference();
     const focusSize = useMotionValue(40);
 
     const distance = useTransform(mouseX, (val) => {

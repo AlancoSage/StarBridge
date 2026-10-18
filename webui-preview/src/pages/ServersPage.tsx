@@ -1,6 +1,7 @@
+import { useMotionPreference } from "@/components/MotionPreference";
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import {
   Check,
@@ -106,10 +107,10 @@ export default function ServersPage({
 }: {
   notify: (message: string) => void;
 }) {
-  const reduceMotion = useReducedMotion();
+  const { reduced: reduceMotion } = useMotionPreference();
   const enter = (index = 0) => ({
     initial: reduceMotion ? (false as const) : { opacity: 0, y: 18 },
-    whileInView: { opacity: 1, y: 0 },
+    whileInView: { opacity: reduceMotion ? [1] : 1, y: reduceMotion ? [0] : 0 },
     viewport: { once: true, amount: 0.1 },
     exit: {
       opacity: 0,
