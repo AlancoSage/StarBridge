@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
+import BackgroundSwitcher from "@/components/BackgroundSwitcher";
 import ServersPage from "@/pages/ServersPage";
 import CommandsPage from "@/pages/CommandsPage";
 
@@ -148,6 +149,7 @@ export default function App() {
             交互预览
           </Badge>
           <div className="header-actions">
+            <BackgroundSwitcher />
             <Button
               variant="ghost"
               className="motion-toggle"

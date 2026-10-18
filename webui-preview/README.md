@@ -32,11 +32,15 @@ npm run preview
 
 页面切换、卡片依次入场、统计数字计数、趋势线绘制、导航滑块、服务器筛选和悬浮导航带有动画。右上角的「动画」按钮可随时开关所有动效，选择会保存在当前浏览器，刷新与切页后保持生效；关闭时「重播动画」按钮停用。未手动选择时跟随系统减少动态效果设置，手动开启或关闭后按所选状态运行。
 
+右上角的「背景」可切换纯净、雾蓝、薄荷、暖砂和点阵五种预设，支持深浅色主题。选择即时生效并保存在当前浏览器，切页和刷新后保留；所有背景均由本地 CSS 绘制，无需加载外部图片。
+
 已通过 TypeScript 检查、生产构建及 Edge 浏览器交互检查，覆盖搜索、筛选、新建与重复标识验证、回复图片、设置保存和撤销、手机悬浮导航。1440px 桌面与 390px 手机均无页面异常或横向溢出。
 
 ![浅色总览](screenshots/overview-light.png)
 
 [深色总览](screenshots/overview-dark.png) · [手机效果](screenshots/overview-mobile.png)
+
+[雾蓝背景](screenshots/background-mist-light.png) · [深色背景](screenshots/background-mist-dark.png) · [手机背景选择器](screenshots/background-picker-mobile.png)
 
 ## 复用范围与许可
 

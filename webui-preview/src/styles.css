@@ -4,8 +4,13 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  background-image: var(--workspace-backdrop, none);
+  background-size: var(--workspace-backdrop-size, cover);
+  background-position: center;
+  background-attachment: scroll;
 }
 button,
 a,
@@ -1211,6 +1216,180 @@ a:focus-visible {
 }
 @media (max-width: 420px) {
   .header-inner > .preview-badge {
+    display: none;
+  }
+}
+
+/* Background presets stay independent of the color theme and motion preference. */
+:root[data-background="mist"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 8% 8%, #bfdbfeaa 0, transparent 55%),
+    radial-gradient(ellipse at 92% 35%, #ddd6feaa 0, transparent 55%),
+    linear-gradient(150deg, #f8fbff, #edf4ff 50%, #f7f3ff);
+}
+:root[data-background="mint"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 8% 5%, #a7f3d099 0, transparent 55%),
+    radial-gradient(ellipse at 90% 65%, #a5f3fc88 0, transparent 55%),
+    linear-gradient(145deg, #f0fdf7, #eefbf8 55%, #f0f9ff);
+}
+:root[data-background="sand"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 5% 15%, #fed7aa88 0, transparent 55%),
+    radial-gradient(ellipse at 95% 65%, #fecdd388 0, transparent 55%),
+    linear-gradient(145deg, #fffaf3, #fff4ec 55%, #fff1f2);
+}
+:root[data-background="dots"] {
+  --workspace-backdrop: radial-gradient(#a1a1aa55 0.8px, transparent 0.8px);
+  --workspace-backdrop-size: 20px 20px;
+}
+:root.dark[data-background="mist"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 8% 8%, #1e3a8a77 0, transparent 55%),
+    radial-gradient(ellipse at 92% 35%, #4c1d9577 0, transparent 55%),
+    linear-gradient(150deg, #0c1221, #121527 55%, #1a1223);
+}
+:root.dark[data-background="mint"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 8% 5%, #065f4666 0, transparent 55%),
+    radial-gradient(ellipse at 90% 65%, #155e7566 0, transparent 55%),
+    linear-gradient(145deg, #0b1814, #0b1c1d 55%, #0c1923);
+}
+:root.dark[data-background="sand"] {
+  --workspace-backdrop:
+    radial-gradient(ellipse at 5% 15%, #78350f66 0, transparent 55%),
+    radial-gradient(ellipse at 95% 65%, #83184355 0, transparent 55%),
+    linear-gradient(145deg, #1d1510, #211512 55%, #20111a);
+}
+:root.dark[data-background="dots"] {
+  --workspace-backdrop: radial-gradient(#a1a1aa44 0.8px, transparent 0.8px);
+}
+:root[data-background]:not([data-background="plain"]) .app-header {
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter: blur(18px);
+}
+:root[data-background]:not([data-background="plain"])
+  :is(.metric-card, .soft-panel) {
+  background: color-mix(in oklab, var(--muted) 82%, transparent);
+  backdrop-filter: blur(12px);
+}
+.header-actions .background-toggle {
+  height: 30px;
+  width: auto;
+  padding: 0 9px;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.background-toggle[data-state="open"] {
+  color: var(--foreground);
+  background: var(--muted);
+}
+.background-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.background-option {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--background);
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.background-option[aria-pressed="true"] {
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+.background-option-name {
+  font-size: 11px;
+  padding: 0 3px 3px;
+}
+.background-swatch {
+  display: block;
+  width: 100%;
+  height: 78px;
+  border-radius: 9px;
+  border: 1px solid #00000005;
+  overflow: hidden;
+}
+.background-swatch-plain {
+  background: linear-gradient(145deg, var(--background) 45%, var(--muted));
+}
+.background-swatch-mist {
+  background:
+    radial-gradient(ellipse at 20% 20%, #bfdbfe, transparent 70%),
+    linear-gradient(135deg, #e0f2fe, #ddd6fe);
+}
+.background-swatch-mint {
+  background:
+    radial-gradient(ellipse at 20% 20%, #a7f3d0, transparent 70%),
+    linear-gradient(135deg, #ecfdf5, #a5f3fc);
+}
+.background-swatch-sand {
+  background:
+    radial-gradient(ellipse at 20% 20%, #fed7aa, transparent 70%),
+    linear-gradient(135deg, #fffbeb, #fecdd3);
+}
+.background-swatch-dots {
+  background-color: var(--background);
+  background-image: radial-gradient(#a1a1aa88 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.dark .background-swatch-mist {
+  background:
+    radial-gradient(ellipse at 20% 20%, #1e3a8a, transparent 70%),
+    linear-gradient(135deg, #101c31, #3b2058);
+}
+.dark .background-swatch-mint {
+  background:
+    radial-gradient(ellipse at 20% 20%, #065f46, transparent 70%),
+    linear-gradient(135deg, #0b201b, #164e63);
+}
+.dark .background-swatch-sand {
+  background:
+    radial-gradient(ellipse at 20% 20%, #78350f, transparent 70%),
+    linear-gradient(135deg, #291c14, #551c39);
+}
+.background-selected-check {
+  position: absolute;
+  right: 13px;
+  top: 13px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+}
+@media (min-width: 640px) {
+  .background-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .header-actions .background-toggle {
+    width: 30px;
+    padding: 0;
+    margin-right: 4px;
+  }
+  .background-toggle-label {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .header-actions .user-avatar {
     display: none;
   }
 }
