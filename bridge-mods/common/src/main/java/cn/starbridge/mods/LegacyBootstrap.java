@@ -12,9 +12,9 @@ public final class LegacyBootstrap {
         if(!LegacyHost.dedicated(server))return;
         try {
             host=new LegacyHost(server,version,loader);bridge=new BridgeEngine(host,BridgeConfig.load(Paths.get("config/starbridge-bridge.properties")));
-            host.listen();bridge.start();host.log("Myrinbot Forge "+version+" 游戏端已启动。",null);
+            host.listen();bridge.start();host.log("VexBot Forge "+version+" 游戏端已启动。",null);
         } catch(Exception error) {
-            System.err.println("[Myrinbot] 游戏端初始化失败，已停止服务器。请检查 config/starbridge-bridge.properties；错误类型："+error.getClass().getSimpleName());
+            System.err.println("[VexBot] 游戏端初始化失败，已停止服务器。请检查 config/starbridge-bridge.properties；错误类型："+error.getClass().getSimpleName());
             if(host!=null)host.closeListeners();call(server,"initiateShutdown|func_71263_m");host=null;bridge=null;
         }
     }

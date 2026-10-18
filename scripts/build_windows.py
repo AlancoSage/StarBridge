@@ -1,4 +1,4 @@
-"""Build a deployable Bot ZIP from a fixed list, excluding live data and credentials."""
+"""Build the VexBot deployment, preserving installed supervisors' legacy paths."""
 import argparse
 from pathlib import Path
 import sys

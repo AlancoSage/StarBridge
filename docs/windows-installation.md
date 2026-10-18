@@ -1,10 +1,10 @@
 # Windows 安装与运行
 
-适用版本：Bot **0.6.25**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
+适用版本：Bot **0.6.28**。本页负责安装、启动和停止主程序；启动后按 [快速开始](quick-start.md) 接入游戏服务器与 QQ。
 
 适用于 Windows 10 / 11 和具有桌面环境的 Windows Server。需要能访问 Python 官网和 Python 包索引的网络；Bot 不需要显卡。
 
-Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。BAT 安装入口仅用于 Windows：源码检出推荐 `Myrinbot.bat`；部署 ZIP 为兼容已有升级器保留 `星桥.bat`。本页以 ZIP 中的文件名演示，该脚本可自行重命名为 `Myrinbot.bat` 后使用，功能相同。
+Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。BAT 安装入口仅用于 Windows：源码检出推荐 `VexBot.bat`；部署 ZIP 为兼容已有升级器保留 `星桥.bat`。本页以 ZIP 中的文件名演示，该脚本可自行重命名为 `VexBot.bat` 后使用，功能相同。
 
 ## 准备
 
@@ -21,8 +21,8 @@ Linux 用户请阅读 [Linux 安装与运行](linux-installation.md)。BAT 安�
 
 ## 方式一 双击安装
 
-1. 下载 Myrinbot Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
-2. 双击部署目录中的 **星桥.bat**；从源码部署时可双击 **Myrinbot.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
+1. 下载 VexBot Windows 部署包，完整解压到可写目录，例如 `D:\StarBridge`。不要直接在 ZIP 预览窗口内运行脚本。
+2. 双击部署目录中的 **星桥.bat**；从源码部署时可双击 **VexBot.bat**。自动寻找 Python 3.11+；未找到时下载并校验官方 Python 3.13.16 安装包，安装到项目的 `.runtime\python`。随后创建 `.venv`，按 `requirements.lock.txt` 安装依赖，生成随机令牌配置。安装与运行逻辑都内嵌在此 BAT 文件中，无需另一个 PowerShell 脚本。
 3. 管理面板就绪后自动打开浏览器，使用用户名和密码登录。首次尚未创建服主账号时，点击「创建服主账号」，使用本地 `config.toml` 的 `app.admin_token` 完成首次授权并设置用户名、密码，再登录面板填写机器人连接、服务器和关联群。
 
 Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PATH，无需 Git、Java 或显卡。QQ 登录实现端与 Minecraft 服务器仍由用户单独接入。ARM64 使用 Python 官方 ARM64 安装包，依赖安装需要该架构可用的二进制包。
@@ -31,7 +31,7 @@ Bot 在后台运行，关闭安装窗口不会停止它。无需修改系统 PAT
 
 | 文件 | 用途 |
 | --- | --- |
-| `星桥.bat` / 源码中的 `Myrinbot.bat` | 自动安装并启动；窗口内选择打开面板、启动、停止、重启或关闭窗口 |
+| `星桥.bat` / 源码中的 `VexBot.bat` | 自动安装并启动；窗口内选择打开面板、启动、停止、重启或关闭窗口 |
 | `config.toml` | 本地运行配置，包含首次创建服主账号的授权令牌及各端连接令牌 |
 | `data/server.log`、`data/server-error.log` | 启动输出与错误日志 |
 
@@ -60,7 +60,7 @@ python -c "import sys; print(sys.executable); assert sys.version_info >= (3, 11)
 
 ### 2. 解压项目并进入目录
 
-完整解压取得的 Myrinbot 项目包，例如放到 `D:\StarBridge`。在 PowerShell 中进入该目录：
+完整解压取得的 VexBot 项目包，例如放到 `D:\StarBridge`。在 PowerShell 中进入该目录：
 
 ```powershell
 Set-Location -LiteralPath 'D:\StarBridge'

@@ -1,6 +1,6 @@
 # 第三方来源与许可证
 
-Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。源码根目录、新构建游戏端 JAR 的 `META-INF/licenses/Myrinbot/` 和官网 ZIP 中提供 `LICENSE`；新构建的 Bot ZIP 提供 `docs/LICENSE.md`。历史 JAR 保留原许可目录。本文件记录第三方文件和依赖的原始许可证；这些许可证继续适用于相应第三方材料。
+VexBot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。源码根目录、新构建游戏端 JAR 的 `META-INF/licenses/VexBot/` 和官网 ZIP 中提供 `LICENSE`；新构建的 Bot ZIP 提供 `docs/LICENSE.md`。历史 JAR 保留原许可目录。本文件记录第三方文件和依赖的原始许可证；这些许可证继续适用于相应第三方材料。
 
 ## 仓库包含的 Gradle Wrapper
 
@@ -21,7 +21,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 - 原作者声明：`Copyright (C) 2008 Google Inc.`。
 - 来源：[Gson 2.13.2 LICENSE](https://github.com/google/gson/blob/gson-parent-2.13.2/LICENSE)。
 - 构建声明：`bridge/pom.xml` 与 `bridge/build.ps1`。
-- 打包位置：当前构建的 `Myrinbot-0.5.4.jar` 及其 `StarBridge-0.5.4.jar` 兼容副本中的 `cn/starbridge/lib/gson/`；历史 JAR 名称按对应版本保留。
+- 打包位置：当前构建的 `VexBot-0.5.4.jar` 及其 `StarBridge-0.5.4.jar` 兼容副本中的 `cn/starbridge/lib/gson/`；历史 JAR 名称按对应版本保留。
 - 修改说明：构建时将 `com.google.gson` 包名和对应类引用重定位为 `cn.starbridge.lib.gson`。
 - 随 JAR 保留的许可：`META-INF/licenses/Gson-LICENSE.txt`；对应仓库文件为 [Gson-LICENSE.txt](https://github.com/AlancoSage/StarBridge/blob/main/bridge/src/main/resources/META-INF/licenses/Gson-LICENSE.txt)。
 
@@ -29,7 +29,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 
 `bridge-fabric/build.py` 从 FabricMC Yarn 读取 Tiny v2 映射，生成 Fabric JAR 内的 `starbridge-fabric-mappings.json`。以下 Minecraft 版本使用 Yarn：`1.16.5+build.10`、`1.18.2+build.4`、`1.19.2+build.28`、`1.20.1+build.10`、`1.21.1+build.3`、`1.21.8+build.1`、`1.21.11+build.6`。
 
-这些映射来源于 FabricMC Yarn contributors，采用 **CC0-1.0**，见 [Yarn LICENSE](https://github.com/FabricMC/yarn/blob/1.21.8/LICENSE)。映射数据继续适用 CC0；Myrinbot 的解析和适配代码适用项目许可证。
+这些映射来源于 FabricMC Yarn contributors，采用 **CC0-1.0**，见 [Yarn LICENSE](https://github.com/FabricMC/yarn/blob/1.21.8/LICENSE)。映射数据继续适用 CC0；VexBot 的解析和适配代码适用项目许可证。
 
 `bridge-fabric/bindings/` 与 `bridge-neoforge/bindings/` 是适配器声明的 API 名称与描述符。构建器核对官方游戏类声明，仅输出适配器所声明的接口表面；构建使用的 Minecraft 服务端 JAR、游戏类和完整官方映射文件均不包含在项目分发包中。
 
@@ -62,7 +62,7 @@ Myrinbot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.c
 
 Bot 的可选 MySQL 连接使用 [PyMySQL](https://github.com/PyMySQL/PyMySQL)（MIT），其 RSA / caching_sha2_password 认证依赖 [cryptography](https://github.com/pyca/cryptography)（Apache-2.0 OR BSD-3-Clause）、[cffi](https://github.com/python-cffi/cffi)（MIT-0）和 [pycparser](https://github.com/eliben/pycparser)（BSD-3-Clause）。这些组件通过 Python 依赖安装，保留各自软件包附带的许可证，不打入游戏端 JAR。MySQL 服务端不随部署包分发。
 
-以下是构建或运行环境使用的主要第三方组件，除上面明确列出的 Gson 和 Gradle Wrapper 外，其实现不被复制进 Myrinbot JAR：
+以下是构建或运行环境使用的主要第三方组件，除上面明确列出的 Gson 和 Gradle Wrapper 外，其实现不被复制进 VexBot JAR：
 
 | 组件 | 用途 / 声明位置 | 上游许可证 |
 | --- | --- | --- |
@@ -75,11 +75,11 @@ Bot 的可选 MySQL 连接使用 [PyMySQL](https://github.com/PyMySQL/PyMySQL)�
 | Brigadier 1.0.18 | Fabric 编译依赖 | [MIT](https://github.com/Mojang/brigadier/blob/master/LICENSE) |
 | JUnit Jupiter 5.10.2 | Forge / NeoForge 测试依赖 | [EPL-2.0](https://github.com/junit-team/junit5/blob/r5.10.2/LICENSE.md) |
 
-`bridge/src/*-test/java/` 下使用第三方包名的类是测试替身，不进入生产 JAR。AuthMe、LimboAuth、LibreLogin、LoginSecurity 与 nLogin 通过已安装插件的 API 接入，其插件实现不随 Myrinbot 分发。`bridge-velocity` 仅包含本项目代码及与 Bukkit 同版、同许可的重定位 Gson；测试期间使用的 Velocity、LimboAuth、LimboAPI、LibreLogin、H2 等正式 JAR 不进入生产附件。`starbridge-website/sdk/starbridge.js` 是 Myrinbot 的浏览器 API 客户端，适用项目许可证。
+`bridge/src/*-test/java/` 下使用第三方包名的类是测试替身，不进入生产 JAR。AuthMe、LimboAuth、LibreLogin、LoginSecurity 与 nLogin 通过已安装插件的 API 接入，其插件实现不随 VexBot 分发。`bridge-velocity` 仅包含本项目代码及与 Bukkit 同版、同许可的重定位 Gson；测试期间使用的 Velocity、LimboAuth、LimboAPI、LibreLogin、H2 等正式 JAR 不进入生产附件。`starbridge-website/sdk/starbridge.js` 是 VexBot 的浏览器 API 客户端，适用项目许可证。
 
 ## Apache License 2.0
 
-下列原文适用于上述 Gradle Wrapper 与 Gson；它不替代 Myrinbot 自有代码的 AGPL 许可证。
+下列原文适用于上述 Gradle Wrapper 与 Gson；它不替代 VexBot 自有代码的 AGPL 许可证。
 
 ```text
                                  Apache License

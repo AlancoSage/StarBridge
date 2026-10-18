@@ -29,15 +29,15 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
     async def test_platform_selection_authentication_and_unknown_platform(self):
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
             for platform, expected in (('bukkit', b'bukkit-fixture'),
-                                      ('forge', f'Myrinbot-Forge-1.20.1-{__forge_version__}.jar'.encode()),
-                                      ('fabric', f'Myrinbot-Fabric-1.20.1-{__forge_version__}.jar'.encode())):
+                                      ('forge', f'VexBot-Forge-1.20.1-{__forge_version__}.jar'.encode()),
+                                      ('fabric', f'VexBot-Fabric-1.20.1-{__forge_version__}.jar'.encode())):
                 response = await self.client.get('/api/plugin?platform=' + platform, headers=self.headers)
                 self.assertEqual(response.status, 200)
                 self.assertEqual(await response.read(), expected)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
                 self.assertIn('attachment;', response.headers['Content-Disposition'])
                 if platform == 'bukkit':
-                    self.assertIn(f'Myrinbot-{__bridge_version__}.jar', response.headers['Content-Disposition'])
+                    self.assertIn(f'VexBot-{__bridge_version__}.jar', response.headers['Content-Disposition'])
             for platform in ('forge', 'fabric'):
                 response = await self.client.get('/api/plugin?platform='+platform)
                 self.assertEqual(response.status, 401)
@@ -91,7 +91,7 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
         directory = self.root / 'bridge/target'
         filename = bridge_filename('fabric', '1.20.1')
         (directory / filename).unlink()
-        (directory / filename.replace('Myrinbot-', 'StarBridge-', 1)).write_bytes(b'legacy-build')
+        (directory / filename.replace('VexBot-', 'StarBridge-', 1)).write_bytes(b'legacy-build')
         with patch('starbridge.app.Path', return_value=self.root / 'starbridge/app.py'):
             catalog = await (await self.client.get('/api/plugin/catalog', headers=self.headers)).json()
             self.assertTrue(next(row for row in catalog['bridges'] if row['filename'] == filename)['available'])
@@ -99,10 +99,14 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(await response.read(), b'legacy-build')
             self.assertIn(filename, response.headers['Content-Disposition'])
-            (directory / filename.replace('Myrinbot-', 'AetherBot-', 1)).write_bytes(b'aetherbot-build')
+            (directory / filename.replace('VexBot-', 'AetherBot-', 1)).write_bytes(b'aetherbot-build')
             response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
             self.assertEqual(response.status, 200)
             self.assertEqual(await response.read(), b'aetherbot-build')
+            (directory / filename.replace('VexBot-', 'Myrinbot-', 1)).write_bytes(b'myrinbot-build')
+            response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(await response.read(), b'myrinbot-build')
             (directory / filename).write_bytes(b'current-build')
             response = await self.client.get('/api/plugin?platform=fabric&version=1.20.1', headers=self.headers)
             self.assertEqual(await response.read(), b'current-build')
@@ -112,7 +116,7 @@ class ForgeDownloadTests(unittest.IsolatedAsyncioTestCase):
             response = await self.client.get('/api/authentication/guide?platform='+platform, headers=self.headers)
             self.assertEqual(response.status, 200)
             self.assertIn(b'1.16.5' if platform == 'fabric' else b'1.7.10', await response.read())
-            self.assertIn('Myrinbot-fabric-game-ends.md' if platform == 'fabric' else 'Myrinbot-mod-game-ends.md', response.headers['Content-Disposition'])
+            self.assertIn('VexBot-fabric-game-ends.md' if platform == 'fabric' else 'VexBot-mod-game-ends.md', response.headers['Content-Disposition'])
         response = await self.client.get('/api/authentication/guide?platform=quilt', headers=self.headers)
         self.assertEqual(response.status, 400)
         response = await self.client.get('/mod-bridge-panel.js')

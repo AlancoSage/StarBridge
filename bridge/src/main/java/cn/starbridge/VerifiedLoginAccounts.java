@@ -64,7 +64,7 @@ final class VerifiedLoginAccounts {
             Properties next = new Properties(); next.putAll(records); next.setProperty(name, identity);
             Files.createDirectories(path.getParent());
             Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
-            try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "Myrinbot verified identities; no passwords"); }
+            try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "VexBot verified identities; no passwords"); }
             try { Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
             catch (AtomicMoveNotSupportedException ex) { Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING); }
             shared.records = next;

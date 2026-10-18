@@ -16,7 +16,7 @@ public final class BridgeConfig {
     public static BridgeConfig load(Path file) throws IOException {
         if (!Files.exists(file)) {
             Files.createDirectories(file.toAbsolutePath().getParent());
-            Files.write(file, ("# Myrinbot: save connection settings, then restart the server.\nendpoint=http://127.0.0.1:5800\nserver-id=survival\ntoken=CHANGE-ME\nallowed-commands=list\n").getBytes(StandardCharsets.UTF_8));
+            Files.write(file, ("# VexBot: save connection settings, then restart the server.\nendpoint=http://127.0.0.1:5800\nserver-id=survival\ntoken=CHANGE-ME\nallowed-commands=list\n").getBytes(StandardCharsets.UTF_8));
         }
         Properties values=new Properties();
         try (Reader input=Files.newBufferedReader(file,StandardCharsets.UTF_8)) { values.load(input); }

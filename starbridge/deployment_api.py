@@ -14,7 +14,7 @@ def setup_routes(app, state_key, read_body, commit, authorize):
                 if data.keys() != {'kind'}: raise RegistrationError('检测只接受 kind')
                 result = await service.probe(data['kind'])
             elif path == '/api/deployment/templates': result = {'templates': [{'id': key, 'title': title} for key, title in [('single', '单服联动'), ('multi', '多服社区'), ('qq_login', '仅 QQ 确认登录'), ('chat_only', '聊天联动，不启用游戏认证')]]}
-            elif path == '/api/deployment/export': return web.json_response(service.export(), headers={'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="Myrinbot-config.json"'})
+            elif path == '/api/deployment/export': return web.json_response(service.export(), headers={'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="VexBot-config.json"'})
             elif path == '/api/deployment/preview': result = service.preview(await read_body(request))
             else:
                 data = await read_body(request)

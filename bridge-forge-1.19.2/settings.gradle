@@ -4,4 +4,4 @@ pluginManagement {
         maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
-rootProject.name = 'Myrinbot-Forge-1.19.2'
+rootProject.name = 'VexBot-Forge-1.19.2'

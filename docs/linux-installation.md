@@ -1,6 +1,6 @@
 # Linux 安装与运行
 
-适用版本：Bot **0.6.25**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
+适用版本：Bot **0.6.28**。本页负责准备 Python 环境、启动主程序和可选后台托管；群服联动按 [快速开始](quick-start.md) 继续。
 
 适用于具有 Python 3.11+ 的 Linux 环境。下面的系统依赖命令面向 Ubuntu 24.04 和 Debian 12；其他发行版需使用对应的包管理器。Bot 不需要图形桌面、Java 或显卡，QQ 实现端和 Minecraft 游戏服务器需另外接入。
 
@@ -25,7 +25,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 11), "需要 Python 3.11 
 
 如果版本检查失败，先安装发行版支持的 Python 3.11+ 及其对应的 venv 包，再继续。创建虚拟环境时使用该版本的解释器，例如 `python3.12 -m venv .venv`。
 
-完整解压 Myrinbot Bot 部署包到部署目录，或从 [公开仓库](https://github.com/AlancoSage/StarBridge) 克隆源码；无需额外仓库授权。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
+完整解压 VexBot 部署包到部署目录，或从 [公开仓库](https://github.com/AlancoSage/StarBridge) 克隆源码；无需额外仓库授权。下文以 `/opt/starbridge` 为例，目录中应直接包含 `starbridge/`、`config.example.toml` 和 `requirements.lock.txt`。部署用户需要有该目录的读写权限。使用其他目录时，修改下文的 `cd` 和 systemd 中的绝对路径。
 
 不要将 Windows 的 `.venv` 或 `.runtime` 复制到 Linux；应在 Linux 上创建运行环境。
 
@@ -81,7 +81,7 @@ QQ 实现端或游戏服务器分开部署时，在面板「设置 → 软件设
 
 ```ini
 [Unit]
-Description=Myrinbot
+Description=VexBot
 Wants=network-online.target
 After=network-online.target
 

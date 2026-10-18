@@ -140,7 +140,7 @@ public final class FabricRuntime {
         FabricHost adapter=host;
         if(adapter!=null)adapter.log(message,error);
         else {
-            System.err.println("[Myrinbot] "+message+" "+error.getClass().getName());
+            System.err.println("[VexBot] "+message+" "+error.getClass().getName());
             for(StackTraceElement frame:error.getStackTrace())System.err.println("    at "+frame);
         }
     }

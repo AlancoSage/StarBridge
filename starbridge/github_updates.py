@@ -13,7 +13,7 @@ DEFAULT_SETTINGS = {'source': 'github', 'feed_url': '', 'github_repository': DEF
 
 
 def package_names(version):
-    return (f'Myrinbot-Windows-{version}.zip', f'AetherBot-Windows-{version}.zip',
+    return (f'VexBot-Windows-{version}.zip', f'Myrinbot-Windows-{version}.zip', f'AetherBot-Windows-{version}.zip',
             f'StarBridge-Windows-{version}.zip')
 
 
@@ -46,7 +46,7 @@ def version_number(value):
 class GitHubReleases:
     def __init__(self, settings):
         self.repository = settings['github_repository']
-        self.headers = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'Myrinbot-Updater'}
+        self.headers = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'VexBot-Updater'}
         if settings['github_token']: self.headers['Authorization'] = 'Bearer ' + settings['github_token']
         self.base = 'https://api.github.com/repos/' + self.repository
 
@@ -79,7 +79,7 @@ class GitHubReleases:
                         raise RegistrationError('GitHub 附件跳转地址不受信任，下载已停止')
                     url = location
                     # Never send a PAT to signed asset URLs, including subsequent redirects.
-                    headers = {'Accept': 'application/octet-stream', 'User-Agent': 'Myrinbot-Updater'}
+                    headers = {'Accept': 'application/octet-stream', 'User-Agent': 'VexBot-Updater'}
                     continue
                 self.status(response.status)
                 yield response

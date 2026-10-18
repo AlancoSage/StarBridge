@@ -43,12 +43,14 @@ def setup_routes(app, state_key, authorize, read_body, bridge):
         root = Path(__file__).resolve().parent.parent
         if request.path.endswith("/guide"):
             path = root / "docs/native-password-reset.md"
+            filename = f"{ARTIFACT_PREFIX}-native-password-reset.md"
         else:
-            path = artifact_path(root / "bridge/target", f"{ARTIFACT_PREFIX}-Velocity-{__velocity_version__}.jar")
+            filename = f"{ARTIFACT_PREFIX}-Velocity-{__velocity_version__}.jar"
+            path = artifact_path(root / "bridge/target", filename)
         if not path.is_file():
             raise web.HTTPNotFound(text="请先构建或安装相应的发布附件")
         return web.FileResponse(path, headers={"Cache-Control": "no-store",
-            "Content-Disposition": f'attachment; filename="{path.name}"'})
+            "Content-Disposition": f'attachment; filename="{filename}"'})
 
     async def script(request):
         return web.FileResponse(Path(__file__).with_name("native-password-panel.js"), headers={"Cache-Control": "no-cache"})

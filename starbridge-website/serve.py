@@ -1,4 +1,4 @@
-"""Myrinbot standalone website server. Python standard library only."""
+"""VexBot standalone website server. Python standard library only."""
 import argparse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -62,7 +62,7 @@ def main():
     except (ValueError, KeyError, OSError, TypeError) as exc:
         parser.error(str(exc))
     with ThreadingHTTPServer((args.host, args.port), handler(address)) as server:
-        print(f'Myrinbot website: http://{args.host}:{server.server_port}/ | Bot API: {address}', flush=True)
+        print(f'VexBot website: http://{args.host}:{server.server_port}/ | Bot API: {address}', flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:

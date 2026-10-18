@@ -163,7 +163,7 @@ def _text_pages(text, title):
         rows = lines[offset:offset+per_page]
         height = max(720, 350+len(rows)*step)
         image = _canvas(height)
-        _label(image, (44, 40), 'MYRINBOT / REPLY', 23, fill=(215, 238, 255, 255))
+        _label(image, (44, 40), 'VEXBOT / REPLY', 23, fill=(215, 238, 255, 255))
         _label(image, (44, 90), _fit(title, _font(58, True), 990), 58, True)
         _label(image, (46, 176), '指令回复  ·  '+time.strftime('%H:%M'), 22)
         _glass(image, (42, 234, 1038, height-68))
@@ -260,7 +260,7 @@ def _server_card(image, y, server, players, continuation, details, left=42, widt
 
 def _online_summary(image, count, online, servers, updated, status):
     _glass(image, (42, 44, 334, image.height-44), radius=30)
-    _label(image, (66, 70), 'Myrinbot', 21, True, fill='#d6f3ee')
+    _label(image, (66, 70), 'VexBot', 21, True, fill='#d6f3ee')
     _label(image, (66, 112), '服务器', 38, True)
     _label(image, (66, 160), '在线列表', 46, True)
     _glass(image, (62, 226, 314, 346), radius=24, tint=14)
@@ -321,7 +321,7 @@ def _status_pages(view, title):
             continue
         height = max(560, 328+max(body, 106)+44)
         image = _canvas(height)
-        _label(image, (42, 79), 'Myrinbot', 21, True, fill='#d6f3ee')
+        _label(image, (42, 79), 'VexBot', 21, True, fill='#d6f3ee')
         heading = '服务器在线列表' if command_key(title) == '在线' else '服务器运行状态'
         _label(image, (42, 121), heading, 60, True)
         _glass(image, (878, 44, 1038, 178), radius=32, tint=14)

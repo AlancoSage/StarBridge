@@ -132,7 +132,7 @@ def migrate(config_path, destination, replace=False, root=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="停止软件后，将 Myrinbot 数据完整迁移至 SQLite 或 MySQL")
+    parser = argparse.ArgumentParser(description="停止软件后，将 VexBot 数据完整迁移至 SQLite 或 MySQL")
     parser.add_argument("--config", type=Path, default=Path("config.toml"))
     parser.add_argument("--to", choices=("mysql", "sqlite"), required=True)
     parser.add_argument("--replace", action="store_true", help="允许替换目标现有数据，替换前保存完整安全副本")

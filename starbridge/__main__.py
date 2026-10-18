@@ -68,7 +68,7 @@ async def serve(path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Myrinbot · QQ / Minecraft 联动机器人")
+    parser = argparse.ArgumentParser(description="VexBot · QQ / Minecraft 联动机器人")
     parser.add_argument("command", nargs="?", choices=["init", "run", "_serve"], default="run")
     parser.add_argument("--config", default="config.toml")
     args = parser.parse_args()
@@ -84,7 +84,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if args.command == 'run':
         from scripts.mysql_runtime import supervise
-        print("Myrinbot已启动；面板使用用户名和密码登录。首次无服主账号时，点击“创建服主账号”，使用本地 config.toml 的 app.admin_token 完成首次授权并设置账号。")
+        print("VexBot已启动；面板使用用户名和密码登录。首次无服主账号时，点击“创建服主账号”，使用本地 config.toml 的 app.admin_token 完成首次授权并设置账号。")
         raise SystemExit(supervise(path))
     try:
         raise SystemExit(asyncio.run(serve(path)) or 0)

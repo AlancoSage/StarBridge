@@ -10,7 +10,7 @@ from classfile import declarations
 
 
 def native_bindings(specification: dict, bundled: Path) -> dict:
-    """Return only Myrinbot's declared API surface; never include game bytecode."""
+    """Return only VexBot's declared API surface; never include game bytecode."""
     with zipfile.ZipFile(bundled) as bundle:
         game_bytes = bundle.read(specification['server']['entry'])
     with zipfile.ZipFile(BytesIO(game_bytes)) as game:

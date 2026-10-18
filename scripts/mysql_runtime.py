@@ -149,7 +149,7 @@ def supervise(config, root=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Myrinbot 内部离线数据库快照工具")
+    parser = argparse.ArgumentParser(description="VexBot 内部离线数据库快照工具")
     parser.add_argument("operation", choices=("export", "import"))
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--snapshot", required=True, type=Path)

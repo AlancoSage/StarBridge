@@ -1,12 +1,12 @@
 # OneBot 11：连接 QQ 机器人
 
-适用版本：Bot **0.6.25**。
+适用版本：Bot **0.6.28**。
 
 本页针对 OneBot 11 接入。使用 QQ 开放平台官机时，改按 [QQ 官方机器人接入](qq-official.md) 配置 AppID / AppSecret；同一实例一次使用一种接入方式。
 
 ## 用途
 
-将一个已登录的 QQ 账号通过 **OneBot 11 通用反向 WebSocket** 接入 Myrinbot，使机器人接收关联群消息并发送回复。Myrinbot 作为 WebSocket 服务端，QQ 实现端主动连接 Myrinbot；QQ 登录在实现端完成。
+将一个已登录的 QQ 账号通过 **OneBot 11 通用反向 WebSocket** 接入 VexBot，使机器人接收关联群消息并发送回复。VexBot 作为 WebSocket 服务端，QQ 实现端主动连接 VexBot；QQ 登录在实现端完成。
 
 当前一个 Bot 实例接入一只 QQ 机器人，可以服务多个关联群。
 
@@ -19,11 +19,11 @@
 
 ## 操作步骤
 
-### 1. 在 Myrinbot 设置 QQ 账号和令牌
+### 1. 在 VexBot 设置 QQ 账号和令牌
 
 从侧栏进入 **接入空间 → 机器人连接**，点击机器人卡片上的「接入设置」。窄屏设备先通过顶部菜单按钮打开导航：
 
-1. 填写「机器人 QQ 号」，与实现端当前登录账号一致。留空时 Myrinbot 按连接头识别账号；首次配置建议明确填写。
+1. 填写「机器人 QQ 号」，与实现端当前登录账号一致。留空时 VexBot 按连接头识别账号；首次配置建议明确填写。
 2. 在「管理员 QQ 号」填写允许执行预设控制台命令的 QQ，每行一个。机器人接收普通消息和处理本人绑定不要求管理员身份。
 3. 保留初始化生成的「OneBot 连接令牌」，或生成新的随机令牌。
 4. 复制令牌和反向 WebSocket 地址，点击「保存全部设置」。保存会同时应用面板中其他尚未保存的设置；关闭弹窗会保留草稿。
@@ -37,12 +37,12 @@
 | 参数 | 值或要求 |
 | --- | --- |
 | URL | 同机默认 `ws://127.0.0.1:5800/onebot/ws` |
-| Token / Access Token | Myrinbot「OneBot 连接令牌」；填令牌本身，不加 `Bearer ` |
+| Token / Access Token | VexBot「OneBot 连接令牌」；填令牌本身，不加 `Bearer ` |
 | 连接模式 | `Universal` / 通用，API 与事件共用一条连接 |
-| 消息格式 | 推荐消息段数组；Myrinbot 也接收 CQ 码字符串 |
+| 消息格式 | 推荐消息段数组；VexBot 也接收 CQ 码字符串 |
 | 断线重连 | 在实现端启用，可设置 3–5 秒间隔 |
 
-Myrinbot 的 OneBot 连接使用 `onebot.token`，Minecraft 游戏端使用对应服务器的 `servers.token`。面板日常登录使用用户名和密码；`app.admin_token` 仅用于首次创建服主账号的授权和兼容管理 API。各类凭据不可混用。
+VexBot 的 OneBot 连接使用 `onebot.token`，Minecraft 游戏端使用对应服务器的 `servers.token`。面板日常登录使用用户名和密码；`app.admin_token` 仅用于首次创建服主账号的授权和兼容管理 API。各类凭据不可混用。
 
 ### 3. 按部署位置选择地址
 
@@ -68,24 +68,24 @@ Myrinbot 的 OneBot 连接使用 `onebot.token`，Minecraft 游戏端使用对�
 
 ## 预期结果
 
-Myrinbot 总览与连接日志显示正确的机器人 QQ，关联群能收到 `帮助` 回复。只打开实现端、只完成 QQ 登录，或者只配置群号，都还不代表 OneBot 已连接成功。
+VexBot 总览与连接日志显示正确的机器人 QQ，关联群能收到 `帮助` 回复。只打开实现端、只完成 QQ 登录，或者只配置群号，都还不代表 OneBot 已连接成功。
 
 ## 常见故障
 
 ### 握手失败
 
-Myrinbot 检查以下连接头。正常实现端应按协议发送，管理员只需在实现端填写 QQ 账号和 Token：
+VexBot 检查以下连接头。正常实现端应按协议发送，管理员只需在实现端填写 QQ 账号和 Token：
 
-| 连接头 | Myrinbot 要求 |
+| 连接头 | VexBot 要求 |
 | --- | --- |
 | `Authorization` | `Bearer <onebot.token>` |
-| `X-Self-ID` | 数字 QQ 号；Myrinbot 填写了机器人 QQ 时必须与其相同 |
+| `X-Self-ID` | 数字 QQ 号；VexBot 填写了机器人 QQ 时必须与其相同 |
 | `X-Client-Role` | 提供该头时必须为 `Universal`，大小写不敏感 |
 
 | 错误或现象 | 处理方法 |
 | --- | --- |
 | `401` / `OneBot token 不正确` | 同步 `onebot.token`；检查是否误用了面板令牌、游戏令牌或在 Token 输入框加了 `Bearer ` |
-| `403` / `X-Self-ID 缺失或与配置不符` | 核对实际登录 QQ 与 Myrinbot 配置；检查实现端或代理是否发送、保留 `X-Self-ID` |
+| `403` / `X-Self-ID 缺失或与配置不符` | 核对实际登录 QQ 与 VexBot 配置；检查实现端或代理是否发送、保留 `X-Self-ID` |
 | `400` / `请选择 Universal / 通用反向 WebSocket` | 将实现端改为通用连接，API 与事件共用一条连接 |
 | `409` / `已有机器人连接` | 断开旧连接，保留一个启用的反向连接配置；当前实例只接受一条 QQ 连接 |
 | `404` | 核对完整路径 `/onebot/ws`，以及代理路径是否正确转发 |

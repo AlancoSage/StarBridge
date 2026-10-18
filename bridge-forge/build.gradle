@@ -23,7 +23,7 @@ dependencies {
 tasks.named('processResources') {
     from(project.file(project.findProperty('starbridgeLicenseRoot') ?: '..')) {
         include 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'
-        into 'META-INF/licenses/Myrinbot'
+        into 'META-INF/licenses/VexBot'
     }
     inputs.property 'version', project.version
     filesMatching('META-INF/mods.toml') { expand 'version': project.version }
@@ -34,6 +34,7 @@ tasks.named('jar') { finalizedBy 'reobfJar' }
 tasks.register('copyBridge', Copy) {
     dependsOn 'build', 'reobfJar'
     from tasks.jar.archiveFile
-    from(tasks.jar.archiveFile) { rename { name -> name.replaceFirst('^Myrinbot-', 'StarBridge-') } }
+    from(tasks.jar.archiveFile) { rename { name -> name.replaceFirst('^VexBot-', 'Myrinbot-') } }
+    from(tasks.jar.archiveFile) { rename { name -> name.replaceFirst('^VexBot-', 'StarBridge-') } }
     into '../bridge/target'
 }

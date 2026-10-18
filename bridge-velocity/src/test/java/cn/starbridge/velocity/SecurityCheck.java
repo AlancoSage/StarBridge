@@ -23,7 +23,7 @@ public final class SecurityCheck {
     private static final UUID ID = UUID.fromString("b656a994-b8f5-4c40-9e32-b2c1ae6ae83e");
     private static final String NAME = "ProofPlayer";
     private static final String OLD = "Old-Verified-Password1!", NEW = "New-Verified-Password2!";
-    private static final Logger LOG = LoggerFactory.getLogger("Myrinbot-Velocity-Check");
+    private static final Logger LOG = LoggerFactory.getLogger("VexBot-Velocity-Check");
     private static int checks;
 
     static void check(boolean value, String label) {

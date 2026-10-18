@@ -228,13 +228,13 @@ class NativeReleaseAssetTests(unittest.TestCase):
     def test_current_brand_requires_current_artifacts_and_keeps_runtime_identity(self):
         item = {'platform': 'fabric', 'version': '1.20.1', 'java': 17}
         self.catalog((item,))
-        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'Myrinbot'\n", encoding='utf-8')
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'VexBot'\n", encoding='utf-8')
         legacy = self.artifact(item)
-        current = self.artifact(item, prefix='Myrinbot')
+        current = self.artifact(item, prefix='VexBot')
         self.assertEqual(native_assets(self.root), [current])
-        validate_native_mod(current, item, '0.1.0', prefix='Myrinbot')
+        validate_native_mod(current, item, '0.1.0', prefix='VexBot')
         with self.assertRaisesRegex(ValueError, '文件名不一致'):
-            validate_native_mod(legacy, item, '0.1.0', prefix='Myrinbot')
+            validate_native_mod(legacy, item, '0.1.0', prefix='VexBot')
         current.unlink()
         with self.assertRaisesRegex(ValueError, '缺少游戏端构建'):
             native_assets(self.root)
@@ -242,14 +242,22 @@ class NativeReleaseAssetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '产物名称错误'):
             native_assets(self.root)
 
-    def test_release_build_includes_identical_legacy_aliases_and_checksums(self):
+    def test_historical_myrinbot_checkouts_keep_their_original_asset_names(self):
         item = {'platform': 'fabric', 'version': '1.20.1', 'java': 17}
         self.catalog((item,))
         (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'Myrinbot'\n", encoding='utf-8')
-        self.artifact(item, prefix='Myrinbot')
+        original = self.artifact(item, prefix='Myrinbot')
+        self.artifact(item, prefix='VexBot')
+        self.assertEqual(native_assets(self.root), [original])
+
+    def test_release_build_includes_identical_legacy_aliases_and_checksums(self):
+        item = {'platform': 'fabric', 'version': '1.20.1', 'java': 17}
+        self.catalog((item,))
+        (self.root / 'starbridge/branding.py').write_text("ARTIFACT_PREFIX = 'VexBot'\n", encoding='utf-8')
+        self.artifact(item, prefix='VexBot')
         (self.root / 'bridge/pom.xml').write_text(
             '<project xmlns="http://maven.apache.org/POM/4.0.0"><version>0.5.2</version></project>', encoding='utf-8')
-        with zipfile.ZipFile(self.root / 'bridge/target/Myrinbot-0.5.2.jar', 'w') as archive:
+        with zipfile.ZipFile(self.root / 'bridge/target/VexBot-0.5.2.jar', 'w') as archive:
             archive.writestr('plugin.yml', 'name: StarBridge\nversion: 0.5.2\n')
         (self.root / 'scripts').mkdir()
         (self.root / 'scripts/update_runtime.py').write_text('stable supervisor', encoding='utf-8')
@@ -264,12 +272,12 @@ class NativeReleaseAssetTests(unittest.TestCase):
             version, assets = release.build(self.root)
         self.assertEqual(version, '0.6.7')
         self.assertEqual(len(calls), 2)
-        primary = [path for path in assets if path.name.startswith('Myrinbot-')]
+        primary = [path for path in assets if path.name.startswith('VexBot-')]
         self.assertEqual({path.name for path in primary}, {
-            'Myrinbot-Windows-0.6.7.zip', 'Myrinbot-website.zip', 'Myrinbot-0.5.2.jar',
-            'Myrinbot-Fabric-1.20.1-0.1.0.jar'})
+            'VexBot-Windows-0.6.7.zip', 'VexBot-website.zip', 'VexBot-0.5.2.jar',
+            'VexBot-Fabric-1.20.1-0.1.0.jar'})
         for path in primary:
-            alias = path.with_name(path.name.replace('Myrinbot-', 'StarBridge-', 1))
+            alias = path.with_name(path.name.replace('VexBot-', 'StarBridge-', 1))
             self.assertIn(alias, assets)
             self.assertEqual(path.read_bytes(), alias.read_bytes())
         checksums = assets[-1].read_text('utf-8').splitlines()

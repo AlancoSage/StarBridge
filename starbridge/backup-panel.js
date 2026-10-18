@@ -10,7 +10,7 @@ function backupControls(locked){
 async function backupDownload(id){
   const response=await fetch('/api/backups/'+id,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(120000)});
   if(!response.ok)throw Error('备份下载失败，请刷新列表后重试。');
-  const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='Myrinbot-'+id+'.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='VexBot-'+id+'.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 window.loadBackups=async function(){
   if(!token||backupLoading||backupBusy)return;backupLoading=true;
@@ -56,7 +56,7 @@ $('backup-file').onchange=()=>{
   backupOperation(async()=>{
     const result=await backupApi('/api/backups/preview',{method:'POST',headers:{'Content-Type':'application/zip'},body:file});
     backupPreview=result;$('backup-preview').hidden=false;
-    setText('backup-preview-meta',new Date(result.created_at).toLocaleString()+' · Myrinbot '+result.app_version);
+    setText('backup-preview-meta',new Date(result.created_at).toLocaleString()+' · VexBot '+result.app_version);
     $('backup-preview-counts').replaceChildren(...Object.entries({players:'玩家档案',accounts:'注册账号',bindings:'绑定记录',servers:'服务器',plugins:'外部插件'}).map(([key,label])=>{const item=node('div');item.append(node('strong',result.counts[key]),node('span',label));return item;}));
     const labels={players:'玩家档案',accounts:'账号',bindings:'绑定',servers:'服务器',plugins:'插件'};
     $('backup-preview-differences').replaceChildren(...Object.entries(result.differences||{}).map(([key,value])=>node('p',labels[key]+'：当前 '+value.current+' → 备份 '+value.incoming+'（'+(value.delta>0?'+':'')+value.delta+'）')));

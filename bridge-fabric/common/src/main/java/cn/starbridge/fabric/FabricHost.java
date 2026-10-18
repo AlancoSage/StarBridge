@@ -152,7 +152,7 @@ public final class FabricHost implements GameHost {
                 else if(method.getDeclaringClass()==Object.class) {
                     if(method.getName().equals("equals"))return proxy==arguments[0];
                     if(method.getName().equals("hashCode"))return System.identityHashCode(proxy);
-                    if(method.getName().equals("toString"))return "Myrinbot command result";
+                    if(method.getName().equals("toString"))return "VexBot command result";
                 }
                 return null;
             });
@@ -165,15 +165,15 @@ public final class FabricHost implements GameHost {
     }
     public void broadcast(String text){for(GameHost.Player player:players())player.message(text);}
     public void log(String message,Throwable error) {
-        System.err.println("[Myrinbot] "+message);
+        System.err.println("[VexBot] "+message);
         // Native error messages may contain command arguments; log types and frames only.
         Set<Throwable> seen=Collections.newSetFromMap(new IdentityHashMap<Throwable,Boolean>());
         for(Throwable cause=error;cause!=null&&seen.add(cause);cause=cause.getCause()) {
-            System.err.println("[Myrinbot] "+cause.getClass().getName());
+            System.err.println("[VexBot] "+cause.getClass().getName());
             StackTraceElement[] frames=cause.getStackTrace();String detail=cause.getMessage();
             if(frames.length>0&&frames[0].getClassName().startsWith("cn.starbridge.fabric.")&&detail!=null
                     &&(detail.startsWith("Native ")||detail.startsWith("External ")||detail.startsWith("Fabric ")))
-                System.err.println("[Myrinbot] "+detail);
+                System.err.println("[VexBot] "+detail);
             for(StackTraceElement frame:cause.getStackTrace())System.err.println("    at "+frame);
         }
     }

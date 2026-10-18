@@ -29,7 +29,7 @@ public final class MyrinbotVelocity {
     private final Path directory;
     private final String instance = UUID.randomUUID().toString();
     private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "Myrinbot-Velocity"); thread.setDaemon(true); return thread;
+        Thread thread = new Thread(runnable, "VexBot-Velocity"); thread.setDaemon(true); return thread;
     });
     private final Set<String> resetting = ConcurrentHashMap.newKeySet();
     private final Map<InboundConnection, String> connections = new ConcurrentHashMap<>();
@@ -54,7 +54,7 @@ public final class MyrinbotVelocity {
         try {
             config = new BridgeConfig(directory);
             if (!config.enabled) {
-                logger.info("Myrinbot Velocity 密码恢复默认关闭；请配置 config.properties 并在面板启用。");
+                logger.info("VexBot Velocity 密码恢复默认关闭；请配置 config.properties 并在面板启用。");
                 worker.shutdownNow(); return;
             }
             boolean limbo = server.getPluginManager().getPlugin("limboauth").isPresent();
@@ -76,10 +76,10 @@ public final class MyrinbotVelocity {
                 }
             });
             worker.scheduleWithFixedDelay(this::tick, 0, 2, TimeUnit.SECONDS);
-            logger.info("Myrinbot Velocity 已启用原生认证账号核验；密码恢复以面板设置为准。");
+            logger.info("VexBot Velocity 已启用原生认证账号核验；密码恢复以面板设置为准。");
         } catch (Exception | LinkageError failure) {
             closed = true; worker.shutdownNow();
-            logger.error("Myrinbot Velocity 初始化失败；请检查配置、插件版本及是否只启用一套认证插件。");
+            logger.error("VexBot Velocity 初始化失败；请检查配置、插件版本及是否只启用一套认证插件。");
         }
     }
 
@@ -186,7 +186,7 @@ public final class MyrinbotVelocity {
             remoteEnabled = false;
             if (System.currentTimeMillis() - lastWarning > 60000) {
                 lastWarning = System.currentTimeMillis();
-                logger.warn("Myrinbot Velocity 连接或认证接口暂不可用；密码恢复已暂停。");
+                logger.warn("VexBot Velocity 连接或认证接口暂不可用；密码恢复已暂停。");
             }
         }
     }

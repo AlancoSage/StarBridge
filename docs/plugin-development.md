@@ -1,6 +1,6 @@
-# Myrinbot 插件开发文档
+# VexBot 插件开发文档
 
-插件接口版本：**1**。本接口用于扩展 Myrinbot 机器人主程序，与 Minecraft 服务端的 Myrinbot JAR 分开管理。
+插件接口版本：**1**。本接口用于扩展 VexBot 机器人主程序，与 Minecraft 服务端的 VexBot JAR 分开管理。
 
 QQ 官机同样使用本规则接口。群权限范围填写完整 `qg:AppID:group_openid`，用户范围填写 `qug:AppID:member_openid` 或 `qup:AppID:user_openid`；身份按应用与场景分别检查。群规则接收平台下发的 @消息，通知发送受有效回复上下文及主动发送权限约束，详见 [官机接入](qq-official.md)。
 
@@ -201,7 +201,7 @@ permissions 省略的子字段使用默认值（能力开关 true，名单空，
 }
 ```
 
-`player_join` 和 `player_quit` 对应桥接的真实入服、退服事件；需要已安装并连接的游戏端 Myrinbot 插件。通知仅发送到该服务器已关联的群，不能在插件文件中指定任意收件人。聊天事件和普通心跳不触发这些通知。
+`player_join` 和 `player_quit` 对应桥接的真实入服、退服事件；需要已安装并连接的游戏端 VexBot 插件。通知仅发送到该服务器已关联的群，不能在插件文件中指定任意收件人。聊天事件和普通心跳不触发这些通知。
 
 游戏规则不接受 `command`、`match`、QQ 管理员或绑定身份限制。支持 `reply`、`when`、`cooldown`；冷却按服务器和玩家 UUID（旧事件无 UUID 时使用玩家名）分别计算。
 

@@ -21,14 +21,14 @@ MAX_FILE = 64 * 1024
 MAX_STATE = 4 * 1024 * 1024
 KEYWORDS_ID = "keyword_replies"
 KEYWORDS_PLUGIN = {
-    "id": KEYWORDS_ID, "name": "关键词回复", "version": "1.0.0", "author": "Myrinbot",
+    "id": KEYWORDS_ID, "name": "关键词回复", "version": "1.0.0", "author": "VexBot",
     "description": "为关联群聊配置关键词与文字回复，精确匹配整条消息。内置命令优先。",
     "settings": {"replies": {"type": "reply_map", "label": "关键词回复", "default": {}}},
     "rules": [{"event": "keyword_reply"}],
 }
 SCHEDULES_ID = "scheduled_tasks"
 SCHEDULES_PLUGIN = {
-    "id": SCHEDULES_ID, "name": "定时任务", "version": "1.0.0", "author": "Myrinbot",
+    "id": SCHEDULES_ID, "name": "定时任务", "version": "1.0.0", "author": "VexBot",
     "description": "按北京时间安排群公告、游戏公告、预设命令与备份，保留任务和执行记录。停用插件后暂停所有任务。",
     "settings": {}, "rules": [],
 }

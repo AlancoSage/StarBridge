@@ -2,7 +2,7 @@
 
 The obfuscated 1.x server is read without executing Minecraft. Its declarations
 are translated by the matching official mappings, then compared by exact owner,
-member name and descriptor. Only the API used by Myrinbot enters the mod.
+member name and descriptor. Only the API used by VexBot enters the mod.
 """
 from __future__ import annotations
 

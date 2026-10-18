@@ -77,7 +77,7 @@ final class GameLogin implements Listener {
     private final Transport transport;
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(64), runnable -> { Thread thread = new Thread(runnable, "Myrinbot-Login"); thread.setDaemon(true); return thread; });
+        new ArrayBlockingQueue<>(64), runnable -> { Thread thread = new Thread(runnable, "VexBot-Login"); thread.setDaemon(true); return thread; });
     private volatile Policy policy = new Policy(false, true, true, true, "", "auto", 120, null, 0);
     private volatile boolean closed;
     private final LoginLinks loginLinks;
@@ -163,7 +163,7 @@ final class GameLogin implements Listener {
         policy = accepted;
         if (!ready) {
             for (Connection connection : connections.values()) dispatch(connection, () -> {
-                if (policy.generation == accepted.generation) kick(connection, "Myrinbot游戏认证尚未就绪，请联系管理员检查登录引擎、登录插件 API 与认证设置。");
+                if (policy.generation == accepted.generation) kick(connection, "VexBot游戏认证尚未就绪，请联系管理员检查登录引擎、登录插件 API 与认证设置。");
             });
             return;
         }
@@ -212,7 +212,7 @@ final class GameLogin implements Listener {
             connections.put(connection.uuid, connection);
         }
         if (current.known && !current.required) { connection.authentication = new Authentication(true, current.generation); return; }
-        message(connection, "Myrinbot正在检查本次游戏登录，请稍候……");
+        message(connection, "VexBot正在检查本次游戏登录，请稍候……");
         submit(connection, connection.request("join"), true);
     }
 
@@ -376,7 +376,7 @@ final class GameLogin implements Listener {
     private void login(Player player, String name, String arg) {
         Policy current = policy;
         if (!current.known) { player.sendMessage("正在同步认证设置，请稍后重试。"); return; }
-        if (!current.required) { player.sendMessage("此服务器没有启用Myrinbot游戏登录。"); return; }
+        if (!current.required) { player.sendMessage("此服务器没有启用VexBot游戏登录。"); return; }
         Connection connection = connections.get(BukkitCompatibility.identity(player));
         if (connection == null || connection.player != player || connection.proof && connection.proofGeneration != current.generation) { begin(player); return; }
         if (!locked(player)) { player.sendMessage("你已经登录。"); return; }
@@ -409,7 +409,7 @@ final class GameLogin implements Listener {
         } else if (!explicitStarBridge && current.known && current.required && current.external != null && current.external.ownershipCommands().contains(name)
                 && connection != null && connection.proof && connection.proofGeneration == current.generation && connection.awaitingExternal) {
             // Permit only the selected adapter's fixed authentication commands after
-            // independent Myrinbot proof. Native handlers still verify all credentials.
+            // independent VexBot proof. Native handlers still verify all credentials.
             event.setCancelled(false);
             return;
         } else if (own && (!current.known || current.required || !LoginLinks.hasExternal())) {

@@ -47,7 +47,7 @@ final class NLoginLink implements LoginLink {
             "nlogin:email", "nlogin:discord")));
     }
     public String ownershipPrompt() {
-        return "nLogin 需要两步验证：先使用 /starbridge:login <网站密码> 或 /starbridge:ql 完成Myrinbot登录，再使用 /login <nLogin 密码>；新账号使用 /register <密码> <确认密码>，并完成 nLogin 要求的二次验证。";
+        return "nLogin 需要两步验证：先使用 /starbridge:login <网站密码> 或 /starbridge:ql 完成VexBot登录，再使用 /login <nLogin 密码>；新账号使用 /register <密码> <确认密码>，并完成 nLogin 要求的二次验证。";
     }
 
     private void check() throws ReflectiveOperationException, IOException {

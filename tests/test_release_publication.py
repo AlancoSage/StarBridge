@@ -14,11 +14,11 @@ from scripts import release
 
 
 class ReleasePublicationTests(unittest.TestCase):
-    def run_publication(self, private, existing=False, mismatch=False):
+    def run_publication(self, private, existing=False, mismatch=False, brand='StarBridge'):
         calls = []
         repo = 'AlancoSage/StarBridge'
         with tempfile.TemporaryDirectory() as directory:
-            asset = Path(directory) / 'StarBridge.zip'
+            asset = Path(directory) / f'{brand}-Windows-1.2.3.zip'
             asset.write_bytes(b'checked release content')
             checksum = hashlib.sha256(asset.read_bytes()).hexdigest()
 
@@ -37,6 +37,7 @@ class ReleasePublicationTests(unittest.TestCase):
                     payload = json.loads(Path(args[args.index('--input') + 1]).read_text('utf-8'))
                     self.assertTrue(payload['draft'])
                     self.assertEqual(payload['target_commitish'], 'a' * 40)
+                    self.assertEqual(payload['name'], brand + ' 1.2.3')
                     value = {'id': 42, 'draft': True}
                 elif args[:2] == ('api', 'repos/' + repo + '/releases/42'):
                     value = {'assets': [{'name': asset.name, 'size': asset.stat().st_size,
@@ -61,6 +62,11 @@ class ReleasePublicationTests(unittest.TestCase):
         for private in (False, True):
             with self.subTest(private=private):
                 self.run_publication(private)
+
+    def test_release_title_uses_vexbot_and_supports_historical_checkouts(self):
+        for brand in ('VexBot', 'Myrinbot', 'AetherBot', 'StarBridge'):
+            with self.subTest(brand=brand):
+                self.run_publication(False, brand=brand)
 
     def test_published_versions_cannot_be_overwritten_in_either_visibility(self):
         for private in (False, True):

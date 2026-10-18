@@ -1,5 +1,5 @@
 // Browser-side integration: only public endpoints, never embed a backend API key.
-// Configure this website's origin in Myrinbot → Members → Registered accounts.
+// Configure this website's origin in VexBot → Members → Registered accounts.
 export function createStarBridgeRegistration(baseUrl) {
   const clean = baseUrl.replace(/\/+$/, '');
   const base = clean.endsWith('/api/v1') ? clean : clean + '/api/v1';
@@ -53,9 +53,11 @@ export const createAetherBotRegistration = createStarBridgeRegistration;
 export const createAetherBotClient = createStarBridgeRegistration;
 export const createMyrinbotRegistration = createStarBridgeRegistration;
 export const createMyrinbotClient = createStarBridgeRegistration;
+export const createVexBotRegistration = createStarBridgeRegistration;
+export const createVexBotClient = createStarBridgeRegistration;
 
 // Example:
-// const client = createMyrinbotClient('https://bridge.example.com');
+// const client = createVexBotClient('https://bridge.example.com');
 // const application = await client.apply('Steve', '123456789@qq.com');
 // const result = await client.verify(application.challenge_id, enteredCode, chosenPassword);
 // const me = await client.account(result.access_token);

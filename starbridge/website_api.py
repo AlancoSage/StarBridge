@@ -99,12 +99,12 @@ def setup_routes(app, state_key, authorize, read_body):
                 return web.json_response({"apiBase":api_base(address)}, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="config.json"'})
             if action == "project":
                 from .branding import artifact_path
-                file = artifact_path(ROOT / "dist", "Myrinbot-website.zip")
+                file = artifact_path(ROOT / "dist", "VexBot-website.zip")
                 if not file.is_file():
                     raise RegistrationError("尚未生成官网独立项目包，请使用独立项目的 build.py 打包", 404, "project_missing")
                 if file.stat().st_size > 4 * 1024 * 1024:
                     raise RegistrationError("官网项目包超过 4 MiB 上限", 413)
-                return web.FileResponse(file, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="Myrinbot-website.zip"'})
+                return web.FileResponse(file, headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="VexBot-website.zip"'})
             return web.FileResponse(ROOT / "docs/website-deployment.md", headers={"Cache-Control": "no-store",
                 "Content-Disposition": 'attachment; filename="website-deployment.md"'})
         except RegistrationError as exc:

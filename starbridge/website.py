@@ -13,7 +13,7 @@ from .extensions import atomic_json, invalid_constant
 from .passwords import check_password
 from .registration import RegistrationError
 
-DEFAULTS = {"title": "Myrinbot社区", "subtitle": "在这里，开启下一段冒险。",
+DEFAULTS = {"title": "VexBot社区", "subtitle": "在这里，开启下一段冒险。",
             "description": "和朋友一起创造、探索，让每一次相遇都留下故事。",
             "rules": "友善交流，尊重其他玩家，共同维护游戏环境。", "join_address": "",
             "group_url": "", "public_players": True, "public_servers": True, "login_enabled": True,
@@ -103,7 +103,7 @@ def api_base(value):
     url = urlsplit(value)
     if (url.scheme not in ("http", "https") or not url.hostname or url.username or url.password
             or url.query or url.fragment or url.path != "/api/v1"):
-        raise RegistrationError("填写Myrinbot的公开 API 地址，例如 https://bridge.example.com/api/v1")
+        raise RegistrationError("填写VexBot的公开 API 地址，例如 https://bridge.example.com/api/v1")
     try:
         url.port
     except ValueError:

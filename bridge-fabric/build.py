@@ -14,7 +14,7 @@ import zipfile
 from bindings import native_bindings, read_specification
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 LOADER = '0.16.14'
 NEW_LOADER = '0.19.5'
 VERSIONS = {'1.16.5': 8, '1.18.2': 17, '1.19.2': 17, '1.20.1': 17, '1.21.1': 21,
@@ -45,7 +45,7 @@ SHARED_SOURCES = ('BridgeEngine', 'GameHost', 'BridgeConfig', 'BridgeHttp', 'Pro
 
 def license_entries(root):
     """Keep release notices in new JARs; older source trees may omit them."""
-    return {'META-INF/licenses/Myrinbot/' + name: (root / name).read_bytes()
+    return {'META-INF/licenses/VexBot/' + name: (root / name).read_bytes()
             for name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md')
             if (root / name).is_file()}
 
@@ -66,7 +66,7 @@ def fetch(name, url, expected, cache):
             return path
     temporary = path.with_suffix('.download')
     try:
-        request = urllib.request.Request(url, headers={'User-Agent': 'Myrinbot-Fabric-Builder/0.1'})
+        request = urllib.request.Request(url, headers={'User-Agent': 'VexBot-Fabric-Builder/0.1'})
         with urllib.request.urlopen(request, timeout=120) as response:
             temporary.write_bytes(response.read())
     except urllib.error.HTTPError as error:
@@ -224,8 +224,8 @@ def build(mc, jdk, cache):
             sources.append(path)
         subprocess.run([str(javac), '-J-Duser.language=en', '--release', '8', '-proc:none', '-encoding', 'UTF-8',
                         '-cp', os.pathsep.join(map(str, libraries)), '-d', str(output), *map(str, sources)], check=True)
-        metadata = {'schemaVersion': 1, 'id': 'starbridge', 'version': VERSION, 'name': 'Myrinbot', 'license': 'AGPL-3.0-or-later',
-                    'description': 'Server-side Myrinbot QQ and account integration.', 'environment': 'server',
+        metadata = {'schemaVersion': 1, 'id': 'starbridge', 'version': VERSION, 'name': 'VexBot', 'license': 'AGPL-3.0-or-later',
+                    'description': 'Server-side VexBot QQ and account integration.', 'environment': 'server',
                     'entrypoints': {'main': ['cn.starbridge.fabric.StarBridgeFabric']}, 'mixins': ['starbridge-fabric.mixins.json'],
                     'depends': {'fabricloader': '>=' + (LOADER if mc in ('1.16.5','1.18.2','1.19.2','1.20.1','1.21.1') else NEW_LOADER),
                                 'minecraft': mc, 'java': '>=' + str(VERSIONS[mc])}}
@@ -233,7 +233,7 @@ def build(mc, jdk, cache):
                      'starbridge-fabric-mappings.json': document,
                      'starbridge-fabric.mixins.json': {'required': True, 'minVersion': '0.8', 'package': 'cn.starbridge.fabric.mixin',
                          'compatibilityLevel': 'JAVA_8', 'mixins': list(generated), 'injectors': {'defaultRequire': 1}}}
-        target = ROOT.parent/'bridge/target'/f'Myrinbot-Fabric-{mc}-{VERSION}.jar'
+        target = ROOT.parent/'bridge/target'/f'VexBot-Fabric-{mc}-{VERSION}.jar'
         target.parent.mkdir(parents=True, exist_ok=True)
         files = {path.relative_to(output).as_posix(): path.read_bytes() for path in sorted(output.rglob('*.class'))}
         for name, data in files.items():
@@ -250,7 +250,8 @@ def build(mc, jdk, cache):
                 entry.external_attr = 0o100644 << 16
                 archive.writestr(entry, data)
         temporary_jar.replace(target)
-        shutil.copyfile(target, target.with_name(target.name.replace('Myrinbot-', 'StarBridge-', 1)))
+        for prefix in ('Myrinbot-', 'StarBridge-'):
+            shutil.copyfile(target, target.with_name(target.name.replace('VexBot-', prefix, 1)))
     print(f'Built Fabric {mc}: {target.name}', flush=True)
     return target
 

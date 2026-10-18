@@ -44,7 +44,7 @@ final class GameLogin {
     private final StarBridge.Session session;
     private final ConcurrentMap<UUID, Login> connections = new ConcurrentHashMap<>();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(64), runnable -> StarBridge.Session.daemon(runnable, "Myrinbot-Login"));
+            new ArrayBlockingQueue<>(64), runnable -> StarBridge.Session.daemon(runnable, "VexBot-Login"));
     private volatile boolean known, required = true;
     private boolean passwordLogin = true, qqLogin = true;
     private String revision = "";
@@ -118,7 +118,7 @@ final class GameLogin {
             });
         } catch (RuntimeException error) {
             player.connection.disconnect(new net.minecraft.network.chat.TextComponent("登录保护初始化失败，请使用 Forge 1.18.2 服务端。"));
-            StarBridge.LOG.error("Myrinbot数据包保护不可用；错误类型：{}", error.getClass().getSimpleName());
+            StarBridge.LOG.error("VexBot数据包保护不可用；错误类型：{}", error.getClass().getSimpleName());
         }
     }
     static boolean hygiene(Object packet) {
@@ -134,7 +134,7 @@ final class GameLogin {
         if (previous != null) login.channel = previous.channel;
         connections.put(login.id, login);
         if (known && !required) login.authenticated = true;
-        else { StarBridge.tell(player, new net.minecraft.network.chat.TextComponent("Myrinbot正在检查本次游戏登录……")); submit(login, login.request("join"), true); }
+        else { StarBridge.tell(player, new net.minecraft.network.chat.TextComponent("VexBot正在检查本次游戏登录……")); submit(login, login.request("join"), true); }
         return login;
     }
     void leave(ServerPlayer player) {
@@ -150,7 +150,7 @@ final class GameLogin {
     void command(ServerPlayer player, String action, String password) {
         if (!currentPlayer(player)) return;
         if (!known) { StarBridge.tell(player, new net.minecraft.network.chat.TextComponent("正在同步认证设置，请稍后重试。")); return; }
-        if (!required) { StarBridge.tell(player, new net.minecraft.network.chat.TextComponent("此服务器没有启用Myrinbot游戏登录。")); return; }
+        if (!required) { StarBridge.tell(player, new net.minecraft.network.chat.TextComponent("此服务器没有启用VexBot游戏登录。")); return; }
         if (action.equals("logout")) { begin(player); return; }
         Login login = connections.get(player.getUUID());
         if (login == null) { join(player); return; }
@@ -195,7 +195,7 @@ final class GameLogin {
         String engine = Protocol.text(policy, "login_engine", "auto");
         if (required && (!policy.get("available").getAsBoolean() || !Set.of("auto", "builtin").contains(engine))) {
             known = false;
-            for (Login login : connections.values()) kick(login, "Forge 请使用Myrinbot内置或自动登录引擎；请联系管理员检查认证设置。");
+            for (Login login : connections.values()) kick(login, "Forge 请使用VexBot内置或自动登录引擎；请联系管理员检查认证设置。");
             return;
         }
         if (!required) { connections.values().forEach(login -> login.authenticated = true); return; }

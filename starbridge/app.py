@@ -398,7 +398,7 @@ async def player_action(request):
         return web.json_response({"error": "游戏服务器未连接，无法提交玩家操作。"}, status=409)
     snap = bot.snapshots[sid]
     if "player_management" not in snap.get("capabilities", []):
-        return web.json_response({"error": "请安装新版Myrinbot插件以启用玩家管理。"}, status=409)
+        return web.json_response({"error": "请安装新版VexBot插件以启用玩家管理。"}, status=409)
     target = next((p for p in snap.get("player_records", []) if p["uuid"] == identity and p["name"] == name), None)
     if target is None or (action == "kick" and not target["online"]):
         return web.json_response({"error": "玩家状态已变化，请刷新列表后重试。"}, status=409)
@@ -419,7 +419,7 @@ async def plugin_download(request):
     if kind == "bukkit":
         if request.query.get("version"):
             raise web.HTTPBadRequest(text="Paper / Spigot / Folia 插件无需按游戏版本下载")
-        filename = f"Myrinbot-{__bridge_version__}.jar"
+        filename = f"VexBot-{__bridge_version__}.jar"
     else:
         from .game_bridges import bridge_filename
         try:
@@ -487,7 +487,7 @@ async def extension_document(request):
     base = Path(__file__).resolve().parent.parent
     example = request.match_info["document"] == "example"
     path = base / ("examples/community_helper.json" if example else "docs/plugin-development.md")
-    filename = "community_helper.json" if example else "Myrinbot-plugin-development.md"
+    filename = "community_helper.json" if example else "VexBot-plugin-development.md"
     return web.FileResponse(path, headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
 
 

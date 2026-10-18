@@ -47,7 +47,7 @@ final class PasswordReset implements Listener {
     private final Startup startup;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<Runnable>(8), runnable -> {
-            Thread thread = new Thread(runnable, "Myrinbot-PasswordReset"); thread.setDaemon(true); return thread;
+            Thread thread = new Thread(runnable, "VexBot-PasswordReset"); thread.setDaemon(true); return thread;
         });
     private final LinkedBlockingDeque<JsonObject> results = new LinkedBlockingDeque<JsonObject>(64);
     private final ConcurrentHashMap<String, Long> seen = new ConcurrentHashMap<String, Long>();
@@ -87,7 +87,7 @@ final class PasswordReset implements Listener {
         }
     }
 
-    /** Native authentication is required for qbind even when Myrinbot game login is disabled. */
+    /** Native authentication is required for qbind even when VexBot game login is disabled. */
     Proof bindingProof(Player player) throws Exception {
         refresh();
         Adapter captured = adapter;
@@ -439,7 +439,7 @@ final class PasswordReset implements Listener {
             if (records.size() >= 10000 && !records.containsKey(key)) throw new IOException("Reset proof capacity reached");
             Properties next = new Properties(); next.putAll(records); next.setProperty(key, value);
             Files.createDirectories(path.getParent()); Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
-            try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "Myrinbot native authenticated reset proofs; no passwords"); }
+            try (Writer writer = Files.newBufferedWriter(temporary)) { next.store(writer, "VexBot native authenticated reset proofs; no passwords"); }
             try { Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
             catch (AtomicMoveNotSupportedException unsupported) { Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING); }
             records.clear(); records.putAll(next);

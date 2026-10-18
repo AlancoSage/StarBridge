@@ -52,7 +52,7 @@ function renderChanged(key, data, render) {
 }
 function setText(id, value) { if ($(id).textContent !== String(value)) $(id).textContent = value; }
 const pages = {
-  overview: ['Myrinbot', '运行概览', '查看机器人、游戏服务器与社群的运行状态。'],
+  overview: ['VexBot', '运行概览', '查看机器人、游戏服务器与社群的运行状态。'],
   connection: ['接入空间', '机器人连接', '配置 QQ 账号、管理权限与 OneBot 连接。'],
   servers: ['接入空间', '服务器列表', '管理游戏服务器、关联群聊与插件连接。'],
   bindings: ['成员', '账号绑定', '查询游戏玩家与 QQ 账号的绑定关系。'],
@@ -65,7 +65,7 @@ const pages = {
   extensions: ['扩展', '插件管理', '导入插件、管理运行状态和调整插件设置。'],
   app: ['系统', '软件设置', '管理连接地址、数据存储与控制台访问。'],
   backups: ['系统', '备份与恢复', '保存社区数据，或从已校验的备份恢复。'],
-  website: ['接入空间', '网站绑定', '绑定Myrinbot官网或自己的官网，设置网站地址和公开 API。'],
+  website: ['接入空间', '网站绑定', '绑定VexBot官网或自己的官网，设置网站地址和公开 API。'],
   schedules: ['扩展', '定时任务 · 管理任务', '管理内置定时任务插件的公告、预设命令与备份。'],
   whitelist: ['成员', '白名单申请', '审核入服申请，跟进游戏服务器的执行结果。'],
   managers: ['系统', '管理员与权限', '为团队建立独立账号，按职责授权。'],
@@ -505,7 +505,7 @@ async function downloadPlugin(card, platform = 'bukkit') {
     if (dirty) throw Error('请先保存全部设置，再下载与已生效设置一致的插件配置。');
     const server = readServer(card), endpoint = new URL(card.querySelector('[data-field="endpoint"]').value);
     if (!['http:', 'https:'].includes(endpoint.protocol) || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw Error('主程序访问地址必须是有效的 HTTP / HTTPS 地址，不包含账号、查询参数或片段。');
-    const yaml = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\n' +
+    const yaml = '# 从VexBot面板导出，包含连接令牌，请妥善保管。\n' +
       'endpoint: ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id: ' + JSON.stringify(server.id) + '\ntoken: ' + JSON.stringify(server.token) + '\n' +
       '# 新版插件连接后会从主程序自动同步命令白名单。\nallowed-commands: ' + JSON.stringify(Object.values(server.commands)) + '\n';
@@ -513,15 +513,15 @@ async function downloadPlugin(card, platform = 'bukkit') {
     const selected = mod ? (await modBridgeCatalog()).find(row=>row.platform+'/'+row.version===platform) : null;
     if (mod && !selected) throw Error('请选择支持的模组加载器与游戏版本。');
     const usesProperties = selected?.config === 'properties';
-    const toml = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\n' +
+    const toml = '# 从VexBot面板导出，包含连接令牌，请妥善保管。\n' +
       'endpoint = ' + JSON.stringify(endpoint.href.replace(/\/+$/, '')) + '\n' +
       'server-id = ' + JSON.stringify(server.id) + '\ntoken = ' + JSON.stringify(server.token) + '\n' +
       'allowed-commands = ' + JSON.stringify(Object.values(server.commands)) + '\n';
     const propertiesEscape = value => value.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/^ /, '\\ ');
-    const properties = '# 从Myrinbot面板导出，包含连接令牌，请妥善保管。\nendpoint=' + propertiesEscape(endpoint.href.replace(/\/+$/, '')) + '\nserver-id=' + propertiesEscape(server.id) + '\ntoken=' + propertiesEscape(server.token) + '\nallowed-commands=list\n';
+    const properties = '# 从VexBot面板导出，包含连接令牌，请妥善保管。\nendpoint=' + propertiesEscape(endpoint.href.replace(/\/+$/, '')) + '\nserver-id=' + propertiesEscape(server.id) + '\ntoken=' + propertiesEscape(server.token) + '\nallowed-commands=list\n';
     const configName = usesProperties ? 'starbridge-bridge.properties' : 'starbridge-common.toml';
     const url = URL.createObjectURL(new Blob([usesProperties ? properties : mod ? toml : yaml], {type: 'text/plain;charset=utf-8'}));
-    const a = document.createElement('a'); a.href = url; a.download = mod ? configName : 'Myrinbot-' + server.id + '-config.yml'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = mod ? configName : 'VexBot-' + server.id + '-config.yml'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notice('save-notice', mod ? '已下载。将 '+configName+' 放入游戏服 config 目录，然后重启游戏服。' : '已下载。将文件重命名为 config.yml，放入游戏服 plugins/StarBridge 后重启游戏服。', 'success');
   } catch (e) { notice('save-notice', e.message, 'error'); }
@@ -620,7 +620,7 @@ function renderConnection() {
   document.querySelector('#connection-card .bot-identity p').textContent = official ? 'QQ 官方 · WebSocket Gateway' : 'OneBot 11 · 反向 WebSocket';
   setText('connection-groups', new Set(saved.servers.flatMap(server => server.groups)).size + ' 个');
   setText('connection-admin-count', (official ? saved.qq_official.admins : connection.admins).length + ' 位');
-  setText('connection-address', official ? 'Myrinbot 主动连接 QQ 官方 Gateway' : $('onebot-url').value);
+  setText('connection-address', official ? 'VexBot 主动连接 QQ 官方 Gateway' : $('onebot-url').value);
   document.querySelector('#connection-card [data-copy="onebot-url"]').hidden = official;
   setText('connection-state-hint', official ? (latestStatus?.qq_error || (online ? '官机连接正常，群内请 @机器人发送消息。' : '等待官方鉴权与网关连接，请核对应用设置。')) : online ? '连接正常，可以接收和发送群消息。' : '等待 QQ 协议端连接，请确认地址与令牌一致。');
   renderChanged('qq-connection-guide', official, () => {
@@ -895,7 +895,7 @@ async function downloadPluginJar() {
     const response = await fetch('/api/plugin', {headers: {Authorization: 'Bearer ' + token}, signal: AbortSignal.timeout(30000), cache: 'no-store'});
     if (!response.ok) throw Error('插件下载失败：' + response.status);
     const url = URL.createObjectURL(await response.blob()), link = node('a');
-    link.href = url; link.download = 'Myrinbot-0.5.4.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.href = url; link.download = 'VexBot-0.5.5.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     latestPlayerActionId = null;
     notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版游戏端 JAR，然后重启游戏服务器。', 'success');
   } catch (error) { notice('player-notice', error.message, 'error'); selectTab('players'); }
@@ -1027,7 +1027,7 @@ async function enterPanel(accessToken) {
     $('login').hidden = $('owner-setup').hidden = true; $('content').hidden = false; $('save-bar').hidden = false; $('logout').hidden = false;
     $('page-actions').hidden = false; document.body.classList.remove('logged-out'); selectTab(location.hash.slice(1) || 'overview');
     $('panel-password').value='';panelAccess();setText('panel-user',panelIdentity.username);
-    setText('panel-avatar', Array.from(panelIdentity.username || 'Myrinbot')[0].toUpperCase());
+    setText('panel-avatar', Array.from(panelIdentity.username || 'VexBot')[0].toUpperCase());
     await refresh(); startAutoRefresh();
   } catch (error) {
     try { await api('/api/admin-auth/logout',{method:'POST'}); } catch {}

@@ -234,7 +234,7 @@ class NativePasswords:
     def _notify(self, request, message):
         # Messages never contain a password, challenge token or plugin exception.
         item = (request["server"], request["qq"], request["fence"][1],
-                f"[Myrinbot · 密码找回]\n玩家：{request['player']}\n{message}")
+                f"[VexBot · 密码找回]\n玩家：{request['player']}\n{message}")
         if not self.notifications.full():
             self.notifications.put_nowait(item)
 

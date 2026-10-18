@@ -2,14 +2,14 @@
 
 官网接入是可选功能。这篇文档用于选择接入方式、部署独立官网，或在已有网页中调用服务器与账号 API。Bot 首次安装见 [快速开始](quick-start.md)；只需要邮件注册时可直接使用 Bot 的 `/register` 页面，见 [账号注册](account-api.md)。
 
-本文对应随 **Bot v0.6.25** 正式分发的 `Myrinbot-website.zip`，官网与面板使用同一枚黑白 M 机器人图标。新安装的 Bot 默认面板与 API 端口为 **5800**，官网本机预览仍使用 **8089**；已有 Bot 配置保留原端口，接入时使用实际 API 地址。
+本文对应随 **Bot v0.6.28** 正式分发的 `VexBot-website.zip`，官网与面板使用同一枚黑白 V 机器人图标。新安装的 Bot 默认面板与 API 端口为 **5800**，官网本机预览仍使用 **8089**；已有 Bot 配置保留原端口，接入时使用实际 API 地址。
 
 ## 先选择接入方式
 
 | 面板选择 | 适用情况 | 需要完成的事 |
 | --- | --- | --- |
 | 不接入官网 | 只使用 Bot、游戏服及群功能；新安装默认 | 保持此模式即可，Bot 可独立运行 |
-| 使用 Myrinbot 提供的官网 | 需要现成的首页、服务器状态和玩家账号页 | 下载独立项目、自行部署、填写网站与 API 地址并替换 `config.json` |
+| 使用 VexBot 提供的官网 | 需要现成的首页、服务器状态和玩家账号页 | 下载独立项目、自行部署、填写网站与 API 地址并替换 `config.json` |
 | 接入自己的官网 | 已有自己的页面和内容 | 填写网站地址，用本页 API 或 SDK 接入所需功能 |
 
 两种接入方式均需网站地址，使用同一套 HTTP API 和来源授权。选择提供的官网不会自动部署网站；选择自有官网后，页面设计与内容由自己的项目管理，Bot 显示 API 公开范围设置及接口文档。
@@ -18,13 +18,13 @@
 
 ## 官网项目与部署内容
 
-Myrinbot 提供完整的社区官网：首页、全部服务器状态、邮箱注册、密码登录、本人档案与邮件找回密码。所有页面为本地 HTML/CSS/JavaScript，无运行时框架、外部字体、图片服务、WebGL 或持续动画；导航只播放一次 160 毫秒淡入，并遵守减少动态效果设置。服务器状态页展示全部已配置服务器，包含未连接项，提供已连接数量及在线人数合计；每 30 秒刷新，后台暂停，回到页面立即刷新，也支持手动刷新。官网不展示公开玩家目录，已有网站仍可通过下述玩家信息 API 接入。
+VexBot 提供完整的社区官网：首页、全部服务器状态、邮箱注册、密码登录、本人档案与邮件找回密码。所有页面为本地 HTML/CSS/JavaScript，无运行时框架、外部字体、图片服务、WebGL 或持续动画；导航只播放一次 160 毫秒淡入，并遵守减少动态效果设置。服务器状态页展示全部已配置服务器，包含未连接项，提供已连接数量及在线人数合计；每 30 秒刷新，后台暂停，回到页面立即刷新，也支持手动刷新。官网不展示公开玩家目录，已有网站仍可通过下述玩家信息 API 接入。
 
 - **独立项目**：`starbridge-website/` 可以单独复制到自己的仓库和服务器，包含独立启动、打包工具、SDK 与文档。Bot 不承载官网静态文件，也不需要网站源目录才能启动。
 - **独立部署**：在「接入空间 → 网站绑定」下载独立项目和 `config.json`，解压项目并替换接入配置，然后部署到自己选择的静态服务器或托管目录。面板下载的是预先生成的项目包；源码修改后运行独立项目的 `build.py` 重新打包。
 - **已有网站**：使用本页接口和部署包中的 `sdk/starbridge.js`，可以自定义界面。
 
-独立项目不含 Myrinbot 数据库、Bot 配置、密码或任何管理/网站后端密钥。首页介绍、规则、游戏地址、入群链接及公开开关都在 Myrinbot 面板调整，无需重新打包；网站只通过 HTTP API 读取这些数据。API 地址持久保存在 Bot 接入设置中，下载接入配置后需替换网站根目录的 `config.json`；保存 Bot 设置不会直接修改远端网站文件。
+独立项目不含 VexBot 数据库、Bot 配置、密码或任何管理/网站后端密钥。首页介绍、规则、游戏地址、入群链接及公开开关都在 VexBot 面板调整，无需重新打包；网站只通过 HTTP API 读取这些数据。API 地址持久保存在 Bot 接入设置中，下载接入配置后需替换网站根目录的 `config.json`；保存 Bot 设置不会直接修改远端网站文件。
 
 官网采用静态网格、方块装饰和紧凑导航。面板支持 `accent_color`、`secondary_color`（`#RRGGBB` 格式）、`theme_mode`（`system/light/dark`）及 `grid_background`。访客可通过「外观」选择配色和明暗模式，偏好保存在本浏览器 `localStorage`，不修改全站设置；「恢复官网默认外观」清除此偏好。窄屏导航自动放到页底。没有背景视频、加载遮罩、持续动画或模糊滤镜。
 
@@ -37,16 +37,16 @@ Myrinbot 提供完整的社区官网：首页、全部服务器状态、邮箱�
 
 ## 配置步骤
 
-1. 在「网站绑定」选择「使用 Myrinbot 提供的官网」或「接入自己的官网」，填写网站地址、Bot 公开 API 地址并保存。网站地址支持子目录，例如 `https://www.example.com/community/`；Bot 会自动允许其准确来源 `https://www.example.com`。
+1. 在「网站绑定」选择「使用 VexBot 提供的官网」或「接入自己的官网」，填写网站地址、Bot 公开 API 地址并保存。网站地址支持子目录，例如 `https://www.example.com/community/`；Bot 会自动允许其准确来源 `https://www.example.com`。
 2. 需要注册或密码找回时，在「成员 → 注册账号」配置 SMTP 和发件人；需要开放新用户注册时再启用注册。只展示公开信息可以跳过。官网登录不依赖注册开关，已注册用户可在停止新注册后继续登录。
-3. 使用 Myrinbot 提供的官网时，设置官网名称、首页内容、游戏地址、入群链接及外观；两种接入方式都检查公开范围与官网登录开关。接入网站无需重复填写注册来源白名单；其他第三方网站可继续在注册设置中加入精确来源，不支持 `*` 或 `file://`。
+3. 使用 VexBot 提供的官网时，设置官网名称、首页内容、游戏地址、入群链接及外观；两种接入方式都检查公开范围与官网登录开关。接入网站无需重复填写注册来源白名单；其他第三方网站可继续在注册设置中加入精确来源，不支持 `*` 或 `file://`。
 4. API 地址填写 `https://bridge.example.com/api/v1`，保存后下载接入配置；同来源反向代理 `/api/v1/` 时可填写 `/api/v1`。
-5. 使用 Myrinbot 提供的官网时，解压下载的独立项目，用新下载的 `config.json` 替换根目录配置，上传所有网页文件。站点可位于子目录，资源使用相对地址，导航使用 hash，不需要 SPA 重写规则。自有官网按下方 SDK 示例修改自己的项目。
+5. 使用 VexBot 提供的官网时，解压下载的独立项目，用新下载的 `config.json` 替换根目录配置，上传所有网页文件。站点可位于子目录，资源使用相对地址，导航使用 hash，不需要 SPA 重写规则。自有官网按下方 SDK 示例修改自己的项目。
 6. 按实际启用的功能测试服务器状态、注册、登录、本人档案和找回密码，再向玩家提供官网地址。
 
 ### 最小本机预览
 
-先在「网站绑定」选择「使用 Myrinbot 提供的官网」，网站地址填 `http://127.0.0.1:8089/`，API 地址填 `http://127.0.0.1:5800/api/v1`，保存并允许公开服务器。下载并解压项目，在独立项目目录执行：
+先在「网站绑定」选择「使用 VexBot 提供的官网」，网站地址填 `http://127.0.0.1:8089/`，API 地址填 `http://127.0.0.1:5800/api/v1`，保存并允许公开服务器。下载并解压项目，在独立项目目录执行：
 
 ```powershell
 python serve.py --port 8089 --api-base http://127.0.0.1:5800/api/v1
@@ -62,11 +62,11 @@ Bot 使用其他端口时同步替换 API 地址。打开 `http://127.0.0.1:8089
 
 启动工具只依赖 Python 3.11+ 标准库，不依赖 Bot 或父目录；`--api-base` 覆盖本次服务的配置，不修改磁盘，不指定时读取项目 `config.json`。正式静态部署不需要 Python。API 的 `127.0.0.1` 对外网玩家指向玩家自己的机器，正式部署须使用玩家可访问的地址。
 
-独立打包：`python build.py --api-base https://bridge.example.com/api/v1`，生成 `dist/Myrinbot-website.zip`；`--output` 可指定输出位置。只读取项目固定文件，API 地址写入压缩包，原始配置保持不变。Bot 的发布脚本会将同一官网包放到内部兼容路径 `dist/StarBridge-website.zip`，面板以新品牌文件名提供下载；源码手动部署时，将独立构建的 ZIP 复制到该兼容路径即可。
+独立打包：`python build.py --api-base https://bridge.example.com/api/v1`，生成 `dist/VexBot-website.zip`；`--output` 可指定输出位置。只读取项目固定文件，API 地址写入压缩包，原始配置保持不变。Bot 的发布脚本会将同一官网包放到内部兼容路径 `dist/StarBridge-website.zip`，面板以新品牌文件名提供下载；源码手动部署时，将独立构建的 ZIP 复制到该兼容路径即可。
 
 选择「不接入官网」后，即使该来源同时存在于手动白名单，Bot 也拒绝该网站来源的跨域 API 请求；其他手动授权网站不受影响。CORS 不代替身份验证，不阻止非浏览器客户端，关闭接入不会撤销用户令牌或关闭公共 API。旧 `/community/` 地址在接入时跳转到网站，未接入时返回 404，静态资源不再从 Bot 提供。接入方式保存在 `website_mode`（`none/provided/custom`）；旧版启用的接入设置迁移为 `custom`，关闭的设置迁移为 `none`，不会擅自更换地址。
 
-公网官网和 API 使用 HTTPS，避免浏览器混合内容拦截。独立项目内提供 `nginx.example.conf`，自行填写目录、域名和证书；反向代理应只公开需要的 `/api/v1/` 与官网资源，管理面板可保留在内网。Myrinbot 当前以实际 socket 地址限流，不信任任意 `X-Forwarded-For`，经代理的用户可能共用额度。
+公网官网和 API 使用 HTTPS，避免浏览器混合内容拦截。独立项目内提供 `nginx.example.conf`，自行填写目录、域名和证书；反向代理应只公开需要的 `/api/v1/` 与官网资源，管理面板可保留在内网。VexBot 当前以实际 socket 地址限流，不信任任意 `X-Forwarded-For`，经代理的用户可能共用额度。
 
 ## 上线前验收
 
@@ -107,7 +107,7 @@ Bot 使用其他端口时同步替换 API 地址。打开 `http://127.0.0.1:8089
 
 ## 公共接口
 
-下列路径都相对于 Myrinbot 地址，GET 不需要凭据。所有 JSON 接口禁止缓存；跨域来源受网站接入及注册来源设置约束，CORS 不代替用户身份验证。
+下列路径都相对于 VexBot 地址，GET 不需要凭据。所有 JSON 接口禁止缓存；跨域来源受网站接入及注册来源设置约束，CORS 不代替用户身份验证。
 
 ### `GET /api/v1/community/info`
 
@@ -125,7 +125,7 @@ Bot 使用其他端口时同步替换 API 地址。打开 `http://127.0.0.1:8089
 {"players":[{"name":"Steve","uuid":"12345678-1234-1234-1234-123456789abc","status":"online"}],"page":1,"page_size":24,"total":1}
 ```
 
-列表来自 Myrinbot 记录的未删除玩家档案，注册账号尚未到访或关联游戏身份时不会凭空生成游戏 UUID。状态为 `online`、`offline` 或 `unknown`。仅用当前有效心跳确认在线/离线，断连或缺少足够数据时为 `unknown`。
+列表来自 VexBot 记录的未删除玩家档案，注册账号尚未到访或关联游戏身份时不会凭空生成游戏 UUID。状态为 `online`、`offline` 或 `unknown`。仅用当前有效心跳确认在线/离线，断连或缺少足够数据时为 `unknown`。
 
 ### `GET /api/v1/players/{uuid}`
 
@@ -195,12 +195,12 @@ SDK 增加 `services(token)`、`bind(token,server,code)`、`unbind(token,server)
 <!doctype html>
 <html lang="zh-CN">
 <meta charset="utf-8">
-<title>Myrinbot API 接入示例</title>
+<title>VexBot API 接入示例</title>
 <h1 id="community-name">正在读取社区信息…</h1>
 <pre id="servers"></pre>
 <script type="module">
-  import {createMyrinbotClient} from './website-registration.js';
-  const bridge = createMyrinbotClient('http://127.0.0.1:5800/api/v1');
+  import {createVexBotClient} from './website-registration.js';
+  const bridge = createVexBotClient('http://127.0.0.1:5800/api/v1');
   const name = document.getElementById('community-name');
   const output = document.getElementById('servers');
   try {
@@ -224,8 +224,8 @@ SDK 增加 `services(token)`、`bind(token,server,code)`、`unbind(token,server)
 独立项目内 SDK 路径为 `sdk/starbridge.js`；从面板下载时文件名为 `website-registration.js`，按自己保存的位置调整 import。下例中的 `playerInput`、`passwordInput` 分别取自账号表单的玩家名和密码输入，玩家查询需启用公开玩家：
 
 ```js
-import {createMyrinbotClient} from './sdk/starbridge.js';
-const bridge = createMyrinbotClient('https://bridge.example.com');
+import {createVexBotClient} from './sdk/starbridge.js';
+const bridge = createVexBotClient('https://bridge.example.com');
 const info = await bridge.communityInfo();
 const directory = await bridge.players({q:'Steve',page:1,pageSize:24});
 const result = await bridge.login(playerInput, passwordInput);
@@ -233,7 +233,7 @@ const profile = await bridge.profile(result.access_token);
 await bridge.logout(result.access_token);
 ```
 
-新接入推荐使用 `createMyrinbotClient` 或注册专用的 `createMyrinbotRegistration`。SDK 继续提供 `createStarBridgeClient`、`createStarBridgeRegistration`、`createAetherBotClient` 与 `createAetherBotRegistration` 兼容别名，已有网站无需改动。客户端提供 `info/apply/resend/verify/account/requestPassword/setPassword`，以及 `communityInfo/servers/players/player/login/logout/profile`。可传后端来源或包含 `/api/v1` 的完整地址。使用 DOM `textContent` 展示 API 文本，避免把用户或管理员输入当 HTML 执行。
+新接入推荐使用 `createVexBotClient` 或注册专用的 `createVexBotRegistration`。SDK 继续提供 `createMyrinbotClient`、`createMyrinbotRegistration`、`createStarBridgeClient`、`createStarBridgeRegistration`、`createAetherBotClient` 与 `createAetherBotRegistration` 兼容别名，已有网站无需改动。客户端提供 `info/apply/resend/verify/account/requestPassword/setPassword`，以及 `communityInfo/servers/players/player/login/logout/profile`。可传后端来源或包含 `/api/v1` 的完整地址。使用 DOM `textContent` 展示 API 文本，避免把用户或管理员输入当 HTML 执行。
 
 ### 网站服务端查询
 
@@ -260,4 +260,4 @@ def starbridge_profile(verified_account_id):
 
 ## 备份与恢复
 
-官网内容及接入设置 `data/website-settings.json` 加入 Myrinbot 备份；账号、绑定、实际 UUID 关联位于数据库内。恢复会撤销所有临时用户令牌。独立网站源码和部署文件由网站项目单独备份；Bot 数据备份不包含它们。旧版无接入字段的备份默认不启用网站接入，恢复后检查网站地址、公开范围与文案。
+官网内容及接入设置 `data/website-settings.json` 加入 VexBot 备份；账号、绑定、实际 UUID 关联位于数据库内。恢复会撤销所有临时用户令牌。独立网站源码和部署文件由网站项目单独备份；Bot 数据备份不包含它们。旧版无接入字段的备份默认不启用网站接入，恢复后检查网站地址、公开范围与文案。

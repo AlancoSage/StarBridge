@@ -61,7 +61,7 @@ class Deployment:
                     if raw.keys() - {'format', 'config', 'authentication'}: raise ValueError()
                     candidate = deepcopy(raw['config']); auth = raw.get('authentication')
                 else: candidate = deepcopy(raw)
-            except (ValueError, KeyError, TypeError): raise RegistrationError('配置需为有效 TOML 或Myrinbot导出的 JSON') from None
+            except (ValueError, KeyError, TypeError): raise RegistrationError('配置需为有效 TOML 或VexBot导出的 JSON') from None
             if not isinstance(candidate, dict) or not isinstance(candidate.get('onebot'), dict) or not isinstance(candidate.get('servers'), list): raise RegistrationError('配置缺少 QQ 设置或服务器列表')
             old = {s['id']: s for s in current['servers']}
             candidate['app'] = deepcopy(current['app']); candidate['onebot']['token'] = current['onebot']['token']
@@ -169,7 +169,7 @@ class Deployment:
                     if response.status != 200 or len(raw) > 16384: raise RegistrationError('公开 API 状态或响应大小不正确')
                     try: value = json.loads(raw)
                     except (ValueError, UnicodeError): raise RegistrationError('公开 API 没有返回 JSON') from None
-                    if not isinstance(value, dict) or 'title' not in value: raise RegistrationError('此地址不是Myrinbot社区 API')
+                    if not isinstance(value, dict) or 'title' not in value: raise RegistrationError('此地址不是VexBot社区 API')
                     return {'status': 'ok', 'detail': '公开社区 API 可访问，未携带任何密钥'}
         except (smtplib.SMTPException, OSError, aiohttp.ClientError, TimeoutError):
             return {'status': 'error', 'detail': '连接或认证失败，请检查主机、端口、TLS、网络与授权码'}

@@ -64,7 +64,7 @@ def setup_routes(app, state_key, authorize, read_body):
         return web.FileResponse(Path(__file__).parent / "operations-panel.js", headers={"Cache-Control":"no-cache"})
     async def guide(request):
         authorize(request, state["config"]["app"]["admin_token"])
-        return web.FileResponse(Path(__file__).parent.parent / "docs/automation-and-whitelist.md", headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="Myrinbot-automation-and-whitelist.md"'})
+        return web.FileResponse(Path(__file__).parent.parent / "docs/automation-and-whitelist.md", headers={"Cache-Control":"no-store", "Content-Disposition":'attachment; filename="VexBot-automation-and-whitelist.md"'})
     app.add_routes([web.get("/operations-panel.js", script), web.get("/api/schedules", endpoint), web.post("/api/schedules", endpoint),
                     web.put('/api/schedules/plugin', endpoint),
                     web.get("/api/operations/guide",guide),

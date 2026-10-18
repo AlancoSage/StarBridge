@@ -17,7 +17,7 @@ import uuid
 from .extensions import atomic_json
 
 
-DEFAULTS = {"enabled": False, "site_name": "Myrinbot社区", "website_url": "", "api_token": "",
+DEFAULTS = {"enabled": False, "site_name": "VexBot社区", "website_url": "", "api_token": "",
             "smtp_host": "", "smtp_port": 465, "smtp_security": "ssl", "smtp_username": "",
             "smtp_password": "", "smtp_from": "", "code_minutes": 5, "resend_seconds": 60,
             "hourly_limit": 60, "allowed_origins": []}

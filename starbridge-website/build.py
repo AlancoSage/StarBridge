@@ -1,4 +1,4 @@
-"""Build the independent Myrinbot website without reading any Bot files."""
+"""Build the independent VexBot website without reading any Bot files."""
 import argparse
 import json
 from pathlib import Path
@@ -15,7 +15,7 @@ FILES = ('index.html', 'site.css', 'site.js', 'config.json', 'mark.png', 'mark.s
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--api-base', help='API address for config.json in the archive only')
-    parser.add_argument('--output', type=Path, default=ROOT/'dist/Myrinbot-website.zip')
+    parser.add_argument('--output', type=Path, default=ROOT/'dist/VexBot-website.zip')
     args = parser.parse_args()
     try:
         address = api_base(args.api_base if args.api_base is not None else json.loads((ROOT/'config.json').read_text(encoding='utf-8'))['apiBase'])

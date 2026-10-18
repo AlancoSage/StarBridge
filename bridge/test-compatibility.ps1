@@ -11,8 +11,8 @@ $tests = Join-Path $target 'compat-test-classes'
 $api = Join-Path $target 'spigot-api-1.8.8-shaded.jar'
 $gson = Join-Path $target 'gson-2.13.2.jar'
 $asm = Join-Path $target 'asm-9.8.jar'
-$jar = Join-Path $target 'Myrinbot-0.5.4.jar'
-$legacyJar = Join-Path $target 'StarBridge-0.5.4.jar'
+$jar = Join-Path $target 'VexBot-0.5.5.jar'
+$legacyJar = Join-Path $target 'StarBridge-0.5.5.jar'
 if ((Get-FileHash -LiteralPath $jar -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $legacyJar -Algorithm SHA256).Hash) {
     throw 'Legacy updater artifact must match the primary JAR'
 }

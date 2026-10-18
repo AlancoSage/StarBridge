@@ -137,7 +137,7 @@ def runtime_config(cfg, path):
 def serialize(cfg):
     def literal(v):
         return str(v).lower() if isinstance(v, bool) else json.dumps(v, ensure_ascii=False)
-    lines = ["# 由Myrinbot管理面板保存；修改前一版位于同目录 .bak 文件。"]
+    lines = ["# 由VexBot管理面板保存；修改前一版位于同目录 .bak 文件。"]
     if not cfg["servers"]:
         lines.append("servers = []")
     for section in ("app", "mysql", "onebot", "qq_official", "reply_images", "features", "replies"):

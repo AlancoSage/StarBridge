@@ -124,7 +124,7 @@ class WebsiteApiTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_public_settings_redact_backend_config_and_server_secrets(self):
         info=await (await self.client.get('/api/v1/community/info')).json()
-        self.assertEqual(info['title'],'Myrinbot社区');self.assertFalse(info['registration_enabled'])
+        self.assertEqual(info['title'],'VexBot社区');self.assertFalse(info['registration_enabled'])
         self.assertTrue(info['login_enabled'])
         servers=await (await self.client.get('/api/v1/servers')).json()
         self.assertEqual(set(servers['servers'][0]),{'id','name','connected','online_count','max_players'})
@@ -275,7 +275,7 @@ class WebsiteApiTests(unittest.IsolatedAsyncioTestCase):
             file=self.base/'dist/StarBridge-website.zip';file.parent.mkdir();file.write_bytes(b'project-release')
             response=await self.client.get('/api/website/project',headers=self.admin)
             self.assertEqual(response.status,200);self.assertEqual(await response.read(),b'project-release')
-            self.assertIn('Myrinbot-website.zip', response.headers['Content-Disposition'])
+            self.assertIn('VexBot-website.zip', response.headers['Content-Disposition'])
             with file.open('wb') as stream:stream.truncate(4*1024*1024+1)
             self.assertEqual((await self.client.get('/api/website/project',headers=self.admin)).status,413)
             (self.base/'dist/AetherBot-website.zip').write_bytes(b'current-project')
@@ -286,6 +286,10 @@ class WebsiteApiTests(unittest.IsolatedAsyncioTestCase):
             response=await self.client.get('/api/website/project',headers=self.admin)
             self.assertEqual(response.status,200)
             self.assertEqual(await response.read(),b'myrinbot-project')
+            (self.base/'dist/VexBot-website.zip').write_bytes(b'vexbot-project')
+            response=await self.client.get('/api/website/project',headers=self.admin)
+            self.assertEqual(response.status,200)
+            self.assertEqual(await response.read(),b'vexbot-project')
 
     async def test_end_to_end_register_password_login_and_reset_revoke_sessions(self):
         settings=self.reg.config_response();settings['settings'].update(enabled=True,smtp_host='smtp.test.example',smtp_from='sender@example.com')

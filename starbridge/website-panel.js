@@ -12,15 +12,15 @@ function websiteModeUI(){
   $('website-check').disabled=websiteSaving||websiteChecking||!websiteConfig?.connection.enabled;
   $('website-unbind').disabled=websiteSaving||!websiteConfig?.connection.enabled;
   setText('website-save',!enabled?'保存接入设置':websiteConfig?.connection.enabled?'保存绑定与内容':'绑定网站');
-  setText('website-mode-description',mode==='none'?'不接入官网，Bot 仍可正常使用。已保存的网站地址和设置会保留。':provided?'使用Myrinbot提供的独立官网项目，自行选择部署位置，再填写网站地址接入。':'填写已有官网地址，通过 API 或 SDK 接入注册、登录和信息查询；网站界面由你自己的项目管理。');
-  setText('website-deployment-title',provided?'部署Myrinbot官网':'接入你自己的官网');
-  setText('website-deployment-description',provided?'下载官网项目并部署到自己的服务器或静态托管，将接入配置 config.json 放到网站根目录。官网内容和外观可在本面板调整。':'使用接口文档与 SDK，在自己的网站中接入Myrinbot账号和服务器信息。接入配置提供 Bot API 地址，页面设计和内容由你自行管理。');
+  setText('website-mode-description',mode==='none'?'不接入官网，Bot 仍可正常使用。已保存的网站地址和设置会保留。':provided?'使用VexBot提供的独立官网项目，自行选择部署位置，再填写网站地址接入。':'填写已有官网地址，通过 API 或 SDK 接入注册、登录和信息查询；网站界面由你自己的项目管理。');
+  setText('website-deployment-title',provided?'部署VexBot官网':'接入你自己的官网');
+  setText('website-deployment-description',provided?'下载官网项目并部署到自己的服务器或静态托管，将接入配置 config.json 放到网站根目录。官网内容和外观可在本面板调整。':'使用接口文档与 SDK，在自己的网站中接入VexBot账号和服务器信息。接入配置提供 Bot API 地址，页面设计和内容由你自行管理。');
 }
 function websitePopulate(data){
   websiteConfig=data;websiteDirty=false;
   for(const [key,value] of Object.entries(data.settings)){const input=$('website-'+key);if(typeof value==='boolean')input.checked=value;else input.value=value;}
   setText('website-origin',data.connection.origin||'尚未填写网站地址');
-  setText('website-connection-status',data.connection.enabled?(data.connection.mode==='provided'?'已绑定Myrinbot官网':'已绑定自己的官网'):'未绑定网站');
+  setText('website-connection-status',data.connection.enabled?(data.connection.mode==='provided'?'已绑定VexBot官网':'已绑定自己的官网'):'未绑定网站');
   setText('website-check-result','');
   const open=$('website-open');open.hidden=!data.connection.enabled||!!data.error;open.href=data.settings.website_url||'/community/';
   setText('website-draft-label','');
@@ -66,7 +66,7 @@ $('website-check').onclick=async()=>{
     const response=await fetch(url,{credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',redirect:'error',signal:AbortSignal.timeout(8000)});
     if(!response.ok)throw Error('API 返回 HTTP '+response.status+'。');
     const data=await response.json();
-    if(typeof data.title!=='string'||typeof data.registration_enabled!=='boolean'||typeof data.login_enabled!=='boolean')throw Error('该地址未返回Myrinbot官网 API 数据，请检查地址。');
+    if(typeof data.title!=='string'||typeof data.registration_enabled!=='boolean'||typeof data.login_enabled!=='boolean')throw Error('该地址未返回VexBot官网 API 数据，请检查地址。');
     if(epoch===websiteEpoch)setText('website-check-result','API 可达 · '+data.title+'。此结果只验证当前浏览器的访问；请在官网完成接入测试。');
   }catch(error){if(epoch===websiteEpoch)setText('website-check-result',error.name==='TimeoutError'?'API 检查超时，请检查地址和网络。':error instanceof TypeError?'当前浏览器无法访问 API，请检查地址、HTTPS 和跨域来源设置。':error.message);}
   finally{websiteChecking=false;websiteModeUI();}
@@ -82,7 +82,7 @@ async function websiteDownload(kind){
     const response=await fetch(url,{method:kind==='config'?'POST':'GET',headers:{Authorization:'Bearer '+token,...(kind==='config'?{'Content-Type':'application/json'}:{})},
       ...(kind==='config'?{body:JSON.stringify({})}:{}),cache:'no-store',signal:AbortSignal.timeout(15000)});
     if(!response.ok){const data=await response.json().catch(()=>({}));throw Error(data.error||'下载失败，请检查登录状态。');}
-    const objectUrl=URL.createObjectURL(await response.blob()),link=node('a');link.href=objectUrl;link.download=kind==='project'?'Myrinbot-website.zip':kind==='config'?'config.json':kind==='guide'?'Myrinbot-website-deployment.md':'website-registration.js';link.click();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+    const objectUrl=URL.createObjectURL(await response.blob()),link=node('a');link.href=objectUrl;link.download=kind==='project'?'VexBot-website.zip':kind==='config'?'config.json':kind==='guide'?'VexBot-website-deployment.md':'website-registration.js';link.click();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
     notice('website-download-notice',kind==='project'?'独立网站项目已下载。':'接入文件已下载。','success');
   }catch(error){notice('website-download-notice',error.message,'error');}finally{button.disabled=false;}
 }

@@ -32,7 +32,7 @@ def main(java_home: str | None) -> None:
     for name, (url, checksum) in TEST_DEPS.items():
         path = folder / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != checksum:
-            request = urllib.request.Request(url, headers={"User-Agent": "Myrinbot-auth-api-test/0.1"})
+            request = urllib.request.Request(url, headers={"User-Agent": "VexBot-auth-api-test/0.1"})
             with urllib.request.urlopen(request, timeout=60) as response:
                 payload = response.read(32 * 1024 * 1024 + 1)
             if len(payload) > 32 * 1024 * 1024 or hashlib.sha256(payload).hexdigest() != checksum:
@@ -47,7 +47,7 @@ def main(java_home: str | None) -> None:
                         "-Dcom.j256.simplelogging.level=ERROR", "-cp", os.pathsep.join(map(str, [work / "classes", MODULE / "src/main/resources", *paths])),
                         "cn.starbridge.velocity.SecurityCheck", str(work)], check=True, timeout=90)
     # Deployed jar must contain no optional authentication implementation, test class, or compile-only API.
-    jar = TARGET / "Myrinbot-Velocity-0.1.0.jar"
+    jar = TARGET / "VexBot-Velocity-0.1.1.jar"
     with zipfile.ZipFile(jar) as archive:
         classes = [name for name in archive.namelist() if name.endswith(".class")]
         assert classes and all(name.startswith(("cn/starbridge/velocity/", "cn/starbridge/lib/gson/")) for name in classes)

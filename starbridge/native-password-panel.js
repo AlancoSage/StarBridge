@@ -50,6 +50,6 @@ for(const kind of ['velocity','guide'])$('native-password-'+kind).onclick=async(
   try{
     const response=await fetch('/api/native-passwords/'+kind,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
     if(!response.ok)throw Error('下载失败，请检查发布附件。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=kind==='guide'?'Myrinbot-native-password-reset.md':'Myrinbot-Velocity-0.1.0.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=kind==='guide'?'VexBot-native-password-reset.md':'VexBot-Velocity-0.1.1.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('native-password-notice',error.message,'error');}
 };

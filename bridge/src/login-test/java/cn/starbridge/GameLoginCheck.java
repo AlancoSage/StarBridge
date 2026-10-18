@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 public final class GameLoginCheck {
     private static final Queue<Runnable> callbacks = new ConcurrentLinkedQueue<>();
     private static final List<Runnable> timers = new ArrayList<>();
-    private static final Logger logger = Logger.getLogger("Myrinbot-test");
+    private static final Logger logger = Logger.getLogger("VexBot-test");
     private static FakePlayer actor;
     private static boolean authMe;
     private static Plugin installedAuthMe;

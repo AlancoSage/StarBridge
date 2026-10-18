@@ -31,7 +31,7 @@ def setup_routes(app, state_key, authorize, read_body):
                 result = await manager.restore(data["preview_id"])
             elif request.method == "GET":
                 return web.FileResponse(manager.path(request.match_info["backup_id"]), headers={"Cache-Control": "no-store",
-                    "Content-Disposition": 'attachment; filename="Myrinbot-' + request.match_info["backup_id"] + '.zip"'})
+                    "Content-Disposition": 'attachment; filename="VexBot-' + request.match_info["backup_id"] + '.zip"'})
             else:
                 if manager.busy: raise BackupError("备份或恢复操作正在处理中", 409)
                 manager.path(request.match_info["backup_id"]).unlink()

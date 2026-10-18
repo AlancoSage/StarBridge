@@ -59,13 +59,13 @@ def artifact_prefix(root):
     """Use this checkout's brand while retaining historical release filenames."""
     branding = root / 'starbridge/branding.py'
     prefix = source_literal(branding, 'ARTIFACT_PREFIX') if branding.is_file() else 'StarBridge'
-    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot'):
+    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot', 'VexBot'):
         raise ValueError('发布产物名称错误')
     return prefix
 
 
 def native_filename(item, mod_version, prefix='StarBridge'):
-    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot'):
+    if prefix not in ('StarBridge', 'AetherBot', 'Myrinbot', 'VexBot'):
         raise ValueError('发布产物名称错误')
     loader = GAME_LOADERS.get(item.get('platform'))
     version = item.get('version')
@@ -315,7 +315,7 @@ def publish(version,assets,repo,commit,notes,latest=True):
         release = json.loads(existing.stdout)
         if not release.get('draft'): raise ValueError('该版本已正式发布，不能覆盖；请增加版本号')
     else:
-        title = next((name for name in ('Myrinbot', 'AetherBot')
+        title = next((name for name in ('VexBot', 'Myrinbot', 'AetherBot')
                       if any(path.name.startswith(name + '-') for path in assets)), 'StarBridge')
         payload = {'tag_name':tag,'target_commitish':commit,'name':title+' '+version,'body':notes,'draft':True,'prerelease':False,'make_latest':'false'}
         with tempfile.TemporaryDirectory() as tmp:

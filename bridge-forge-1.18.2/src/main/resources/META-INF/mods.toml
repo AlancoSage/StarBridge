@@ -4,10 +4,10 @@ license="AGPL-3.0-or-later"
 [[mods]]
 modId="starbridge"
 version="${version}"
-displayName="Myrinbot · Forge 游戏桥接"
+displayName="VexBot · Forge 游戏桥接"
 authors="AlancoSage"
 displayTest="IGNORE_SERVER_VERSION"
-description='''Myrinbot服务端桥接：QQ 联动、玩家管理、白名单、密码登录及 QQ 确认。'''
+description='''VexBot服务端桥接：QQ 联动、玩家管理、白名单、密码登录及 QQ 确认。'''
 [[dependencies.starbridge]]
 modId="forge"
 mandatory=true

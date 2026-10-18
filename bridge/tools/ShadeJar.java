@@ -52,7 +52,7 @@ public final class ShadeJar {
                     Path path = root.resolve(name);
                     if (Files.isRegularFile(path)) {
                         if (Files.isSymbolicLink(path)) throw new IOException("Symlink in license input");
-                        entry(output, names, "META-INF/licenses/Myrinbot/" + name, Files.readAllBytes(path));
+                        entry(output, names, "META-INF/licenses/VexBot/" + name, Files.readAllBytes(path));
                     }
                 }
             }

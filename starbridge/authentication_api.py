@@ -51,7 +51,7 @@ def setup_routes(app, state_key, authorize, read_body, bridge):
             raise web.HTTPBadRequest(text="不支持的游戏端类型")
         name = "fabric-game-ends.md" if platform == "fabric" else "mod-game-ends.md" if platform != "bukkit" else "game-login.md"
         return web.FileResponse(Path(__file__).resolve().parent.parent / "docs" / name,
-            headers={"Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="Myrinbot-{name}"'})
+            headers={"Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="VexBot-{name}"'})
 
     async def password_request(request):
         if request.content_type != "application/json":

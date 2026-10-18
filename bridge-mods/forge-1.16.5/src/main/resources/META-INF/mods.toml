@@ -3,8 +3,8 @@ loaderVersion="[36,37)"
 license="AGPL-3.0-or-later"
 [[mods]]
 modId="starbridge"
-version="0.1.1"
-displayName="Myrinbot · Forge 游戏桥接"
+version="0.1.2"
+displayName="VexBot · Forge 游戏桥接"
 [[dependencies.starbridge]]
 modId="forge"
 mandatory=true

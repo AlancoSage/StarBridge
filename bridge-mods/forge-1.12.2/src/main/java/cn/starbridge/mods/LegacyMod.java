@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
-@Mod(modid="starbridge", name="Myrinbot · Forge 游戏桥接", version="0.1.1", acceptableRemoteVersions="*")
+@Mod(modid="starbridge", name="VexBot · Forge 游戏桥接", version="0.1.2", acceptableRemoteVersions="*")
 public final class LegacyMod {
     private final LegacyBootstrap bootstrap=new LegacyBootstrap();
     @Mod.EventHandler public void initialize(net.minecraftforge.fml.common.event.FMLInitializationEvent event) {

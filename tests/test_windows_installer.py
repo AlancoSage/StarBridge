@@ -118,15 +118,15 @@ class WindowsInstallerTests(unittest.TestCase):
             (root / 'starbridge/__init__.py').write_text(
                 f'__version__ = {builder.__version__!r}\n', encoding='utf-8')
             renamed = {
-                f'bridge/target/Myrinbot-{builder.__bridge_version__}.jar': b'new Bukkit',
-                f'bridge/target/Myrinbot-Fabric-1.20.1-{__forge_version__}.jar': b'new Fabric',
-                'dist/Myrinbot-website.zip': b'new website',
+                f'bridge/target/VexBot-{builder.__bridge_version__}.jar': b'new Bukkit',
+                f'bridge/target/VexBot-Fabric-1.20.1-{__forge_version__}.jar': b'new Fabric',
+                'dist/VexBot-website.zip': b'new website',
             }
             for name, content in renamed.items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(content)
-                path.with_name(path.name.replace('Myrinbot-', 'StarBridge-', 1)).write_bytes(b'older download')
+                path.with_name(path.name.replace('VexBot-', 'StarBridge-', 1)).write_bytes(b'older download')
             output = root / 'package.zip'
             with patch.object(builder, 'ROOT', root):
                 builder.build(output)
@@ -134,7 +134,7 @@ class WindowsInstallerTests(unittest.TestCase):
                 self.assertNotIn('StarBridge/云墟.bat', archive.namelist())
                 self.assertTrue(all(name.startswith('StarBridge/') for name in archive.namelist()))
                 for name, content in renamed.items():
-                    legacy = name.replace('Myrinbot-', 'StarBridge-', 1)
+                    legacy = name.replace('VexBot-', 'StarBridge-', 1)
                     self.assertEqual(archive.read('StarBridge/' + legacy), content)
                     self.assertNotIn('StarBridge/' + name, archive.namelist())
             stage = root / 'stage'
@@ -161,6 +161,12 @@ class WindowsInstallerTests(unittest.TestCase):
                 builder.build(output)
             with zipfile.ZipFile(output) as archive:
                 self.assertEqual(archive.read('StarBridge/dist/StarBridge-website.zip'), previous.read_bytes())
+            myrinbot = legacy.with_name('Myrinbot-website.zip')
+            myrinbot.write_bytes(b'website from Myrinbot deployment')
+            with patch.object(builder, 'ROOT', root):
+                builder.build(output)
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(archive.read('StarBridge/dist/StarBridge-website.zip'), myrinbot.read_bytes())
 
 
 if __name__ == '__main__':

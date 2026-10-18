@@ -6,7 +6,7 @@ import time
 from .reply_images import command_key
 
 
-HELP = """Myrinbot · Minecraft 群助手
+HELP = """VexBot · Minecraft 群助手
 帮助 — 查看命令
 状态 / 在线 — 查看服务器状态与玩家
 绑定 验证码 — 先在游戏中输入 /qbind
@@ -125,7 +125,7 @@ class Bot:
             mid = event.get("message_id")
             if not isinstance(mid, str) or self.store.seen(f"official-info:{group}:{qq}:{mid}") or not self.allow(("official-info", group, qq), count=3, period=60):
                 return
-            reply = f"Myrinbot 官机接入信息\n你的用户身份：{qq}"
+            reply = f"VexBot 官机接入信息\n你的用户身份：{qq}"
             if event.get("message_type") == "group":
                 reply += f"\n本群身份：{group}\n将本群身份填写到服务器关联群；管理员填写对应用户身份。"
                 await self.reply(group, reply, '接入信息')

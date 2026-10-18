@@ -78,7 +78,7 @@ async function registrationDownload(kind){
   try{
     const response=await fetch('/api/registration/'+kind,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
     if(!response.ok)throw Error('下载失败，请检查登录状态。');
-    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=kind==='guide'?'Myrinbot-account-api.md':'website-registration.js';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download=kind==='guide'?'VexBot-account-api.md':'website-registration.js';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('registration-notice',error.message,'error');}
 }
 $('registration-guide').onclick=()=>registrationDownload('guide');$('registration-example').onclick=()=>registrationDownload('example');

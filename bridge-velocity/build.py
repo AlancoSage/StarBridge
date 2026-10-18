@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "bridge-velocity"
 TARGET = ROOT / "bridge" / "target"
 DEPS = TARGET / "velocity-build-deps"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 MAVEN = "https://repo.maven.apache.org/maven2/"
 DEPENDENCIES = {
     "velocity-api.jar": (
@@ -44,7 +44,7 @@ def dependencies() -> list[Path]:
             if existing.is_file() and hashlib.sha256(existing.read_bytes()).hexdigest() == checksum:
                 shutil.copyfile(existing, path)
             else:
-                request = urllib.request.Request(url, headers={"User-Agent": "Myrinbot-Velocity-build/0.1"})
+                request = urllib.request.Request(url, headers={"User-Agent": "VexBot-Velocity-build/0.1"})
                 with urllib.request.urlopen(request, timeout=60) as response:
                     payload = response.read(16 * 1024 * 1024 + 1)
                 if len(payload) > 16 * 1024 * 1024 or hashlib.sha256(payload).hexdigest() != checksum:
@@ -84,10 +84,11 @@ def build(java_home: str | None) -> Path:
         resources = work / "resources"
         shutil.copytree(MODULE / "src/main/resources", resources)
         shutil.copytree(ROOT / "bridge/src/main/resources/META-INF/licenses", resources / "META-INF/licenses")
-        output = TARGET / f"Myrinbot-Velocity-{VERSION}.jar"
+        output = TARGET / f"VexBot-Velocity-{VERSION}.jar"
         subprocess.run([java, "-cp", os.pathsep.join(map(str, [tools, *paths])), "ShadeJar", str(classes),
                         str(resources), str(DEPS / "gson-2.13.2.jar"), str(output), str(ROOT)], check=True)
-    shutil.copyfile(output, TARGET / f"StarBridge-Velocity-{VERSION}.jar")
+    for prefix in ("Myrinbot", "StarBridge"):
+        shutil.copyfile(output, TARGET / f"{prefix}-Velocity-{VERSION}.jar")
     return output
 
 

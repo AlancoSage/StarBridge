@@ -4,7 +4,7 @@
 
 ## 连接
 
-支持 **MySQL 8.0.17+ 和 8.4**，使用 InnoDB、utf8mb4 与区分大小写的排序规则。请为单个 Myrinbot 实例创建专用数据库和数据库用户。不要与其他应用共用数据表，也不要同时运行两个实例操作同一个库。本版不声明兼容 MariaDB。
+支持 **MySQL 8.0.17+ 和 8.4**，使用 InnoDB、utf8mb4 与区分大小写的排序规则。请为单个 VexBot 实例创建专用数据库和数据库用户。不要与其他应用共用数据表，也不要同时运行两个实例操作同一个库。本版不声明兼容 MariaDB。
 
 在 MySQL 管理工具中创建数据库，并向专用用户直接授予该库的 SELECT、INSERT、UPDATE、DELETE、CREATE、ALTER、INDEX、TRIGGER 权限。TRIGGER 权限用于检查并拒绝已有触发器，程序不会创建触发器；仅通过角色授予此权限的账户需补充直接授权。生产环境请使用独立密码，并按实际 Bot 来源地址限制用户。程序不会创建 MySQL 服务、数据库或数据库用户。
 
@@ -31,7 +31,7 @@ ssl_ca = ""
 
 ## 迁移已有数据
 
-先配置好 MySQL 连接信息，保留当前数据库模式，再完全停止 Myrinbot。以下命令在软件目录中运行，使用软件自带的 Python 环境：
+先配置好 MySQL 连接信息，保留当前数据库模式，再完全停止 VexBot。以下命令在软件目录中运行，使用软件自带的 Python 环境：
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/migrate_database.py --config config.toml --to mysql

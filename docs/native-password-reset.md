@@ -1,13 +1,13 @@
 # 原登录插件密码找回
 
-Bot **0.6.25** 增加已绑定 QQ 的原生游戏密码找回，默认关闭。它调用原登录插件的接口修改密码，不执行包含密码的控制台命令，也不会修改 Myrinbot 网页密码。
+适用于 Bot **0.6.28**。已绑定 QQ 的原生游戏密码找回默认关闭，调用原登录插件的接口修改密码，不执行包含密码的控制台命令，也不会修改 VexBot 网页密码。
 
-| 登录插件 | 安装位置 | Myrinbot 配套端 |
+| 登录插件 | 安装位置 | VexBot 配套端 |
 | --- | --- | --- |
-| AuthMe Reloaded | Bukkit / Spigot / Paper | `Myrinbot-0.5.4.jar` |
-| LibreLogin | 普通 Paper | `Myrinbot-0.5.4.jar` |
-| LimboAuth | Velocity 代理 | `Myrinbot-Velocity-0.1.0.jar` |
-| LibreLogin | Velocity 代理 | `Myrinbot-Velocity-0.1.0.jar` |
+| AuthMe Reloaded | Bukkit / Spigot / Paper | `VexBot-0.5.5.jar` |
+| LibreLogin | 普通 Paper | `VexBot-0.5.5.jar` |
+| LimboAuth | Velocity 代理 | `VexBot-Velocity-0.1.1.jar` |
+| LibreLogin | Velocity 代理 | `VexBot-Velocity-0.1.1.jar` |
 
 接口验证使用 AuthMe 5.7.0、LibreLogin 0.24.0、LimboAuth 1.1.14 与 Velocity 3.3。其他版本需具备相同公共接口；不兼容时会拒绝提供重置。
 
@@ -17,14 +17,14 @@ Folia 的第三方登录 API、BungeeCord、多代理共享账号数据库和 Ea
 
 1. 更新 Bot 和对应的配套游戏端，完整重启游戏服或代理。
 2. 原登录插件由服主自行安装。AuthMe 需要关闭自身的 `settings.sessions.enabled`，然后完整重启游戏服，避免旧 IP 会话绕过新密码；其他登录、安全配置仍由原插件管理。首次安装 AuthMe 生成配置后，也需配置好再重启。
-3. 在面板「成员 → 游戏登录 → 找回原登录插件密码」中，选择服务器实际使用的插件和安装位置，保存。此设置独立于 Myrinbot 的进服登录开关；无需启用两套登录来使用找回功能。
+3. 在面板「成员 → 游戏登录 → 找回原登录插件密码」中，选择服务器实际使用的插件和安装位置，保存。此设置独立于 VexBot 的进服登录开关；无需启用两套登录来使用找回功能。
 4. 玩家先完成原登录插件的认证，再执行 `/qbind`，使用自己的 QQ **私聊**机器人发送 `/验证绑定 服务器ID 验证码`。已经绑定的玩家也要用原 QQ 私聊确认，无需解绑。游戏内认证和本人 QQ 的私聊确认都完成后才获得改密码权限，旧绑定不会自动升级权限。验证码不要发群或转发；普通群绑定只用于聊天绑定，不授予改密码权限。
 
 仅验证真实登录过的账号：服务端记录 UUID、玩家名与原账号创建信息，Bot 记录对应绑定的创建代次。原账号删除重建、解绑重绑、更换登录插件后，需要重新验证。请保留游戏端的 `password-reset-proofs.properties`；删除它不会泄露密码，但对应账号必须重新验证。
 
 ## Velocity 安装
 
-把 `Myrinbot-Velocity-0.1.0.jar` 放进 **Velocity 的 `plugins/`**，不要放进后端服。需要 Java 17 或更高版本；LibreLogin 自身的 Java 要求另行满足。
+把 `VexBot-Velocity-0.1.1.jar` 放进 **Velocity 的 `plugins/`**，不要放进后端服。需要 Java 17 或更高版本；LibreLogin 自身的 Java 要求另行满足。
 
 首次运行后编辑 `plugins/myrinbot-velocity/config.properties`：
 
@@ -40,7 +40,7 @@ LibreLogin 使用 `engine=librelogin`。`server-id` 与绑定所在的后端服�
 
 代理提供 `/qbind` 和 `/myrinbot:qbind`，请在原登录插件认证完成后执行。它只负责原生账号验证和密码找回；状态、聊天等功能仍由原有后端桥接负责。更改代理配置后完整重启代理。
 
-同一服务器的认证由代理上的原登录插件负责，请关闭该服务器的 Myrinbot 内置进服登录，避免同时使用两套连接认证。后端桥接仍可正常上报状态与聊天。
+同一服务器的认证由代理上的原登录插件负责，请关闭该服务器的 VexBot 内置进服登录，避免同时使用两套连接认证。后端桥接仍可正常上报状态与聊天。
 
 ## 玩家使用
 

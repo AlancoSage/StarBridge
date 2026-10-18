@@ -1,6 +1,6 @@
 @echo off
 setlocal DisableDelayedExpansion
-title Myrinbot
+title VexBot
 chcp 65001 >nul
 set "STARBRIDGE_SELF=%~f0"
 set "STARBRIDGE_ACTION=%~1"
@@ -122,7 +122,7 @@ function Start-StarBridgeWindows {
     param([string]$Root, [string]$RequestedPython = '', [switch]$InstallOnly, [switch]$WithoutBrowser)
     Set-Location -LiteralPath $Root
     foreach ($name in @('config.example.toml', 'requirements.lock.txt', 'starbridge\__main__.py', 'scripts\windows_runtime.py')) {
-        if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { throw "安装文件不完整。请先完整解压 Myrinbot 部署包，再双击 $entrypoint。" }
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { throw "安装文件不完整。请先完整解压 VexBot 部署包，再双击 $entrypoint。" }
     }
     $data = Join-Path $Root 'data'
     New-Item -ItemType Directory -Force -Path $data | Out-Null
@@ -219,7 +219,7 @@ function Stop-StarBridgeWindows {
         # Windows venv launches a child Python process; stop the verified process tree.
         & "$env:SystemRoot\System32\taskkill.exe" /PID $serviceId /T /F | Out-Null
         if ($LASTEXITCODE -ne 0) { throw '停止失败，请查看进程状态后重试。' }
-        Write-Host 'Myrinbot后台服务已停止。' -ForegroundColor Green
+        Write-Host 'VexBot后台服务已停止。' -ForegroundColor Green
     } finally { if ($lock) { $lock.Dispose() } }
 }
 
@@ -243,7 +243,7 @@ try {
     if (-not $quiet) {
         while ($true) {
             Write-Host ''
-            Write-Host 'Myrinbot  |  1 打开面板  2 启动  3 停止  4 重启  0 关闭窗口'
+            Write-Host 'VexBot  |  1 打开面板  2 启动  3 停止  4 重启  0 关闭窗口'
             $choice = Read-Host '请选择'
             switch ($choice) {
                 '0' { exit 0 }

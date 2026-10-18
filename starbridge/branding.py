@@ -1,6 +1,6 @@
 """Product names; deployment identifiers remain compatible with existing installs."""
-DISPLAY_NAME = "Myrinbot"
-ARTIFACT_PREFIX = "Myrinbot"
+DISPLAY_NAME = "VexBot"
+ARTIFACT_PREFIX = "VexBot"
 
 
 def artifact_path(directory, filename):
@@ -9,7 +9,7 @@ def artifact_path(directory, filename):
     if path.is_file() or not filename.startswith(ARTIFACT_PREFIX + "-"):
         return path
     suffix = filename[len(ARTIFACT_PREFIX) + 1:]
-    for prefix in ("AetherBot", "StarBridge"):
+    for prefix in ("Myrinbot", "AetherBot", "StarBridge"):
         legacy = directory / (prefix + "-" + suffix)
         if legacy.is_file():
             return legacy

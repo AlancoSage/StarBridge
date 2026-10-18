@@ -1,6 +1,6 @@
-# Myrinbot 账号注册与网站 API
+# VexBot 账号注册与网站 API
 
-版本：`v1`。Myrinbot 负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
+版本：`v1`。VexBot 负责邮件验证与社区账号创建，QQ 和网站共享账号库。群内用文字反馈，无需图片渲染或显卡。
 
 ## 用途与准备
 
@@ -28,7 +28,7 @@
 | 面板项 | 填写说明 |
 | --- | --- |
 | SMTP 主机 | 邮件服务商提供的域名或 IP，不含 `https://`、路径和空格 |
-| 端口 / 加密方式 | 必须匹配服务商的 SSL 或 STARTTLS 服务；Myrinbot 不接受明文 SMTP |
+| 端口 / 加密方式 | 必须匹配服务商的 SSL 或 STARTTLS 服务；VexBot 不接受明文 SMTP |
 | 发件邮箱 | 验证邮件的 From 地址，需符合服务商发信要求 |
 | 登录账号 / 授权码 | SMTP 认证凭据；授权码不是网站 API 密钥，也不是玩家密码 |
 | 注册网页地址 | 可选，写入网页注册邮件的入口；不自动部署网页或授权跨域来源 |
@@ -80,7 +80,7 @@ API 根地址：`https://你的Bot域名/api/v1`。浏览器跨站接入需在�
 `GET /registration/info` 返回：
 
 ```json
-{"enabled":true,"site_name":"Myrinbot社区","code_minutes":5,"website_url":"https://community.example.com/register"}
+{"enabled":true,"site_name":"VexBot社区","code_minutes":5,"website_url":"https://community.example.com/register"}
 ```
 
 不返回邮件配置或密钥。
@@ -233,4 +233,4 @@ revision 防止旧页面覆盖新设置。只有管理员配置接口返回 SMTP
 注册使用现有 aiohttp、SQLite 和 Python 标准库，无新增依赖。发信在后台线程执行，同一实例最多同时发两封，避免阻塞网页事件循环。网页没有持续动画或 GPU 渲染。
 ## 社区官网与玩家信息
 
-Myrinbot 社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。
+VexBot 社区官网是独立的纯静态项目，支持密码登录、所有服务器状态和本人档案，另提供公开玩家信息 API。面板「接入空间 → 网站绑定」可接入网站、自动授权准确来源、下载独立项目与接入配置，并调整内容及公开范围。新增接口包括 `/api/v1/community/info`、`/api/v1/servers`、`/api/v1/players`、`/api/v1/players/{uuid}`、`/api/v1/account/login`、`/api/v1/account/logout`、`/api/v1/me/profile` 与网站后端专用 `/api/v1/accounts/{account_id}/profile`。详细字段及部署方式见 [官网部署与信息接口](website-deployment.md)。现有注册接口保持兼容。
