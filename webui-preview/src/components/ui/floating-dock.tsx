@@ -12,6 +12,7 @@ import {
   type MotionValue,
   motion,
   useMotionValue,
+  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -70,6 +71,7 @@ const FloatingDockMobile = memo(
     buttonClassName?: string;
   }) => {
     const [open, setOpen] = useState(false);
+    const reduceMotion = useReducedMotion();
 
     const toggleOpen = useCallback(() => {
       setOpen((prev) => !prev);
@@ -90,19 +92,25 @@ const FloatingDockMobile = memo(
                 return (
                   <motion.div
                     key={item.title}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
                     animate={{
                       opacity: 1,
                       y: 0,
                     }}
                     exit={{
                       opacity: 0,
-                      y: 10,
+                      y: reduceMotion ? 0 : 10,
                       transition: {
-                        delay: idx * 0.05,
+                        delay: reduceMotion ? 0 : idx * 0.04,
                       },
                     }}
-                    transition={{ delay: (items.length - 1 - idx) * 0.05 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 26,
+                      duration: reduceMotion ? 0 : undefined,
+                      delay: reduceMotion ? 0 : (items.length - 1 - idx) * 0.04,
+                    }}
                   >
                     {item.customComponent ? (
                       <div
@@ -171,8 +179,8 @@ const FloatingDockMobile = memo(
           )}
         >
           <motion.div
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            animate={{ rotate: open && !reduceMotion ? 180 : 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeInOut" }}
           >
             <IconLayoutNavbarCollapse className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
           </motion.div>
@@ -205,7 +213,8 @@ const FloatingDockDesktop = memo(
 
     const handleMouseMove = useCallback(
       (e: React.MouseEvent) => {
-        mouseX.set(e.pageX);
+        // getBoundingClientRect uses viewport coordinates, including after scrolling.
+        mouseX.set(e.clientX);
       },
       [mouseX],
     );
@@ -224,10 +233,11 @@ const FloatingDockDesktop = memo(
         )}
       >
         {(() => {
-          const firstRow = items.slice(0, 3);
           const dividerIndex = items.findIndex(
             (item) => item.title === "divider",
           );
+          const firstRow =
+            dividerIndex === -1 ? items : items.slice(0, dividerIndex);
           const secondRow =
             dividerIndex !== -1 ? items.slice(dividerIndex + 1) : [];
 
@@ -281,6 +291,8 @@ const IconContainer = memo(
     active?: boolean;
   }) => {
     const ref = useRef<HTMLDivElement>(null);
+    const reduceMotion = useReducedMotion();
+    const focusSize = useMotionValue(40);
 
     const distance = useTransform(mouseX, (val) => {
       const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
@@ -288,47 +300,19 @@ const IconContainer = memo(
       return val - bounds.x - bounds.width / 2;
     });
 
-    const widthTransform = useTransform(distance, [-150, 0, 150], [40, 70, 40]);
-    const heightTransform = useTransform(
-      distance,
-      [-150, 0, 150],
-      [40, 70, 40],
+    const pointerSize = useTransform(distance, [-150, 0, 150], [40, 70, 40]);
+    const targetSize = useTransform(() =>
+      Math.max(pointerSize.get(), focusSize.get()),
     );
-
-    const widthTransformIcon = useTransform(
-      distance,
-      [-150, 0, 150],
-      [20, 35, 20],
-    );
-    const heightTransformIcon = useTransform(
-      distance,
-      [-150, 0, 150],
-      [20, 35, 20],
-    );
-
-    const width = useSpring(widthTransform, {
-      mass: 0.1,
-      stiffness: 150,
-      damping: 12,
+    const size = useSpring(targetSize, {
+      mass: 0.25,
+      stiffness: 260,
+      damping: 19,
     });
-    const height = useSpring(heightTransform, {
-      mass: 0.1,
-      stiffness: 150,
-      damping: 12,
-    });
-
-    const widthIcon = useSpring(widthTransformIcon, {
-      mass: 0.1,
-      stiffness: 150,
-      damping: 12,
-    });
-    const heightIcon = useSpring(heightTransformIcon, {
-      mass: 0.1,
-      stiffness: 150,
-      damping: 12,
-    });
+    const iconSize = useTransform(size, [40, 70], [20, 35]);
 
     const [hovered, setHovered] = useState(false);
+    const [focused, setFocused] = useState(false);
 
     const handleMouseEnter = useCallback(() => {
       setHovered(true);
@@ -356,20 +340,34 @@ const IconContainer = memo(
         {...elementProps}
         aria-label={title}
         aria-current={active ? "page" : undefined}
+        onFocus={() => {
+          setFocused(true);
+          focusSize.set(64);
+        }}
+        onBlur={() => {
+          setFocused(false);
+          focusSize.set(40);
+        }}
+        className="outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
       >
         <motion.div
           ref={ref}
-          style={{ width, height }}
+          style={{
+            width: reduceMotion ? 40 : size,
+            height: reduceMotion ? 40 : size,
+          }}
+          data-dock-icon={title}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           className="relative flex aspect-square items-center justify-center rounded-full bg-gray-200 cursor-pointer dark:bg-neutral-800"
         >
           <AnimatePresence>
-            {hovered && (
+            {(hovered || focused) && (
               <motion.div
-                initial={{ opacity: 0, y: 10, x: "-50%" }}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 10, x: "-50%" }}
                 animate={{ opacity: 1, y: 0, x: "-50%" }}
-                exit={{ opacity: 0, y: 2, x: "-50%" }}
+                exit={{ opacity: 0, y: reduceMotion ? 0 : 2, x: "-50%" }}
+                transition={{ duration: reduceMotion ? 0 : 0.16 }}
                 className="absolute -top-8 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white"
               >
                 {tooltip || title}
@@ -377,7 +375,10 @@ const IconContainer = memo(
             )}
           </AnimatePresence>
           <motion.div
-            style={{ width: widthIcon, height: heightIcon }}
+            style={{
+              width: reduceMotion ? 20 : iconSize,
+              height: reduceMotion ? 20 : iconSize,
+            }}
             className="flex items-center justify-center"
           >
             {customComponent || icon}

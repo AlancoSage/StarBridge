@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useReducedMotion,
+} from "motion/react";
+import {
   ArrowRight,
   ArrowUpRight,
   Bell,
@@ -16,6 +22,7 @@ import {
   MessageCircle,
   Moon,
   PlugZap,
+  RotateCcw,
   Search,
   Server,
   Settings2,
@@ -31,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { FloatingDock } from "@/components/ui/floating-dock";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import ServersPage from "@/pages/ServersPage";
 import CommandsPage from "@/pages/CommandsPage";
 
@@ -51,6 +59,12 @@ function currentPage(): Page {
 }
 
 export default function App() {
+  const reduced = Boolean(useReducedMotion());
+  const pageMotion = {
+    initial: { opacity: reduced ? 1 : 0, y: reduced ? 0 : 16 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: reduced ? 0 : 0.42, ease: "easeOut" as const },
+  };
   const [page, setPage] = useState<Page>(currentPage);
   const [dark, setDark] = useState(() => {
     try {
@@ -60,6 +74,7 @@ export default function App() {
     }
   });
   const [notice, setNotice] = useState("");
+  const [replay, setReplay] = useState(0);
   const [notifications, setNotifications] = useState(false);
   const active = pages.find((item) => item.id === page)!;
   const go = (next: Page) => {
@@ -109,7 +124,7 @@ export default function App() {
   });
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <a
         className="skip-link"
         href="#workspace"
@@ -164,26 +179,38 @@ export default function App() {
                 <Bell />
                 <span className="notification-dot" />
               </Button>
-              {notifications && (
-                <section className="notification-panel">
-                  <div className="flex items-center justify-between">
-                    <strong>通知</strong>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="关闭通知"
-                      onClick={() => setNotifications(false)}
-                    >
-                      <X />
-                    </Button>
-                  </div>
-                  <p>
-                    <CheckCheck className="size-4 text-emerald-600" />
-                    预览环境已准备就绪
-                  </p>
-                  <small>这里使用示例数据，你可以放心体验各项操作。</small>
-                </section>
-              )}
+              <AnimatePresence>
+                {notifications && (
+                  <motion.section
+                    className="notification-panel"
+                    initial={{
+                      opacity: 0,
+                      y: reduced ? 0 : -8,
+                      scale: reduced ? 1 : 0.97,
+                    }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: reduced ? 0 : -6 }}
+                    transition={{ duration: reduced ? 0 : 0.18 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <strong>通知</strong>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="关闭通知"
+                        onClick={() => setNotifications(false)}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                    <p>
+                      <CheckCheck className="size-4 text-emerald-600" />
+                      预览环境已准备就绪
+                    </p>
+                    <small>这里使用示例数据，你可以放心体验各项操作。</small>
+                  </motion.section>
+                )}
+              </AnimatePresence>
             </div>
             <button
               className="user-avatar"
@@ -196,7 +223,12 @@ export default function App() {
         </div>
       </header>
 
-      <main id="workspace" className="workspace" tabIndex={-1}>
+      <main
+        id="workspace"
+        className="workspace"
+        tabIndex={-1}
+        data-motion={reduced ? "reduced" : "full"}
+      >
         <nav className="page-navigation" aria-label="页面导航">
           {pages.map(({ id, label }) => (
             <button
@@ -204,11 +236,24 @@ export default function App() {
               onClick={() => go(id)}
               aria-current={page === id ? "page" : undefined}
             >
-              {label}
+              {page === id && (
+                <motion.span
+                  className="nav-active-indicator"
+                  layoutId={reduced ? undefined : "page-nav-indicator"}
+                  aria-hidden="true"
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 32,
+                    duration: reduced ? 0 : undefined,
+                  }}
+                />
+              )}
+              <span className="nav-label">{label}</span>
             </button>
           ))}
         </nav>
-        <div className="page-heading">
+        <motion.div key={page} className="page-heading" {...pageMotion}>
           <div>
             <div className="section-eyebrow">VEXBOT / {active.en}</div>
             <h1>
@@ -226,22 +271,69 @@ export default function App() {
             <span className="text-muted-foreground">/</span>
             <span>示例数据</span>
           </div>
-        </div>
+        </motion.div>
 
-        {page === "overview" && <Overview go={go} notify={setNotice} />}
-        <div hidden={page !== "servers"}>
+        {page === "overview" && (
+          <motion.div
+            key={`overview-${replay}`}
+            {...pageMotion}
+            className="page-content"
+            data-page="overview"
+          >
+            <Overview
+              go={go}
+              notify={setNotice}
+              replay={() => setReplay((value) => value + 1)}
+            />
+          </motion.div>
+        )}
+        <motion.div
+          hidden={page !== "servers"}
+          className="page-content"
+          data-page="servers"
+          initial={false}
+          animate={{
+            opacity: page === "servers" ? 1 : 0,
+            y: page === "servers" || reduced ? 0 : 16,
+          }}
+          transition={pageMotion.transition}
+        >
           <ServersPage notify={setNotice} />
-        </div>
-        <div hidden={page !== "commands"}>
+        </motion.div>
+        <motion.div
+          hidden={page !== "commands"}
+          className="page-content"
+          data-page="commands"
+          initial={false}
+          animate={{
+            opacity: page === "commands" ? 1 : 0,
+            y: page === "commands" || reduced ? 0 : 16,
+          }}
+          transition={pageMotion.transition}
+        >
           <CommandsPage notify={setNotice} />
-        </div>
-        {page === "players" && <Players />}
+        </motion.div>
+        {page === "players" && (
+          <motion.div
+            {...pageMotion}
+            className="page-content"
+            data-page="players"
+          >
+            <Players />
+          </motion.div>
+        )}
         {page === "settings" && (
-          <Settings
-            notify={setNotice}
-            dark={dark}
-            toggleTheme={() => setDark(!dark)}
-          />
+          <motion.div
+            {...pageMotion}
+            className="page-content"
+            data-page="settings"
+          >
+            <Settings
+              notify={setNotice}
+              dark={dark}
+              toggleTheme={() => setDark(!dark)}
+            />
+          </motion.div>
         )}
 
         <footer className="workspace-footer">
@@ -265,28 +357,40 @@ export default function App() {
           mobileButtonClassName="mobile-dock-button"
         />
       </nav>
-      {notice && (
-        <div className="preview-toast" role="status">
-          <Check className="size-4 text-emerald-600" />
-          <span>{notice}</span>
-          <button aria-label="关闭提示" onClick={() => setNotice("")}>
-            <X className="size-4" />
-          </button>
-        </div>
-      )}
-    </>
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            className="preview-toast"
+            role="status"
+            initial={{ opacity: 0, y: reduced ? 0 : 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: reduced ? 0 : 8 }}
+            transition={{ duration: reduced ? 0 : 0.22 }}
+          >
+            <Check className="size-4 text-emerald-600" />
+            <span>{notice}</span>
+            <button aria-label="关闭提示" onClick={() => setNotice("")}>
+              <X className="size-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }
 
 function Overview({
   go,
   notify,
+  replay,
 }: {
   go: (page: Page) => void;
   notify: (text: string) => void;
+  replay: () => void;
 }) {
   const [range, setRange] = useState(7);
   const [tab, setTab] = useState("activity");
+  const reduced = Boolean(useReducedMotion());
   const metrics = [
     {
       title: "在线玩家",
@@ -344,27 +448,59 @@ function Overview({
               aria-pressed={tab === value}
               onClick={() => setTab(value)}
             >
-              {label}
+              {tab === value && (
+                <motion.span
+                  className="pill-active-indicator"
+                  layoutId={reduced ? undefined : "overview-tab-indicator"}
+                  aria-hidden="true"
+                  transition={{
+                    type: "spring",
+                    stiffness: 420,
+                    damping: 34,
+                    duration: reduced ? 0 : undefined,
+                  }}
+                />
+              )}
+              <span className="pill-label">{label}</span>
             </button>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground flex items-center gap-2">
-          <Clock3 className="size-3.5" />
-          {time} · 实时演示
-        </span>
+        <div className="overview-time-actions">
+          <span className="text-xs text-muted-foreground flex items-center gap-2">
+            <Clock3 className="size-3.5" />
+            {time} · 实时演示
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="replay-motion"
+            onClick={replay}
+          >
+            <RotateCcw />
+            重播动画
+          </Button>
+        </div>
       </div>
       <div className="metrics-grid">
         {metrics.map(
-          ({
-            title,
-            value,
-            unit,
-            change,
-            desc,
-            icon: MetricIcon,
-            positive,
-          }) => (
-            <section key={title} className="metric-card">
+          (
+            { title, value, unit, change, desc, icon: MetricIcon, positive },
+            index,
+          ) => (
+            <motion.section
+              key={title}
+              className="metric-card"
+              initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: reduced ? 0 : 0.48,
+                delay: reduced ? 0 : 0.08 + index * 0.09,
+                ease: "easeOut",
+              }}
+              whileHover={
+                reduced ? undefined : { y: -4, transition: { duration: 0.18 } }
+              }
+            >
               <div className="flex items-center justify-between">
                 <span>{title}</span>
                 <div className="metric-icon">
@@ -372,7 +508,7 @@ function Overview({
                 </div>
               </div>
               <div className="metric-value">
-                {value}
+                <AnimatedNumber value={Number(value.replaceAll(",", ""))} />
                 <small>{unit}</small>
               </div>
               <div className="metric-description">
@@ -386,112 +522,135 @@ function Overview({
                   {change}
                 </span>
               </div>
-            </section>
+            </motion.section>
           ),
         )}
       </div>
 
-      {tab === "activity" ? (
-        <div className="chart-grid">
-          <section className="soft-panel chart-panel">
+      <motion.div
+        key={tab}
+        className="overview-tab-content"
+        initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduced ? 0 : 0.35 }}
+      >
+        {tab === "activity" ? (
+          <div className="chart-grid">
+            <section className="soft-panel chart-panel">
+              <div className="panel-title">
+                <div>
+                  <h2>社区活跃趋势</h2>
+                  <p>每一次互动，都是社区活力的回响。</p>
+                </div>
+                <div className="pill-tabs range-tabs" aria-label="趋势时间范围">
+                  {[7, 15, 30].map((days) => (
+                    <button
+                      key={days}
+                      aria-pressed={range === days}
+                      onClick={() => setRange(days)}
+                    >
+                      {range === days && (
+                        <motion.span
+                          className="pill-active-indicator"
+                          layoutId={reduced ? undefined : "range-tab-indicator"}
+                          aria-hidden="true"
+                          transition={{
+                            type: "spring",
+                            stiffness: 420,
+                            damping: 34,
+                            duration: reduced ? 0 : undefined,
+                          }}
+                        />
+                      )}
+                      <span className="pill-label">{days}天</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="chart-summary">
+                <strong>
+                  <AnimatedNumber
+                    value={range === 7 ? 8432 : range === 15 ? 17926 : 36814}
+                  />
+                </strong>
+                <span>条互动消息</span>
+                <Badge variant="secondary" className="growth-badge">
+                  <ArrowUpRight />
+                  12.8%
+                </Badge>
+              </div>
+              <ActivityChart range={range} />
+              <div className="chart-legend">
+                <span>
+                  <i className="bg-foreground" />
+                  群聊消息
+                </span>
+                <span>
+                  <i className="bg-emerald-500" />
+                  游戏消息
+                </span>
+                <span className="ml-auto">示例统计</span>
+              </div>
+            </section>
+            <ConnectionCard go={go} />
+          </div>
+        ) : tab === "messages" ? (
+          <section className="soft-panel">
             <div className="panel-title">
               <div>
-                <h2>社区活跃趋势</h2>
-                <p>每一次互动，都是社区活力的回响。</p>
+                <h2>消息动态</h2>
+                <p>最近的群服同步与指令回复示例。</p>
               </div>
-              <div className="pill-tabs range-tabs" aria-label="趋势时间范围">
-                {[7, 15, 30].map((days) => (
-                  <button
-                    key={days}
-                    aria-pressed={range === days}
-                    onClick={() => setRange(days)}
-                  >
-                    {days}天
-                  </button>
-                ))}
-              </div>
+              <MessageCircle className="size-4 text-muted-foreground" />
             </div>
-            <div className="chart-summary">
-              <strong>
-                {range === 7 ? "8,432" : range === 15 ? "17,926" : "36,814"}
-              </strong>
-              <span>条互动消息</span>
-              <Badge variant="secondary" className="growth-badge">
-                <ArrowUpRight />
-                12.8%
-              </Badge>
-            </div>
-            <ActivityChart range={range} />
-            <div className="chart-legend">
-              <span>
-                <i className="bg-foreground" />
-                群聊消息
-              </span>
-              <span>
-                <i className="bg-emerald-500" />
-                游戏消息
-              </span>
-              <span className="ml-auto">示例统计</span>
-            </div>
-          </section>
-          <ConnectionCard go={go} />
-        </div>
-      ) : tab === "messages" ? (
-        <section className="soft-panel">
-          <div className="panel-title">
-            <div>
-              <h2>消息动态</h2>
-              <p>最近的群服同步与指令回复示例。</p>
-            </div>
-            <MessageCircle className="size-4 text-muted-foreground" />
-          </div>
-          {[
-            ["13:28:06", "群聊 → 生存服", "Alex：今天一起去探索新的地图吗？"],
-            ["13:27:42", "生存服 → 群聊", "Steve 完成了进度「钻石！」"],
-            ["13:26:18", "指令回复", "在线 · 已发送服务器在线列表图片"],
-          ].map(([time, source, text]) => (
-            <div className="message-row" key={time}>
-              <span className="message-time">{time}</span>
-              <div>
-                <small>{source}</small>
-                <p>{text}</p>
-              </div>
-              <CheckCheck className="size-4 text-muted-foreground" />
-            </div>
-          ))}
-        </section>
-      ) : (
-        <section className="soft-panel">
-          <div className="panel-title">
-            <div>
-              <h2>接入概况</h2>
-              <p>所有连接状态均为演示数据。</p>
-            </div>
-            <PlugZap className="size-4" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
             {[
-              ["QQ 官方机器人", "已连接"],
-              ["OneBot 11", "未启用"],
-              ["社区官网", "未接入"],
-            ].map(([name, status]) => (
-              <div className="connection-tile" key={name}>
-                <PlugZap className="size-5 text-muted-foreground" />
-                <h3>{name}</h3>
-                <p>{status}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => go("settings")}
-                >
-                  接入设置
-                  <ArrowRight />
-                </Button>
+              ["13:28:06", "群聊 → 生存服", "Alex：今天一起去探索新的地图吗？"],
+              ["13:27:42", "生存服 → 群聊", "Steve 完成了进度「钻石！」"],
+              ["13:26:18", "指令回复", "在线 · 已发送服务器在线列表图片"],
+            ].map(([time, source, text]) => (
+              <div className="message-row" key={time}>
+                <span className="message-time">{time}</span>
+                <div>
+                  <small>{source}</small>
+                  <p>{text}</p>
+                </div>
+                <CheckCheck className="size-4 text-muted-foreground" />
               </div>
             ))}
-          </div>
-        </section>
-      )}
+          </section>
+        ) : (
+          <section className="soft-panel">
+            <div className="panel-title">
+              <div>
+                <h2>接入概况</h2>
+                <p>所有连接状态均为演示数据。</p>
+              </div>
+              <PlugZap className="size-4" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                ["QQ 官方机器人", "已连接"],
+                ["OneBot 11", "未启用"],
+                ["社区官网", "未接入"],
+              ].map(([name, status]) => (
+                <div className="connection-tile" key={name}>
+                  <PlugZap className="size-5 text-muted-foreground" />
+                  <h3>{name}</h3>
+                  <p>{status}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => go("settings")}
+                  >
+                    接入设置
+                    <ArrowRight />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </motion.div>
 
       <div className="bottom-grid">
         <section className="soft-panel server-overview">
@@ -613,6 +772,7 @@ function Overview({
 
 function ActivityChart({ range }: { range: number }) {
   const [hover, setHover] = useState(false);
+  const reduced = Boolean(useReducedMotion());
   const main =
     range === 7
       ? "M0 148 C28 148 31 175 65 158 S108 72 143 94 S181 142 215 108 S258 105 288 70 S328 113 358 75 S408 94 438 41 S487 67 518 30 S552 62 580 25"
@@ -658,9 +818,40 @@ function ActivityChart({ range }: { range: number }) {
               strokeDasharray="3 5"
             />
           ))}
-          <path d={main + " L580 206 L0 206 Z"} fill="url(#area-fill)" />
-          <path d={second} fill="none" stroke="#10b981" strokeWidth="2" />
-          <path d={main} fill="none" stroke="currentColor" strokeWidth="2.5" />
+          <motion.g key={range} data-chart-animation="lines">
+            <motion.path
+              d={main + " L580 206 L0 206 Z"}
+              fill="url(#area-fill)"
+              initial={{ opacity: reduced ? 1 : 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                duration: reduced ? 0 : 0.8,
+                delay: reduced ? 0 : 0.2,
+              }}
+            />
+            <motion.path
+              d={second}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="2"
+              initial={{ pathLength: reduced ? 1 : 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{
+                duration: reduced ? 0 : 1.15,
+                ease: "easeInOut",
+                delay: reduced ? 0 : 0.12,
+              }}
+            />
+            <motion.path
+              d={main}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              initial={{ pathLength: reduced ? 1 : 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: reduced ? 0 : 1.15, ease: "easeInOut" }}
+            />
+          </motion.g>
         </svg>
         {hover && (
           <div className="chart-tooltip">

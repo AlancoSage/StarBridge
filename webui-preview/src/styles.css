@@ -706,7 +706,7 @@ a:focus-visible {
   position: fixed;
   bottom: 105px;
   left: 50%;
-  transform: translateX(-50%);
+  translate: -50% 0;
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 13px 16px;
@@ -1060,6 +1060,119 @@ a:focus-visible {
   }
   .notification-panel {
     right: -40px;
+  }
+}
+/* Shared highlights follow navigation instead of switching abruptly. */
+.page-navigation button,
+.pill-tabs button {
+  position: relative;
+  isolation: isolate;
+}
+.nav-active-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: var(--foreground);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.page-navigation button[aria-current] {
+  border-bottom-color: transparent;
+}
+.pill-tabs button[aria-pressed="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+.pill-active-indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--background);
+  box-shadow: 0 1px 4px #00000008;
+  pointer-events: none;
+}
+.range-tabs .pill-active-indicator {
+  background: var(--foreground);
+}
+.nav-label,
+.pill-label {
+  position: relative;
+  z-index: 1;
+}
+.page-content {
+  min-width: 0;
+}
+.animated-number {
+  font-variant-numeric: tabular-nums;
+}
+.overview-time-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.replay-motion {
+  font-size: 10px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+}
+.replay-motion svg {
+  width: 12px;
+  height: 12px;
+}
+.quick-action > span,
+.quick-action > svg,
+[data-slot="button"],
+.connection-tile {
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  [data-slot="button"]:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .quick-action:hover > span {
+    transform: translateY(-2px) rotate(-5deg);
+  }
+  .quick-action:hover > svg {
+    transform: translateX(3px);
+  }
+  .connection-tile:hover {
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="button"]:not(:disabled):active {
+    transform: scale(0.97);
+  }
+  .page-heading .status-dot {
+    animation: status-breathe 2.4s ease-in-out infinite;
+  }
+  .bottom-grid {
+    animation: section-enter 500ms 150ms ease-out both;
+  }
+}
+@keyframes status-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #10b98112;
+  }
+  50% {
+    box-shadow: 0 0 0 6px #10b98108;
+  }
+}
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

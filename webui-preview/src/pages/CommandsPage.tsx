@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import {
   ArrowUpRight,
   Check,
@@ -79,7 +81,10 @@ const initialCommands: BotCommand[] = [
   },
 ];
 
+const MotionButton = motion.create(Button);
+
 function GlassReply() {
+  const reduceMotion = useReducedMotion();
   const worlds = [
     {
       name: "VexBot 生存服",
@@ -121,7 +126,12 @@ function GlassReply() {
         </span>
       </div>
       <div className="grid gap-4 sm:grid-cols-[0.8fr_1.5fr]">
-        <div className="flex flex-col justify-between rounded-[20px] border border-white/20 bg-white/[0.08] p-5 backdrop-blur-xl">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5 }}
+          className="flex flex-col justify-between rounded-[20px] border border-white/20 bg-white/[0.08] p-5 backdrop-blur-xl"
+        >
           <div>
             <p className="text-xs tracking-[0.18em] text-white/50">
               OUR WORLDS, TOGETHER
@@ -136,7 +146,7 @@ function GlassReply() {
             </p>
             <div className="mt-8 flex items-baseline gap-2">
               <strong className="text-6xl font-semibold tracking-tighter">
-                24
+                <AnimatedNumber value={24} />
               </strong>
               <span className="text-xs text-white/60">位玩家在线</span>
             </div>
@@ -158,11 +168,17 @@ function GlassReply() {
             <br />
             VEXBOT / SERVER ACTIVITY
           </div>
-        </div>
+        </motion.div>
         <div className="space-y-3">
           {worlds.map((world, index) => (
-            <div
+            <motion.div
               key={world.name}
+              initial={reduceMotion ? false : { opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                duration: reduceMotion ? 0 : 0.45,
+                delay: reduceMotion ? 0 : 0.1 + index * 0.075,
+              }}
               className="rounded-[20px] border border-white/20 bg-white/[0.09] p-4 backdrop-blur-xl"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -203,7 +219,7 @@ function GlassReply() {
                   世界正在休息，期待下次相见。
                 </p>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -242,6 +258,22 @@ export default function CommandsPage({
 }: {
   notify: (message: string) => void;
 }) {
+  const reduceMotion = useReducedMotion();
+  const enter = (index = 0) => ({
+    initial: reduceMotion ? (false as const) : { opacity: 0, y: 18 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.1 },
+    exit: {
+      opacity: 0,
+      y: reduceMotion ? 0 : -8,
+      transition: { duration: reduceMotion ? 0 : 0.18, delay: 0 },
+    },
+    transition: {
+      duration: reduceMotion ? 0 : 0.42,
+      delay: reduceMotion ? 0 : Math.min(index, 5) * 0.065,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  });
   const [commands, setCommands] = useState(initialCommands);
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -330,10 +362,15 @@ export default function CommandsPage({
         <p className="text-sm text-muted-foreground">
           让每一次对话，都有恰到好处的回应。
         </p>
-        <Button onClick={openAdd} className="gap-2 rounded-xl">
+        <MotionButton
+          onClick={openAdd}
+          className="gap-2 rounded-xl"
+          whileHover={reduceMotion ? undefined : { y: -2 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+        >
           <Plus className="size-4" />
           新建指令
-        </Button>
+        </MotionButton>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -356,22 +393,31 @@ export default function CommandsPage({
             icon: Image,
             note: "更直观地呈现信息",
           },
-        ].map((stat) => (
-          <Card
+        ].map((stat, index) => (
+          <motion.div
             key={stat.label}
-            className="rounded-[20px] border-0 py-0 bg-muted/60 shadow-none"
+            {...enter(index)}
+            whileHover={
+              reduceMotion
+                ? undefined
+                : { y: -4, transition: { duration: 0.18, delay: 0 } }
+            }
           >
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <stat.icon className="size-4 text-muted-foreground" />
-              </div>
-              <p className="mt-3 text-3xl font-semibold tracking-tight">
-                {stat.value}
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">{stat.note}</p>
-            </CardContent>
-          </Card>
+            <Card className="h-full rounded-[20px] border-0 py-0 bg-muted/60 shadow-none">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <stat.icon className="size-4 text-muted-foreground" />
+                </div>
+                <p className="mt-3 text-3xl font-semibold tracking-tight">
+                  <AnimatedNumber value={stat.value} />
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {stat.note}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
@@ -413,82 +459,88 @@ export default function CommandsPage({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((command) => (
-              <tr
-                key={command.id}
-                className="border-t transition-colors hover:bg-muted/20"
-              >
-                <td className="px-5 py-5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{command.trigger}</span>
-                    {command.kind === "custom" && (
-                      <Badge variant="outline" className="text-[10px]">
-                        自定义
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {command.id.startsWith("custom")
-                      ? "CUSTOM REPLY"
-                      : `BUILT-IN / ${command.id}`}
-                  </p>
-                </td>
-                <td className="px-4 py-5 text-muted-foreground">
-                  {command.description}
-                </td>
-                <td className="px-4 py-5">
-                  <div className="flex items-center gap-2">
+            <AnimatePresence>
+              {filtered.map((command, index) => (
+                <motion.tr
+                  key={command.id}
+                  layout={reduceMotion ? false : "position"}
+                  {...enter(index)}
+                  className="border-t transition-colors hover:bg-muted/20"
+                >
+                  <td className="px-5 py-5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{command.trigger}</span>
+                      {command.kind === "custom" && (
+                        <Badge variant="outline" className="text-[10px]">
+                          自定义
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {command.id.startsWith("custom")
+                        ? "CUSTOM REPLY"
+                        : `BUILT-IN / ${command.id}`}
+                    </p>
+                  </td>
+                  <td className="px-4 py-5 text-muted-foreground">
+                    {command.description}
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={command.enabled}
+                        onCheckedChange={(checked) =>
+                          updateCommand(command.id, "enabled", checked)
+                        }
+                        aria-label={`${command.enabled ? "停用" : "启用"}${command.trigger}指令`}
+                      />
+                      <span className="whitespace-nowrap text-xs text-muted-foreground">
+                        {command.enabled ? "已启用" : "已停用"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
                     <Switch
-                      checked={command.enabled}
+                      checked={command.image}
                       onCheckedChange={(checked) =>
-                        updateCommand(command.id, "enabled", checked)
+                        updateCommand(command.id, "image", checked)
                       }
-                      aria-label={`${command.enabled ? "停用" : "启用"}${command.trigger}指令`}
+                      aria-label={`${command.trigger}图片回复`}
                     />
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {command.enabled ? "已启用" : "已停用"}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-5">
-                  <Switch
-                    checked={command.image}
-                    onCheckedChange={(checked) =>
-                      updateCommand(command.id, "image", checked)
-                    }
-                    aria-label={`${command.trigger}图片回复`}
-                  />
-                </td>
-                <td className="px-5 py-5 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1.5 rounded-lg"
-                    onClick={() => setPreviewId(command.id)}
-                  >
-                    预览
-                    <ArrowUpRight className="size-3.5" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-5 py-14 text-center">
-                  <Search className="mx-auto mb-3 size-6 text-muted-foreground" />
-                  <p className="font-medium">没有找到相关指令</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setQuery("")}
-                    className="mt-3"
-                  >
-                    清空搜索
-                    <ChevronRight className="ml-1 size-3.5" />
-                  </Button>
-                </td>
-              </tr>
-            )}
+                  </td>
+                  <td className="px-5 py-5 text-right">
+                    <MotionButton
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 rounded-lg"
+                      onClick={() => setPreviewId(command.id)}
+                      whileHover={reduceMotion ? undefined : { x: 2 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.94 }}
+                    >
+                      预览
+                      <ArrowUpRight className="size-3.5" />
+                    </MotionButton>
+                  </td>
+                </motion.tr>
+              ))}
+              {filtered.length === 0 && (
+                <motion.tr key="empty" {...enter()}>
+                  <td colSpan={5} className="px-5 py-14 text-center">
+                    <Search className="mx-auto mb-3 size-6 text-muted-foreground" />
+                    <p className="font-medium">没有找到相关指令</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setQuery("")}
+                      className="mt-3"
+                    >
+                      清空搜索
+                      <ChevronRight className="ml-1 size-3.5" />
+                    </Button>
+                  </td>
+                </motion.tr>
+              )}
+            </AnimatePresence>
           </tbody>
         </table>
       </div>
@@ -641,26 +693,43 @@ export default function CommandsPage({
                   }
                 />
               </div>
-              {preview.image ? (
-                preview.id === "online" ? (
-                  <GlassReply />
-                ) : (
-                  <GenericImageReply command={preview} />
-                )
-              ) : (
-                <div className="rounded-[20px] bg-muted/60 p-5">
-                  <div className="mb-4 flex items-center gap-2">
-                    <img src="/mark.svg" alt="" className="size-8 rounded-lg" />
-                    <span className="text-sm font-medium">VexBot</span>
-                    <Badge variant="outline" className="ml-auto text-[10px]">
-                      演示
-                    </Badge>
-                  </div>
-                  <div className="whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-sm leading-7">
-                    {preview.reply}
-                  </div>
-                </div>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${preview.id}-${preview.image ? "image" : "text"}`}
+                  initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.24 }}
+                >
+                  {preview.image ? (
+                    preview.id === "online" ? (
+                      <GlassReply />
+                    ) : (
+                      <GenericImageReply command={preview} />
+                    )
+                  ) : (
+                    <div className="rounded-[20px] bg-muted/60 p-5">
+                      <div className="mb-4 flex items-center gap-2">
+                        <img
+                          src="/mark.svg"
+                          alt=""
+                          className="size-8 rounded-lg"
+                        />
+                        <span className="text-sm font-medium">VexBot</span>
+                        <Badge
+                          variant="outline"
+                          className="ml-auto text-[10px]"
+                        >
+                          演示
+                        </Badge>
+                      </div>
+                      <div className="whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-sm leading-7">
+                        {preview.reply}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-xs text-muted-foreground">
                   {preview.enabled

@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import {
   Check,
   ChevronRight,
@@ -79,6 +81,7 @@ const initialServers: GameServer[] = [
 ];
 
 const fieldClass = "grid gap-2 text-sm";
+const MotionButton = motion.create(Button);
 
 function StatusBadge({ online }: { online: boolean }) {
   return (
@@ -103,6 +106,22 @@ export default function ServersPage({
 }: {
   notify: (message: string) => void;
 }) {
+  const reduceMotion = useReducedMotion();
+  const enter = (index = 0) => ({
+    initial: reduceMotion ? (false as const) : { opacity: 0, y: 18 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.1 },
+    exit: {
+      opacity: 0,
+      y: reduceMotion ? 0 : -10,
+      transition: { duration: reduceMotion ? 0 : 0.18, delay: 0 },
+    },
+    transition: {
+      duration: reduceMotion ? 0 : 0.42,
+      delay: reduceMotion ? 0 : Math.min(index, 5) * 0.065,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  });
   const [servers, setServers] = useState(initialServers);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
@@ -185,10 +204,15 @@ export default function ServersPage({
         <p className="text-sm text-muted-foreground">
           把每个世界的状态，放在一个地方。
         </p>
-        <Button onClick={openAdd} className="gap-2 rounded-xl">
+        <MotionButton
+          onClick={openAdd}
+          className="gap-2 rounded-xl"
+          whileHover={reduceMotion ? undefined : { y: -2 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+        >
           <Plus className="size-4" />
           添加服务器
-        </Button>
+        </MotionButton>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -211,26 +235,33 @@ export default function ServersPage({
             suffix: "此刻正在探索",
             icon: Users,
           },
-        ].map((stat) => (
-          <Card
+        ].map((stat, index) => (
+          <motion.div
             key={stat.label}
-            className="rounded-[20px] border-0 py-0 bg-muted/60 shadow-none"
+            {...enter(index)}
+            whileHover={
+              reduceMotion
+                ? undefined
+                : { y: -4, transition: { duration: 0.18, delay: 0 } }
+            }
           >
-            <CardContent className="flex items-start justify-between p-5">
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="mt-3 flex items-baseline gap-2 text-3xl font-semibold tracking-tight">
-                  {stat.value}
-                  <span className="text-xs font-normal tracking-normal text-muted-foreground">
-                    {stat.suffix}
-                  </span>
-                </p>
-              </div>
-              <span className="rounded-xl bg-background p-2.5">
-                <stat.icon className="size-4 text-muted-foreground" />
-              </span>
-            </CardContent>
-          </Card>
+            <Card className="h-full rounded-[20px] border-0 py-0 bg-muted/60 shadow-none">
+              <CardContent className="flex items-start justify-between p-5">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="mt-3 flex items-baseline gap-2 text-3xl font-semibold tracking-tight">
+                    <AnimatedNumber value={stat.value} />
+                    <span className="text-xs font-normal tracking-normal text-muted-foreground">
+                      {stat.suffix}
+                    </span>
+                  </p>
+                </div>
+                <span className="rounded-xl bg-background p-2.5">
+                  <stat.icon className="size-4 text-muted-foreground" />
+                </span>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
@@ -250,17 +281,19 @@ export default function ServersPage({
               },
             ] as const
           ).map((tab) => (
-            <Button
+            <MotionButton
               key={tab.value}
               size="sm"
               variant={filter === tab.value ? "secondary" : "ghost"}
               aria-pressed={filter === tab.value}
               onClick={() => setFilter(tab.value)}
               className={`gap-2 rounded-lg ${filter === tab.value ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              whileHover={reduceMotion ? undefined : { y: -1 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.94 }}
             >
               {tab.label}
               <span className="text-xs opacity-60">{tab.count}</span>
-            </Button>
+            </MotionButton>
           ))}
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
@@ -309,135 +342,176 @@ export default function ServersPage({
         </div>
       </div>
 
-      {visibleServers.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed p-12 text-center">
-          <Search className="mx-auto mb-3 size-7 text-muted-foreground" />
-          <h2 className="font-medium">没有找到服务器</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            换个关键词，或者查看全部服务器。
-          </p>
-          <Button
-            variant="outline"
-            className="mt-5 rounded-xl"
-            onClick={() => {
-              setQuery("");
-              setFilter("all");
-            }}
+      <AnimatePresence mode="wait">
+        {visibleServers.length === 0 ? (
+          <motion.div
+            key="empty"
+            {...enter()}
+            className="rounded-[20px] border border-dashed p-12 text-center"
           >
-            重置筛选
-          </Button>
-        </div>
-      ) : view === "grid" ? (
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {visibleServers.map((server) => (
-            <Card
-              key={server.id}
-              className="min-w-0 rounded-[20px] py-0 border bg-background shadow-none transition-shadow hover:shadow-sm"
+            <Search className="mx-auto mb-3 size-7 text-muted-foreground" />
+            <h2 className="font-medium">没有找到服务器</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              换个关键词，或者查看全部服务器。
+            </p>
+            <Button
+              variant="outline"
+              className="mt-5 rounded-xl"
+              onClick={() => {
+                setQuery("");
+                setFilter("all");
+              }}
             >
-              <CardContent className="p-5">
-                <div className="mb-6 flex items-start justify-between gap-3">
-                  <span className="rounded-2xl bg-muted p-3">
-                    <Server className="size-5" />
-                  </span>
-                  <StatusBadge online={server.online} />
-                </div>
-                <h2 className="break-words text-lg font-semibold tracking-tight">
-                  {server.name}
-                </h2>
-                <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
-                  {server.identifier} · {server.software} {server.version}
-                </p>
-                <p className="mt-4 min-h-10 text-sm leading-6 text-muted-foreground">
-                  {server.description}
-                </p>
-                <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4">
-                  <div>
-                    <span className="text-xl font-semibold">
-                      {server.players}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {" "}
-                      / {server.capacity} 玩家
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Circle
-                      className={`size-2 fill-current ${server.online ? "text-emerald-500" : "text-muted-foreground"}`}
-                    />
-                    {server.online ? `${server.latency} ms` : "暂无连接"}
-                  </span>
-                </div>
-                <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full rounded-full ${server.online ? "bg-foreground" : "bg-muted-foreground"}`}
-                    style={{
-                      width: `${(server.players / server.capacity) * 100}%`,
-                    }}
-                  />
-                </div>
-                <Button
-                  variant="ghost"
-                  className="mt-4 w-full justify-between rounded-xl bg-muted/50 text-xs"
-                  onClick={() => setSelected(server)}
+              重置筛选
+            </Button>
+          </motion.div>
+        ) : view === "grid" ? (
+          <motion.div
+            key="grid"
+            {...enter()}
+            className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3"
+          >
+            <AnimatePresence mode="popLayout">
+              {visibleServers.map((server, index) => (
+                <motion.div
+                  key={server.id}
+                  layout={reduceMotion ? false : "position"}
+                  {...enter(index)}
+                  whileHover={
+                    reduceMotion
+                      ? undefined
+                      : { y: -5, transition: { duration: 0.18, delay: 0 } }
+                  }
+                  className="min-w-0"
                 >
-                  查看服务器
-                  <ChevronRight className="size-3.5" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="max-w-full overflow-x-auto rounded-[20px] border">
-          <table className="w-full min-w-[650px] text-left text-sm">
-            <thead className="bg-muted/60 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-5 py-4 font-medium">服务器</th>
-                <th className="px-4 py-4 font-medium">状态</th>
-                <th className="px-4 py-4 font-medium">在线玩家</th>
-                <th className="px-4 py-4 font-medium">延迟</th>
-                <th className="px-5 py-4 text-right font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleServers.map((server) => (
-                <tr key={server.id} className="border-t">
-                  <td className="px-5 py-5">
-                    <div className="font-medium">{server.name}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {server.identifier} · {server.version}
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <StatusBadge online={server.online} />
-                  </td>
-                  <td className="px-4 py-5">
-                    {server.players}
-                    <span className="text-muted-foreground">
-                      {" "}
-                      / {server.capacity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-5 text-muted-foreground">
-                    {server.online ? `${server.latency} ms` : "—"}
-                  </td>
-                  <td className="px-5 py-5 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-lg"
-                      onClick={() => setSelected(server)}
-                    >
-                      查看详情
-                      <ChevronRight className="ml-1 size-3.5" />
-                    </Button>
-                  </td>
-                </tr>
+                  <Card className="h-full min-w-0 rounded-[20px] py-0 border bg-background shadow-none transition-shadow hover:shadow-sm">
+                    <CardContent className="p-5">
+                      <div className="mb-6 flex items-start justify-between gap-3">
+                        <span className="rounded-2xl bg-muted p-3">
+                          <Server className="size-5" />
+                        </span>
+                        <StatusBadge online={server.online} />
+                      </div>
+                      <h2 className="break-words text-lg font-semibold tracking-tight">
+                        {server.name}
+                      </h2>
+                      <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
+                        {server.identifier} · {server.software} {server.version}
+                      </p>
+                      <p className="mt-4 min-h-10 text-sm leading-6 text-muted-foreground">
+                        {server.description}
+                      </p>
+                      <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4">
+                        <div>
+                          <span className="text-xl font-semibold">
+                            {server.players}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {" "}
+                            / {server.capacity} 玩家
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Circle
+                            className={`size-2 fill-current ${server.online ? "text-emerald-500" : "text-muted-foreground"}`}
+                          />
+                          {server.online ? `${server.latency} ms` : "暂无连接"}
+                        </span>
+                      </div>
+                      <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          className={`h-full rounded-full ${server.online ? "bg-foreground" : "bg-muted-foreground"}`}
+                          initial={reduceMotion ? false : { width: 0 }}
+                          whileInView={{
+                            width: `${(server.players / server.capacity) * 100}%`,
+                          }}
+                          viewport={{ once: true }}
+                          style={{
+                            width: `${(server.players / server.capacity) * 100}%`,
+                          }}
+                          transition={{
+                            duration: reduceMotion ? 0 : 0.75,
+                            delay: reduceMotion ? 0 : 0.18 + index * 0.065,
+                          }}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        className="mt-4 w-full justify-between rounded-xl bg-muted/50 text-xs"
+                        onClick={() => setSelected(server)}
+                      >
+                        查看服务器
+                        <ChevronRight className="size-3.5" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list"
+            {...enter()}
+            className="max-w-full overflow-x-auto rounded-[20px] border"
+          >
+            <table className="w-full min-w-[650px] text-left text-sm">
+              <thead className="bg-muted/60 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-4 font-medium">服务器</th>
+                  <th className="px-4 py-4 font-medium">状态</th>
+                  <th className="px-4 py-4 font-medium">在线玩家</th>
+                  <th className="px-4 py-4 font-medium">延迟</th>
+                  <th className="px-5 py-4 text-right font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence>
+                  {visibleServers.map((server, index) => (
+                    <motion.tr
+                      key={server.id}
+                      layout={reduceMotion ? false : "position"}
+                      {...enter(index)}
+                      className="border-t"
+                    >
+                      <td className="px-5 py-5">
+                        <div className="font-medium">{server.name}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {server.identifier} · {server.version}
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <StatusBadge online={server.online} />
+                      </td>
+                      <td className="px-4 py-5">
+                        {server.players}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          / {server.capacity}
+                        </span>
+                      </td>
+                      <td className="px-4 py-5 text-muted-foreground">
+                        {server.online ? `${server.latency} ms` : "—"}
+                      </td>
+                      <td className="px-5 py-5 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={() => setSelected(server)}
+                        >
+                          查看详情
+                          <ChevronRight className="ml-1 size-3.5" />
+                        </Button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
         <Check className="mt-0.5 size-3.5 shrink-0" />
