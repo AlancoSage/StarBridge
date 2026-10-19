@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { SelectControl } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -682,7 +683,7 @@ export default function PlayersPage({
   }
   function bindProfile(event: FormEvent) {
     event.preventDefault();
-    if (!selected) return;
+    if (!selected || !bindingServer || !qq.trim()) return;
     const pid = selected.id,
       savedToken = token,
       generation = epoch.current;
@@ -947,39 +948,37 @@ export default function PlayersPage({
                   setPage(1);
                 }}
               />
-              <select
+              <SelectControl
                 aria-label="玩家状态"
-                className={controlClass}
                 value={filterStatus}
-                onChange={(event) => {
-                  setFilterStatus(event.target.value);
+                onValueChange={(value) => {
+                  setFilterStatus(value);
                   setPage(1);
                 }}
-              >
-                <option value="">全部状态</option>
-                <option value="online">在线</option>
-                <option value="offline">离线</option>
-                <option value="unknown">状态未知</option>
-                <option value="banned">已封禁</option>
-                <option value="whitelisted">在白名单中</option>
-              </select>
-              <select
+                options={[
+                  { value: "", label: "全部状态" },
+                  { value: "online", label: "在线" },
+                  { value: "offline", label: "离线" },
+                  { value: "unknown", label: "状态未知" },
+                  { value: "banned", label: "已封禁" },
+                  { value: "whitelisted", label: "在白名单中" },
+                ]}
+              />
+              <SelectControl
                 aria-label="筛选服务器"
-                className={controlClass}
                 value={server}
-                onChange={(event) => {
-                  setServer(event.target.value);
+                onValueChange={(value) => {
+                  setServer(value);
                   setPage(1);
                 }}
-              >
-                <option value="">全部服务器</option>
-                {data?.servers.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                    {item.historical ? "（历史）" : ""}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "全部服务器" },
+                  ...(data?.servers.map((item) => ({
+                    value: item.id,
+                    label: `${item.name}${item.historical ? "（历史）" : ""}`,
+                  })) ?? []),
+                ]}
+              />
             </div>
             <div className="mb-4 flex items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1098,21 +1097,19 @@ export default function PlayersPage({
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
               <label className="flex items-center gap-2">
                 每页
-                <select
+                <SelectControl
                   aria-label="每页数量"
-                  className={`${controlClass} !h-8`}
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value));
+                  className="!h-8 !w-20"
+                  value={String(pageSize)}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
                     setPage(1);
                   }}
-                >
-                  {[10, 25, 50, 100].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                  options={[10, 25, 50, 100].map((value) => ({
+                    value: String(value),
+                    label: String(value),
+                  }))}
+                />
                 位
               </label>
               <div className="flex items-center gap-3">
@@ -1393,25 +1390,22 @@ export default function PlayersPage({
                   >
                     <label className={fieldClass}>
                       服务器
-                      <select
+                      <SelectControl
                         aria-label="服务器"
                         required
-                        className={controlClass}
                         value={bindingServer}
                         disabled={busy}
-                        onChange={(event) =>
-                          setBindingServer(event.target.value)
-                        }
-                      >
-                        <option value="">选择服务器</option>
-                        {data?.servers
-                          .filter((item) => !item.historical)
-                          .map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                      </select>
+                        onValueChange={setBindingServer}
+                        options={[
+                          { value: "", label: "选择服务器" },
+                          ...(data?.servers
+                            .filter((item) => !item.historical)
+                            .map((item) => ({
+                              value: item.id,
+                              label: item.name,
+                            })) ?? []),
+                        ]}
+                      />
                     </label>
                     <label className={fieldClass}>
                       QQ / 官机用户身份

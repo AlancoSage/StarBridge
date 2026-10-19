@@ -1393,3 +1393,157 @@ a:focus-visible {
     display: none;
   }
 }
+
+/* Shared console selects: the menu uses the same theme as the visible control. */
+.vex-select-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--muted) 48%, var(--background));
+  color: var(--foreground);
+  font-size: 13px;
+  text-align: left;
+  transition:
+    background-color 160ms,
+    border-color 160ms,
+    box-shadow 160ms;
+}
+.vex-select-trigger:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--muted) 78%, var(--background));
+  border-color: color-mix(in oklab, var(--ring) 50%, var(--border));
+}
+.vex-select-trigger:focus-visible,
+.vex-select-trigger[data-state="open"] {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 14%, transparent);
+}
+.vex-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.vex-select-trigger[data-empty="true"] .vex-select-value {
+  color: var(--muted-foreground);
+}
+.vex-select-value {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vex-select-chevron {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  transition: transform 160ms;
+}
+.vex-select-trigger[data-state="open"] .vex-select-chevron {
+  transform: rotate(180deg);
+}
+.vex-select-content {
+  --select-enter-y: -4px;
+  z-index: 80;
+  box-sizing: border-box;
+  width: var(--radix-select-trigger-width);
+  min-width: 96px;
+  max-width: calc(100vw - 24px);
+  max-height: min(320px, var(--radix-select-content-available-height));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 12px 36px rgb(15 23 42 / 13%),
+    0 2px 6px rgb(15 23 42 / 5%);
+  transform-origin: var(--radix-select-content-transform-origin);
+  animation: vex-select-in 160ms ease-out;
+}
+.dark .vex-select-content {
+  box-shadow:
+    0 16px 42px rgb(0 0 0 / 38%),
+    0 2px 8px rgb(0 0 0 / 18%);
+}
+.vex-select-content[data-side="top"] {
+  --select-enter-y: 4px;
+}
+.vex-select-viewport {
+  padding: 5px;
+}
+.vex-select-option {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 36px;
+  align-items: center;
+  padding: 8px 33px 8px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.vex-select-option-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.vex-select-option[data-state="checked"] {
+  background: color-mix(in oklab, var(--primary) 7%, var(--muted));
+  font-weight: 500;
+}
+.vex-select-option[data-highlighted] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ring) 18%, transparent);
+}
+.vex-select-option[data-disabled] {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.vex-select-check {
+  position: absolute;
+  right: 11px;
+  width: 15px;
+  height: 15px;
+}
+.vex-select-scroll {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  background: var(--popover);
+  color: var(--muted-foreground);
+}
+@keyframes vex-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--select-enter-y)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+html[data-motion="reduced"] .vex-select-content {
+  animation: none;
+}
+@media (max-width: 767px) {
+  .vex-select-option {
+    min-height: 40px;
+  }
+}

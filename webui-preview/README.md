@@ -48,6 +48,10 @@ npm run preview
 
 统一登录已验证全部五个页面的未登录拦截、切页共享会话、任意页面退出及后台会话撤销、权限不足账号的隔离、在非玩家页检测登录失效，以及开发环境 StrictMode 首次直达玩家页。登录前后均可使用主题、背景与动画设置，320px 和 390px 手机登录及顶部退出入口无溢出。
 
+全控制台下拉栏使用统一组件，覆盖玩家状态、服务器筛选、每页数量、玩家绑定服务器和网站接入方式。触发器和展开菜单统一圆角、阴影与选中勾选，支持深浅主题、键盘选择、输入检索、滚动及手机屏幕边缘避让；动效跟随全局动画开关。已验证空选项重置、必填绑定、真实筛选与绑定请求、弹窗内 Escape 和焦点恢复，以及 320px / 390px 手机布局。
+
+[深色下拉效果](screenshots/select-dark.png) · [浅色下拉效果](screenshots/select-light.png)
+
 ![浅色总览](screenshots/overview-light.png)
 
 [深色总览](screenshots/overview-dark.png) · [手机效果](screenshots/overview-mobile.png)

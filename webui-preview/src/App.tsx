@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { SelectControl } from "@/components/ui/select";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import BackgroundSwitcher from "@/components/BackgroundSwitcher";
@@ -1111,15 +1112,16 @@ function Settings({
         <label className="field-label mt-6" htmlFor="website-mode">
           网站绑定方式
         </label>
-        <select
+        <SelectControl
           id="website-mode"
-          className="preview-select"
+          aria-label="网站接入方式"
           value={draft.website}
-          onChange={(event) => update("website", event.target.value)}
-        >
-          <option value="none">不接入官网</option>
-          <option value="custom">自定义网站</option>
-        </select>
+          onValueChange={(value) => update("website", value)}
+          options={[
+            { value: "none", label: "不接入官网" },
+            { value: "custom", label: "自定义网站" },
+          ]}
+        />
         <p className="mt-2 text-xs text-muted-foreground">
           默认不接入官网，机器人仍可正常使用。
         </p>
