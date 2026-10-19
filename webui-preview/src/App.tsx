@@ -19,7 +19,6 @@ import {
   Moon,
   PlugZap,
   RotateCcw,
-  Search,
   Server,
   Settings2,
   ShieldCheck,
@@ -38,6 +37,7 @@ import { AnimatedNumber } from "@/components/AnimatedNumber";
 import BackgroundSwitcher from "@/components/BackgroundSwitcher";
 import ServersPage from "@/pages/ServersPage";
 import CommandsPage from "@/pages/CommandsPage";
+import PlayersPage from "@/pages/PlayersPage";
 
 type Page = "overview" | "servers" | "commands" | "players" | "settings";
 type Icon = ComponentType<{ className?: string }>;
@@ -64,6 +64,12 @@ export default function App() {
     transition: { duration: reduced ? 0 : 0.42, ease: "easeOut" as const },
   };
   const [page, setPage] = useState<Page>(currentPage);
+  const [playersVisited, setPlayersVisited] = useState(
+    () => currentPage() === "players",
+  );
+  useEffect(() => {
+    if (page === "players") setPlayersVisited(true);
+  }, [page]);
   const [dark, setDark] = useState(() => {
     try {
       return localStorage.getItem("vexbot.cdk.preview.theme") === "dark";
@@ -146,7 +152,7 @@ export default function App() {
           </span>
           <Badge variant="secondary" className="preview-badge">
             <span className="size-1.5 rounded-full bg-amber-500" />
-            交互预览
+            {page === "players" ? "后台管理" : "交互预览"}
           </Badge>
           <div className="header-actions">
             <BackgroundSwitcher />
@@ -222,9 +228,15 @@ export default function App() {
                     </div>
                     <p>
                       <CheckCheck className="size-4 text-emerald-600" />
-                      预览环境已准备就绪
+                      {page === "players"
+                        ? "玩家管理已接入真实后台"
+                        : "预览环境已准备就绪"}
                     </p>
-                    <small>这里使用示例数据，你可以放心体验各项操作。</small>
+                    <small>
+                      {page === "players"
+                        ? "玩家管理操作会修改后台数据，请核对目标后确认。"
+                        : "本页使用示例数据；玩家管理页连接真实后台。"}
+                    </small>
                   </motion.section>
                 )}
               </AnimatePresence>
@@ -277,16 +289,20 @@ export default function App() {
               {page === "overview" ? "让社区的每一刻，都在线。" : active.label}
             </h1>
             <p>
-              {page === "overview"
-                ? "服务器、玩家与消息，在一个地方井然有序。"
-                : "管理你的游戏社区，让连接更简单。"}
+              {page === "players"
+                ? "登录 VexBot 后台，管理真实玩家档案、账号绑定和游戏操作。"
+                : page === "overview"
+                  ? "服务器、玩家与消息，在一个地方井然有序。"
+                  : "管理你的游戏社区，让连接更简单。"}
             </p>
           </div>
           <div className="heading-status">
-            <span className="status-dot" />
-            <span>预览环境运行中</span>
+            {page !== "players" && <span className="status-dot" />}
+            <span>
+              {page === "players" ? "本机 VexBot 后台" : "预览环境运行中"}
+            </span>
             <span className="text-muted-foreground">/</span>
-            <span>示例数据</span>
+            <span>{page === "players" ? "账号权限校验" : "示例数据"}</span>
           </div>
         </motion.div>
 
@@ -330,15 +346,21 @@ export default function App() {
         >
           <CommandsPage notify={setNotice} />
         </motion.div>
-        {page === "players" && (
-          <motion.div
-            {...pageMotion}
-            className="page-content"
-            data-page="players"
-          >
-            <Players />
-          </motion.div>
-        )}
+        <motion.div
+          hidden={page !== "players"}
+          initial={false}
+          animate={{
+            opacity: page === "players" ? (reduced ? [1] : 1) : 0,
+            y: reduced ? [0] : page === "players" ? 0 : 16,
+          }}
+          transition={pageMotion.transition}
+          className="page-content"
+          data-page="players"
+        >
+          {(playersVisited || page === "players") && (
+            <PlayersPage notify={setNotice} active={page === "players"} />
+          )}
+        </motion.div>
         {page === "settings" && (
           <motion.div
             {...pageMotion}
@@ -959,111 +981,6 @@ function QuickAction({
       </div>
       <ChevronRight className="size-4 text-muted-foreground" />
     </button>
-  );
-}
-
-function Players() {
-  const [search, setSearch] = useState("");
-  const [onlyOnline, setOnlyOnline] = useState(false);
-  const players = [
-    {
-      name: "Alex",
-      group: "VexBot 玩家群",
-      server: "生存服",
-      online: true,
-      letter: "A",
-    },
-    {
-      name: "Steve",
-      group: "VexBot 玩家群",
-      server: "创造服",
-      online: true,
-      letter: "S",
-    },
-    {
-      name: "Luna",
-      group: "VexBot 玩家群",
-      server: "生存服",
-      online: false,
-      letter: "L",
-    },
-    {
-      name: "River",
-      group: "VexBot 冒险群",
-      server: "冒险服",
-      online: false,
-      letter: "R",
-    },
-  ];
-  const filtered = players.filter(
-    (player) =>
-      player.name.toLowerCase().includes(search.toLowerCase()) &&
-      (!onlyOnline || player.online),
-  );
-  return (
-    <section className="soft-panel">
-      <div className="panel-title flex-wrap">
-        <div>
-          <h2>绑定玩家</h2>
-          <p>查看已绑定的游戏身份与在线状态 · 示例数据</p>
-        </div>
-        <label className="flex items-center gap-2 text-xs">
-          <Switch checked={onlyOnline} onCheckedChange={setOnlyOnline} />
-          只看在线
-        </label>
-      </div>
-      <div className="relative mb-5 max-w-sm">
-        <Search className="absolute top-3 left-3 size-4 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          aria-label="搜索玩家"
-          placeholder="搜索玩家名称…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
-      <div className="table-scroll">
-        <table className="overview-table">
-          <thead>
-            <tr>
-              <th>玩家</th>
-              <th>所在群聊</th>
-              <th>最近服务器</th>
-              <th>状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((player) => (
-              <tr key={player.name}>
-                <td>
-                  <div className="server-table-name">
-                    <span className="player-avatar" aria-hidden="true">
-                      {player.letter}
-                    </span>
-                    <strong>{player.name}</strong>
-                  </div>
-                </td>
-                <td>{player.group}</td>
-                <td>{player.server}</td>
-                <td>
-                  <span
-                    className={
-                      "status-label " + (player.online ? "online" : "")
-                    }
-                  >
-                    <i />
-                    {player.online ? "在线" : "离线"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!filtered.length && (
-          <div className="empty-state">没有找到符合条件的玩家</div>
-        )}
-      </div>
-    </section>
   );
 }
 
