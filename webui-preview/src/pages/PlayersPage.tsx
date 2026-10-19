@@ -6,11 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LoaderCircle,
-  LogOut,
   Plus,
   RefreshCw,
   Search,
-  ShieldCheck,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,13 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  APIError,
-  checkSetup,
-  login,
-  logout,
-  playerApi,
-} from "@/lib/players-api";
+import { APIError, playerApi } from "@/lib/players-api";
+import { useConsoleAuth } from "@/components/ConsoleAuth";
 import type {
   AdminIdentity,
   PlayerAction,
@@ -125,13 +118,9 @@ export default function PlayersPage({
   notify: (message: string) => void;
   active?: boolean;
 }) {
-  const [token, setToken] = useState("");
-  const [identity, setIdentity] = useState<AdminIdentity | null>(null);
-  const [denied, setDenied] = useState(false);
-  const [setup, setSetup] = useState<boolean | null>(null);
-  const [setupRevision, setSetupRevision] = useState(0);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const { token, identity, invalidate, updateIdentity } = useConsoleAuth();
+  const [blocked, setDenied] = useState(false);
+  const denied = blocked || !permission(identity);
   const [error, setError] = useState("");
   const [listError, setListError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -167,7 +156,7 @@ export default function PlayersPage({
   const [confirmError, setConfirmError] = useState("");
   const [watched, setWatched] = useState<WatchedAction | null>(null);
   const [actionMessage, setActionMessage] = useState("");
-  const tokenRef = useRef("");
+  const tokenRef = useRef(token);
   const activeRef = useRef(active);
   const epoch = useRef(0);
   const lock = useRef(false);
@@ -195,8 +184,6 @@ export default function PlayersPage({
     controllers.current.clear();
     tokenRef.current = "";
     loadedProfile.current = null;
-    setToken("");
-    setIdentity(null);
     setDenied(false);
     setData(null);
     setStatus(null);
@@ -206,7 +193,6 @@ export default function PlayersPage({
     setNotes("");
     setQq("");
     setBindingServer("");
-    setPassword("");
     setConfirmation(null);
     setWatched(null);
     setCreateOpen(false);
@@ -227,7 +213,7 @@ export default function PlayersPage({
       if (aborted(cause)) return;
       if (cause instanceof APIError && cause.status === 401) {
         clearSensitive();
-        setError("登录已失效，请重新登录。");
+        invalidate("登录已失效，请重新登录。");
       } else if (cause instanceof APIError && cause.status === 403) {
         epoch.current += 1;
         for (const item of controllers.current) item.abort();
@@ -255,8 +241,12 @@ export default function PlayersPage({
         setError("此账号没有玩家管理权限，请联系服主授权。");
       }
     },
-    [clearSensitive],
+    [clearSensitive, invalidate],
   );
+  useEffect(() => {
+    if (permission(identity)) setDenied(false);
+    else handleError(new APIError(403));
+  }, [identity, handleError]);
   const current = useCallback(
     (generation: number, value: string) =>
       epoch.current === generation &&
@@ -284,34 +274,14 @@ export default function PlayersPage({
       controllers.current.clear();
     };
   }, [active]);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    tokenRef.current = token;
+    return () => {
       epoch.current += 1;
       tokenRef.current = "";
       for (const item of controllers.current) item.abort();
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!active || token) return;
-    const request = controller();
-    let alive = true;
-    setSetup(null);
-    checkSetup(request.signal)
-      .then((result) => {
-        if (alive) setSetup(result.required);
-      })
-      .catch((cause) => {
-        if (alive && !aborted(cause))
-          setError(`无法连接 VexBot 后台：${errorText(cause)}`);
-      })
-      .finally(() => release(request));
-    return () => {
-      alive = false;
-      request.abort();
     };
-  }, [active, token, setupRevision, controller, release]);
+  }, [token]);
 
   useEffect(() => {
     if (!active || !token || denied) return;
@@ -322,7 +292,7 @@ export default function PlayersPage({
       const api = playerApi(token);
       const who = await api.session(request.signal);
       if (!alive || !current(generation, token)) return;
-      setIdentity(who);
+      updateIdentity(who);
       if (!permission(who)) {
         handleError(new APIError(403));
         return;
@@ -363,6 +333,7 @@ export default function PlayersPage({
     release,
     current,
     handleError,
+    updateIdentity,
   ]);
 
   useEffect(() => {
@@ -570,55 +541,6 @@ export default function PlayersPage({
     handleError,
   ]);
 
-  async function signIn(event: FormEvent) {
-    event.preventDefault();
-    if (lock.current || setup !== false) return;
-    lock.current = true;
-    setBusy(true);
-    setError("");
-    const secret = password;
-    setPassword("");
-    const request = controller(),
-      generation = epoch.current;
-    try {
-      const result = await login(username.trim(), secret, request.signal);
-      if (epoch.current !== generation || !activeRef.current) return;
-      tokenRef.current = result.access_token;
-      setToken(result.access_token);
-      setIdentity(result.identity);
-      setDenied(!permission(result.identity));
-      setError(
-        permission(result.identity)
-          ? ""
-          : "此账号没有玩家管理权限，请联系服主授权。",
-      );
-    } catch (cause) {
-      if (epoch.current === generation && !aborted(cause))
-        setError(errorText(cause));
-    } finally {
-      release(request);
-      if (epoch.current === generation) {
-        lock.current = false;
-        setBusy(false);
-      }
-    }
-  }
-  async function signOut() {
-    const previous = tokenRef.current;
-    clearSensitive();
-    setError("");
-    const generation = epoch.current;
-    if (previous) {
-      try {
-        await logout(previous);
-      } catch {
-        if (epoch.current === generation && !tokenRef.current)
-          setError(
-            "本页登录已清除；后台会话撤销未获确认，如有需要请在正式控制台退出所有会话。",
-          );
-      }
-    }
-  }
   async function mutate(
     operation: (signal: AbortSignal) => Promise<void>,
     onError: (message: string, cause: unknown) => void,
@@ -949,116 +871,8 @@ export default function PlayersPage({
     );
   }
 
-  if (!token)
-    return (
-      <section className="soft-panel mx-auto w-full max-w-xl !rounded-[20px]">
-        <div className="mb-6 flex items-start gap-3">
-          <div className="grid size-11 place-items-center rounded-2xl bg-background">
-            <ShieldCheck className="size-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold">连接真实玩家管理</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              使用 VexBot 后台的管理员账号登录，读取和管理真实玩家数据。
-            </p>
-          </div>
-        </div>
-        {error && (
-          <div className="mb-4">
-            <Message danger>{error}</Message>
-          </div>
-        )}
-        {setup === true ? (
-          <div className="grid gap-4">
-            <Message>
-              后台尚未创建服主账号。请先在正式控制台完成首次设置，再回到这里登录。
-            </Message>
-            <Button asChild>
-              <a href="http://127.0.0.1:5800/" target="_blank" rel="noreferrer">
-                打开正式控制台设置账号
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSetupRevision((value) => value + 1)}
-            >
-              已完成设置，重新检查
-            </Button>
-          </div>
-        ) : setup === false ? (
-          <form onSubmit={signIn} className="grid gap-4">
-            <label className={fieldClass}>
-              用户名
-              <Input
-                autoComplete="username"
-                value={username}
-                maxLength={32}
-                required
-                disabled={busy}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="管理员用户名"
-              />
-            </label>
-            <label className={fieldClass}>
-              密码
-              <Input
-                autoComplete="current-password"
-                type="password"
-                value={password}
-                maxLength={128}
-                required
-                disabled={busy}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="管理员密码"
-              />
-            </label>
-            <Button type="submit" disabled={busy}>
-              {busy && <LoaderCircle className="size-4 animate-spin" />}
-              登录玩家管理
-            </Button>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              登录会话仅保存在当前页面内存中。刷新或关闭页面后需重新登录。
-            </p>
-          </form>
-        ) : (
-          <div className="grid gap-3">
-            <p className="text-sm text-muted-foreground">
-              {error
-                ? "请确认 VexBot 后台已在 5800 端口启动。"
-                : "正在检查后台连接…"}
-            </p>
-            {error && (
-              <Button
-                variant="outline"
-                onClick={() => setSetupRevision((value) => value + 1)}
-              >
-                <RefreshCw className="size-4" />
-                重试连接
-              </Button>
-            )}
-          </div>
-        )}
-      </section>
-    );
-
   return (
     <div className="grid min-w-0 gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-border bg-muted/30 px-5 py-4">
-        <div className="flex items-center gap-2 text-sm">
-          <ShieldCheck className="size-4 text-emerald-500" />
-          <span>已连接真实后台</span>
-          <span className="text-muted-foreground">· {identity?.username}</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void signOut()}
-          disabled={busy}
-        >
-          <LogOut className="size-4" />
-          退出登录
-        </Button>
-      </div>
       {denied ? (
         <section className="soft-panel !rounded-[20px]">
           <Message danger>

@@ -1,4 +1,5 @@
 import { useMotionPreference } from "@/components/MotionPreference";
+import { useConsoleAuth } from "@/components/ConsoleAuth";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -15,6 +16,7 @@ import {
   GitBranch,
   Image,
   LayoutDashboard,
+  LogOut,
   MessageCircle,
   Moon,
   PlugZap,
@@ -56,6 +58,7 @@ function currentPage(): Page {
 }
 
 export default function App() {
+  const { identity, signOut } = useConsoleAuth();
   const { reduced, enabled, toggleMotion } = useMotionPreference();
   // A single-frame target interrupts an in-flight animation with the same endpoint.
   const pageMotion = {
@@ -143,7 +146,7 @@ export default function App() {
         <div className="header-inner">
           <a href="#overview" className="brand-link" aria-label="VexBot 首页">
             <img src="/mark.svg" alt="" width="32" height="32" />
-            <strong>VexBot</strong>
+            <strong className="max-[420px]:hidden">VexBot</strong>
           </a>
           <span className="header-divider" />
           <span className="header-breadcrumb">
@@ -228,14 +231,10 @@ export default function App() {
                     </div>
                     <p>
                       <CheckCheck className="size-4 text-emerald-600" />
-                      {page === "players"
-                        ? "玩家管理已接入真实后台"
-                        : "预览环境已准备就绪"}
+                      已统一登录 VexBot 控制台
                     </p>
                     <small>
-                      {page === "players"
-                        ? "玩家管理操作会修改后台数据，请核对目标后确认。"
-                        : "本页使用示例数据；玩家管理页连接真实后台。"}
+                      各页面共用此账号；玩家管理连接真实后台，其他页面仍为交互预览。
                     </small>
                   </motion.section>
                 )}
@@ -243,11 +242,29 @@ export default function App() {
             </div>
             <button
               className="user-avatar"
-              aria-label="查看管理员设置"
+              aria-label={`当前账号 ${identity.username}，查看控制台设置`}
+              title={`当前账号：${identity.username}`}
               onClick={() => go("settings")}
             >
-              A
+              {identity.username.slice(0, 1).toUpperCase()}
             </button>
+            <span
+              className="hidden max-w-24 truncate text-xs text-muted-foreground xl:block"
+              title={identity.username}
+            >
+              {identity.username}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="退出登录"
+              title="退出登录"
+              onClick={() => void signOut()}
+              className="xl:w-auto xl:px-3"
+            >
+              <LogOut />
+              <span className="hidden text-xs xl:inline">退出登录</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -290,7 +307,7 @@ export default function App() {
             </h1>
             <p>
               {page === "players"
-                ? "登录 VexBot 后台，管理真实玩家档案、账号绑定和游戏操作。"
+                ? "管理真实玩家档案、账号绑定和游戏操作。"
                 : page === "overview"
                   ? "服务器、玩家与消息，在一个地方井然有序。"
                   : "管理你的游戏社区，让连接更简单。"}
