@@ -2,9 +2,11 @@
 
 VexBot 把 QQ 群、Minecraft 服务器和社区账号连接起来。你可以在管理面板配置消息联动、玩家档案、账号注册与登录、插件、官网和备份。
 
-当前说明对应 **Bot 0.6.29 / Bukkit 游戏插件 0.5.5 / 游戏端模组 0.1.2**。支持可选的 [魔方财务商品与付款机器人](mofang-billing.md)。控制台使用用户名和密码登录，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网采用黑白 V 机器人图标；新安装的默认面板端口为 5800。Forge、NeoForge、Fabric 按游戏版本使用各自的模组。首次部署请从 [快速开始](quick-start.md) 阅读；已经接好服务器，可以直接查看下面的功能指南。
+当前说明对应 **Bot 0.6.30 / Bukkit 游戏插件 0.5.5 / 游戏端模组 0.1.2**。支持可选的 [魔方财务商品与付款机器人](mofang-billing.md)。控制台使用用户名和密码登录，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网采用黑白 V 机器人图标；新安装的默认面板端口为 5800。Forge、NeoForge、Fabric 按游戏版本使用各自的模组。首次部署请从 [快速开始](quick-start.md) 阅读；已经接好服务器，可以直接查看下面的功能指南。
 
 项目原有配置和接入标识保持兼容，详细关系见 [项目名称与兼容说明](project-name.md)。
+
+源码另提供默认 5801 的[新版 WebUI 控制台](webui-preview.md)，需要单独启动。玩家管理和网站详细设置已连接真实后台，其余页面和预览选项仍使用示例数据；玩家使用的[社区官网](website-deployment.md)是独立项目，默认本机预览端口为 8089。
 
 ## 第一次部署
 
@@ -21,7 +23,7 @@ Bot、QQ 实现端和游戏服务端可以运行在同一台机器，也可以�
 
 | 文档分区 | 常用入口 |
 | --- | --- |
-| 入门与部署 | [快速开始](quick-start.md)、[OneBot 连接](onebot-connection.md)、[官机接入](qq-official.md)、[面板使用](panel-guide.md)、[版本与 Java 选择](minecraft-compatibility.md) |
+| 入门与部署 | [快速开始](quick-start.md)、[OneBot 连接](onebot-connection.md)、[官机接入](qq-official.md)、[内置面板](panel-guide.md)、[新版 WebUI 控制台](webui-preview.md)、[版本与 Java 选择](minecraft-compatibility.md) |
 | 玩家与账号 | [QQ 绑定](account-binding.md)、[玩家管理](player-management.md)、[消息同步](message-sync.md)、[群命令](group-commands.md)、[游戏登录](game-login.md)、[原插件密码找回](native-password-reset.md)、[注册 API](account-api.md) |
 | 插件与自动化 | [插件开发与最小示例](plugin-development.md)、[定时任务及白名单申请](automation-and-whitelist.md)、[指定指令图片回复](image-replies.md) |
 | 官网与 API | [独立官网部署及信息接口](website-deployment.md)、[注册与密码接口](account-api.md) |
@@ -29,7 +31,7 @@ Bot、QQ 实现端和游戏服务端可以运行在同一台机器，也可以�
 | 团队与权限 | [管理员授权及运行管理](team-and-operations.md)、[工单与跨服处罚](community-operations.md) |
 | 运维与备份 | [连接诊断和配置模板](diagnostics-and-templates.md)、[备份恢复](backups.md)、[更新回退](updates.md)、[常见问题](troubleshooting.md) |
 
-在线文档中心保留这六个分区，每个分区内可以继续选择具体教程：[打开文档中心](https://wiki.rainside.top/starbridge/)。
+在线文档中心按分区提供教程：[打开文档中心](https://wiki.rainside.top/starbridge/)。
 
 ## 哪些组件需要安装
 

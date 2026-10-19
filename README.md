@@ -2,9 +2,9 @@
 
 项目名称为 **VexBot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.29**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.30**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
-面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，中文管理面板和独立社区官网使用 HTML / CSS / JavaScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
+面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，内置管理面板和独立社区官网使用 HTML / CSS / JavaScript，可选新版控制台使用 React / TypeScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
 源码公开于 [AlancoSage/StarBridge](https://github.com/AlancoSage/StarBridge)，采用 **AGPL-3.0-or-later**，完整条款见 [LICENSE](https://github.com/AlancoSage/StarBridge/blob/main/LICENSE)。开发与贡献请阅读 [CONTRIBUTING.md](https://github.com/AlancoSage/StarBridge/blob/main/CONTRIBUTING.md)，安全问题见 [SECURITY.md](https://github.com/AlancoSage/StarBridge/blob/main/SECURITY.md)，第三方依赖与许可证见 [THIRD_PARTY_NOTICES.md](https://github.com/AlancoSage/StarBridge/blob/main/THIRD_PARTY_NOTICES.md)。从开源后的源码构建部署 ZIP 时，`docs/` 目录也会附带这些文件。
 
@@ -33,7 +33,7 @@
 - QQ 官方机器人：AppID / AppSecret 鉴权、WebSocket Gateway、群 @消息及 C2C 单聊事件、文字回复；应用与场景分别管理 OpenID 身份，支持范围见 [官机接入](docs/qq-official.md)。
 - QQ 群 ↔ Minecraft 双向**文本**聊天；群图片转为 `[图片]` 提示。
 - 游戏玩家加入 / 离开群通知。
-- `/qbind` 游戏内生成 5 分钟验证码，在群内 `绑定 验证码`，SQLite 持久化。
+- `/qbind` 游戏内生成 5 分钟验证码，在群内 `绑定 验证码`，绑定持久化到所选数据库（默认 SQLite，可选 MySQL）。
 - 查询绑定、主动解绑、可选退群解绑、可选绑定后改群名片。
 - 查询在线玩家与服务器连接状态。
 - 配置式关键词回复。
@@ -67,7 +67,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.28 的完整部署包为 `VexBot-Windows-0.6.28.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.28.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.30 的完整部署包为 `VexBot-Windows-0.6.30.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.30.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -165,11 +165,25 @@ groups = ["你的QQ群号"]
 
 点击「保存全部设置」统一保存；有未保存更改时，也可使用底部保存条。切换页面会保留配置草稿，保存时会提交各页的更改。业务设置立即生效；监听地址、端口和数据库路径将在「软件设置 → 重启主程序」后生效。更换数据库不会搬迁原数据，原文件保留；修改端口后面板会给出新访问链接。启动新设置失败时，进程会恢复原运行地址和数据库，并显示错误。
 
-保存会校验重复群号、服务器 ID、令牌及字段格式，原子替换配置文件，并将上一版存为 `config.toml.bak`。多个页面编辑产生冲突时会拒绝覆盖，可点击「重新载入」。数据库、令牌和备份文件均保存在本机，请勿公开。
+保存会校验重复群号、服务器 ID、令牌及字段格式，原子替换配置文件，并将上一版存为 `config.toml.bak`。多个页面编辑产生冲突时会拒绝覆盖，可点击「重新载入」。数据库文件、连接凭据、令牌和备份需妥善保管，请勿公开。
 
 修改 OneBot 令牌或机器人账号会断开旧连接，需要同步到 QQ 实现端。修改服务器 ID / 令牌也需要同步到游戏插件；可在「服务器列表 → 安装插件」中填写游戏服可访问的主程序地址并下载完整 `config.yml`。外部 QQ 登录仍在 NapCat 等实现端完成。
 
 通过 `星桥.bat` 启动的 Bot 在后台运行，可在同一脚本菜单中停止或重启；手动前台运行时按 Ctrl+C 停止。重复双击会复用此目录的后台进程。
+
+### 新版 WebUI 控制台（可选）
+
+源码中的 `webui-preview/` 提供基于 React 和 LINUX DO CDK 样式的新版控制台，默认打开 `http://127.0.0.1:5801/`，通过代理连接上面的 5800 后台。先启动 Bot，再在另一个终端执行：
+
+```powershell
+cd webui-preview
+npm ci
+npm run dev
+```
+
+新版控制台统一使用现有管理员用户名和密码登录。**玩家管理和「控制台设置 → 网站详细设置」读写真实后台**；运行总览、服务器、指令中心及其余预览选项仍使用示例数据。网站详细设置仅服主可访问，可填写网站与 Bot API 地址、调整公开权限，并在「VexBot 官网」模式编辑内容和外观。动画、背景和主题偏好保存在当前浏览器。
+
+此控制台需要 Node.js 与单独的前端进程，独立于 Bot 正式部署包；下载部署 ZIP 后仍通过 5800 使用内置面板。玩家访问的社区官网默认本机预览为 8089。完整启动、权限、保存与故障处理见[新版控制台使用指南](docs/webui-preview.md)。
 
 ## 2. 连接 QQ
 
@@ -189,7 +203,7 @@ groups = ["你的QQ群号"]
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.28 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.30 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。
@@ -212,7 +226,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 在「成员 → 玩家管理」筛选玩家后点击「详情」。可修改归属地与备注，按服务器添加 QQ 绑定，或解除单个服务器的绑定。列表中的解绑会解除该玩家全部服务器的绑定；支持本页选择和批量处理。管理员手动绑定前需确认双方账号身份。新增档案需要真实 UUID，不会创建游戏存档或改变权限。
 
-档案按 UUID 去重，一位玩家可关联多个服务器。档案、IP 和到访记录保存在本地 SQLite，服务器断线或移除后仍保留。IP 来自游戏服务器观察到的连接地址，经代理转发时可能是代理地址；归属地仅手动填写，不调用第三方查询。IP 变化会清空原归属地，避免展示旧地址的地区信息。
+档案按 UUID 去重，一位玩家可关联多个服务器。档案、IP 和到访记录保存在所选数据库（默认 SQLite，可选 MySQL），服务器断线或移除后仍保留。IP 来自游戏服务器观察到的连接地址，经代理转发时可能是代理地址；归属地仅手动填写，不调用第三方查询。IP 变化会清空原归属地，避免展示旧地址的地区信息。
 
 删除只清理本地档案、到访记录和全部绑定，同时撤销尚未执行的玩家管理任务，不删除 Minecraft 存档或封禁玩家。普通心跳不会立即重建已删除档案；玩家再次入服（0.3.0 的新入服事件）或管理员重新新增同一 UUID 时，档案可以重新记录。
 
@@ -220,7 +234,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 插件单次上报最近 500 位已知玩家，在线玩家优先，超过时页面会提示；主程序保留此前已记录的档案。绑定记录中尚未上报的玩家和断开连接的服务器会显示「状态未知」，游戏管理按钮不可用。白名单是否限制加入仍由游戏服务器的白名单开关决定。
 
-操作提交后显示「等待执行」，收到游戏插件回执才显示成功或失败。重复发送同一请求编号不会生成第二项任务；60 秒未确认会提示「结果未确认」，应核对游戏端后再操作。服务器连接或权限配置变更会撤销待执行任务。玩家管理记录和执行日志保存到 SQLite。
+操作提交后显示「等待执行」，收到游戏插件回执才显示成功或失败。重复发送同一请求编号不会生成第二项任务；60 秒未确认会提示「结果未确认」，应核对游戏端后再操作。服务器连接或权限配置变更会撤销待执行任务。玩家管理记录和执行日志保存到所选数据库（默认 SQLite，可选 MySQL）。
 5. 在游戏内输入 `/qbind`，将收到的验证码用于群命令 `绑定 A1B2C3D4`。
 
 群号和 QQ 号使用字符串；游戏账号使用 UUID 标识。每台服务器内，一个 QQ 对应一个游戏 UUID，一个游戏 UUID 只能绑定一个 QQ。验证码只能用一次，再次获取会使旧码失效。
@@ -314,7 +328,7 @@ python starbridge-website/build.py --api-base https://bridge.example.com/api/v1
 - 断线重连由 QQ 实现端负责。QQ 离线时游戏消息会记录发送失败，恢复后不补发历史聊天。
 - 游戏侧未送达聊天只保留 30 秒，主程序待执行任务 60 秒后过期；队列有上限。
 - 游戏任务使用 15 秒租约重试，插件在本次运行期间防止同一任务重复执行。插件崩溃重启后，极端情况下已执行但未确认的命令可能再次执行，因此仅配置可安全重试的命令。聊天与事件不承诺持久、恰好一次送达。
-- 绑定记录保存在 SQLite 中。启用游戏登录后，绑定 QQ 可确认本次连接；未启用时绑定可靠性依赖服务器自身账号认证。绑定不自动修改白名单或游戏权限。
+- 绑定记录保存在所选数据库（默认 SQLite，可选 MySQL）。启用游戏登录后，绑定 QQ 可确认本次连接；未启用时绑定可靠性依赖服务器自身账号认证。绑定不自动修改白名单或游戏权限。
 - 暂未实现 AI 对话、自定义图片模板、PAPI、背包预览、插件市场、跨平台账号和强制绑定入服。
 - 已验证主程序模拟集成测试与 JAR 编译。游戏端的隔离实服流程、具体版本和验证范围见 [模组安装说明](docs/mod-game-ends.md)、[Fabric 游戏端](docs/fabric-game-ends.md) 与 [Paper / Spigot / Folia 兼容说明](docs/minecraft-compatibility.md)；真实 QQ、正版账号、其他构建号与整合包组合仍需在你的环境联调。
 
@@ -326,6 +340,7 @@ bridge/src/main/            Java Minecraft 插件源码与配置
 bridge/target/              编译出的插件 JAR
 bridge-*/                   Forge / NeoForge / Fabric Java 游戏端与构建工具
 starbridge-website/         独立 HTML / CSS / JavaScript 官网与 SDK
+webui-preview/             React 新版控制台源码（独立启动，不含在 Bot 部署包中）
 tests/                      HTTP / WebSocket / SQLite 测试
 config.example.toml         示例配置
 config.toml                 本机配置与随机令牌（不提交）

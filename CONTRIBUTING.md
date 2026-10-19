@@ -8,7 +8,7 @@
 
 ## 准备开发环境
 
-Bot 使用 Python 3.11 或更新版本；持续集成使用 Python 3.14。Minecraft 游戏端使用 Java，具体 Java 要求请参阅 [版本兼容文档](https://github.com/AlancoSage/StarBridge/blob/main/docs/minecraft-compatibility.md)。管理面板与独立官网使用 HTML、CSS 和 JavaScript。
+Bot 使用 Python 3.11 或更新版本；持续集成使用 Python 3.14。Minecraft 游戏端使用 Java，具体 Java 要求请参阅 [版本兼容文档](https://github.com/AlancoSage/StarBridge/blob/main/docs/minecraft-compatibility.md)。内置管理面板与独立官网使用 HTML、CSS 和 JavaScript；`webui-preview/` 的独立新版控制台使用 React、TypeScript 和 Vite，需要 Node.js。
 
 ```bash
 git clone https://github.com/AlancoSage/StarBridge.git
@@ -41,6 +41,16 @@ Python 行为改动应运行相关测试；管理面板改动请检查桌面与�
 ```bash
 python starbridge-website/build.py --output website.zip
 ```
+
+新版控制台单独安装和构建：
+
+```bash
+cd webui-preview
+npm ci
+npm run build
+```
+
+该命令同时执行 TypeScript 检查与生产构建。交互检查覆盖深浅主题、键盘和手机尺寸；玩家与网站设置连接真实后台，应使用隔离测试配置验证写入。启动与功能边界见[新版控制台指南](https://github.com/AlancoSage/StarBridge/blob/main/docs/webui-preview.md)，组件来源和许可见[前端说明](https://github.com/AlancoSage/StarBridge/blob/main/webui-preview/README.md)。正式 Bot 部署包不包含此独立前端。
 
 构建完整发布包请参阅 [版本发布说明](https://github.com/AlancoSage/StarBridge/blob/main/docs/updates.md)。已正式发布的附件不应覆盖，行为变更需在新版本中发布。
 
