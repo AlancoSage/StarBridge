@@ -34,13 +34,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { SelectControl } from "@/components/ui/select";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import BackgroundSwitcher from "@/components/BackgroundSwitcher";
 import ServersPage from "@/pages/ServersPage";
 import CommandsPage from "@/pages/CommandsPage";
 import PlayersPage from "@/pages/PlayersPage";
+import WebsiteSettings from "@/components/WebsiteSettings";
 
 type Page = "overview" | "servers" | "commands" | "players" | "settings";
 type Icon = ComponentType<{ className?: string }>;
@@ -71,9 +71,14 @@ export default function App() {
   const [playersVisited, setPlayersVisited] = useState(
     () => currentPage() === "players",
   );
+  const [settingsVisited, setSettingsVisited] = useState(
+    () => currentPage() === "settings",
+  );
   useEffect(() => {
     if (page === "players") setPlayersVisited(true);
+    if (page === "settings") setSettingsVisited(true);
   }, [page]);
+  const realPage = page === "players" || page === "settings";
   const [dark, setDark] = useState(() => {
     try {
       return localStorage.getItem("vexbot.cdk.preview.theme") === "dark";
@@ -156,7 +161,7 @@ export default function App() {
           </span>
           <Badge variant="secondary" className="preview-badge">
             <span className="size-1.5 rounded-full bg-amber-500" />
-            {page === "players" ? "后台管理" : "交互预览"}
+            {realPage ? "后台管理" : "交互预览"}
           </Badge>
           <div className="header-actions">
             <BackgroundSwitcher />
@@ -235,7 +240,7 @@ export default function App() {
                       已统一登录 VexBot 控制台
                     </p>
                     <small>
-                      各页面共用此账号；玩家管理连接真实后台，其他页面仍为交互预览。
+                      各页面共用此账号；玩家管理与网站设置连接真实后台，其他功能仍为交互预览。
                     </small>
                   </motion.section>
                 )}
@@ -309,18 +314,24 @@ export default function App() {
             <p>
               {page === "players"
                 ? "管理真实玩家档案、账号绑定和游戏操作。"
-                : page === "overview"
-                  ? "服务器、玩家与消息，在一个地方井然有序。"
-                  : "管理你的游戏社区，让连接更简单。"}
+                : page === "settings"
+                  ? "配置网站接入和官网信息，调整控制台预览偏好。"
+                  : page === "overview"
+                    ? "服务器、玩家与消息，在一个地方井然有序。"
+                    : "管理你的游戏社区，让连接更简单。"}
             </p>
           </div>
           <div className="heading-status">
-            {page !== "players" && <span className="status-dot" />}
-            <span>
-              {page === "players" ? "本机 VexBot 后台" : "预览环境运行中"}
-            </span>
+            {!realPage && <span className="status-dot" />}
+            <span>{realPage ? "本机 VexBot 后台" : "预览环境运行中"}</span>
             <span className="text-muted-foreground">/</span>
-            <span>{page === "players" ? "账号权限校验" : "示例数据"}</span>
+            <span>
+              {page === "settings"
+                ? "官网设置可保存"
+                : page === "players"
+                  ? "账号权限校验"
+                  : "示例数据"}
+            </span>
           </div>
         </motion.div>
 
@@ -379,19 +390,26 @@ export default function App() {
             <PlayersPage notify={setNotice} active={page === "players"} />
           )}
         </motion.div>
-        {page === "settings" && (
-          <motion.div
-            {...pageMotion}
-            className="page-content"
-            data-page="settings"
-          >
+        <motion.div
+          hidden={page !== "settings"}
+          initial={false}
+          animate={{
+            opacity: page === "settings" ? (reduced ? [1] : 1) : 0,
+            y: reduced ? [0] : page === "settings" ? 0 : 16,
+          }}
+          transition={pageMotion.transition}
+          className="page-content"
+          data-page="settings"
+        >
+          {(settingsVisited || page === "settings") && (
             <Settings
               notify={setNotice}
               dark={dark}
               toggleTheme={() => setDark(!dark)}
+              active={page === "settings"}
             />
-          </motion.div>
-        )}
+          )}
+        </motion.div>
 
         <footer className="workspace-footer">
           <span>
@@ -1005,7 +1023,6 @@ function QuickAction({
 const initialSettings = {
   name: "VexBot",
   connection: "official",
-  website: "none",
   images: true,
   sync: true,
   alerts: false,
@@ -1014,10 +1031,12 @@ function Settings({
   notify,
   dark,
   toggleTheme,
+  active,
 }: {
   notify: (text: string) => void;
   dark: boolean;
   toggleTheme: () => void;
+  active: boolean;
 }) {
   const [saved, setSaved] = useState(() => {
     try {
@@ -1027,11 +1046,12 @@ function Settings({
       return value &&
         typeof value.name === "string" &&
         ["official", "onebot"].includes(value.connection) &&
-        ["none", "custom"].includes(value.website) &&
         ["images", "sync", "alerts"].every(
           (key) => typeof value[key] === "boolean",
         )
-        ? ({ ...initialSettings, ...value } as typeof initialSettings)
+        ? (Object.fromEntries(
+            Object.keys(initialSettings).map((key) => [key, value[key]]),
+          ) as typeof initialSettings)
         : initialSettings;
     } catch {
       return initialSettings;
@@ -1042,161 +1062,151 @@ function Settings({
   const update = (key: keyof typeof initialSettings, value: string | boolean) =>
     setDraft((previous) => ({ ...previous, [key]: value }));
   return (
-    <form
-      className="settings-grid"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!draft.name.trim()) return;
-        try {
-          localStorage.setItem(
-            "vexbot.cdk.preview.settings",
-            JSON.stringify(draft),
-          );
-        } catch {
-          notify("浏览器存储不可用，本次预览设置仅在当前页面生效");
+    <div className="grid gap-5">
+      <WebsiteSettings notify={notify} active={active} />
+      <form
+        className="settings-grid"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!draft.name.trim()) return;
+          try {
+            localStorage.setItem(
+              "vexbot.cdk.preview.settings",
+              JSON.stringify(draft),
+            );
+          } catch {
+            notify("浏览器存储不可用，本次预览设置仅在当前页面生效");
+            setSaved(draft);
+            return;
+          }
           setSaved(draft);
-          return;
-        }
-        setSaved(draft);
-        notify("预览设置已保存到此浏览器");
-      }}
-    >
-      <section className="soft-panel">
-        <div className="panel-title">
-          <div>
-            <h2>基本设置</h2>
-            <p>调整你希望看到的控制台效果。</p>
+          notify("预览设置已保存到此浏览器");
+        }}
+      >
+        <section className="soft-panel">
+          <div className="panel-title">
+            <div>
+              <h2>界面预览</h2>
+              <p>本区域的接入与消息选项用于预览控制台效果。</p>
+            </div>
+            <Settings2 className="size-4 text-muted-foreground" />
           </div>
-          <Settings2 className="size-4 text-muted-foreground" />
-        </div>
-        <label className="field-label" htmlFor="preview-name">
-          机器人显示名称
-        </label>
-        <Input
-          id="preview-name"
-          value={draft.name}
-          onChange={(event) => update("name", event.target.value)}
-          required
-          maxLength={40}
-        />
-        <div className="field-label mt-6" id="connection-label">
-          机器人接入方式
-        </div>
-        <div
-          className="option-grid"
-          role="group"
-          aria-labelledby="connection-label"
-        >
-          {[
-            ["official", "QQ 官方机器人", "官方接口 · WebSocket 接入"],
-            ["onebot", "OneBot 11", "连接兼容的机器人客户端"],
-          ].map(([value, title, desc]) => (
-            <button
-              type="button"
-              key={value}
-              className={
-                "option-tile " + (draft.connection === value ? "selected" : "")
-              }
-              aria-pressed={draft.connection === value}
-              onClick={() => update("connection", value)}
-            >
-              <PlugZap className="size-5" />
-              <strong>{title}</strong>
-              <small>{desc}</small>
-              {draft.connection === value && (
-                <Check className="option-check size-4" />
-              )}
-            </button>
-          ))}
-        </div>
-        <label className="field-label mt-6" htmlFor="website-mode">
-          网站绑定方式
-        </label>
-        <SelectControl
-          id="website-mode"
-          aria-label="网站接入方式"
-          value={draft.website}
-          onValueChange={(value) => update("website", value)}
-          options={[
-            { value: "none", label: "不接入官网" },
-            { value: "custom", label: "自定义网站" },
-          ]}
-        />
-        <p className="mt-2 text-xs text-muted-foreground">
-          默认不接入官网，机器人仍可正常使用。
-        </p>
-      </section>
-      <section className="soft-panel">
-        <div className="panel-title">
-          <div>
-            <h2>消息与外观</h2>
-            <p>让每一次回复都恰到好处。</p>
+          <label className="field-label" htmlFor="preview-name">
+            机器人显示名称
+          </label>
+          <Input
+            id="preview-name"
+            value={draft.name}
+            onChange={(event) => update("name", event.target.value)}
+            required
+            maxLength={40}
+          />
+          <div className="field-label mt-6" id="connection-label">
+            机器人接入方式
           </div>
-          <Sparkles className="size-4 text-muted-foreground" />
-        </div>
-        <SettingRow title="指令图片回复" desc="允许指定指令将回复渲染成图片">
-          <Switch
-            aria-label="指令图片回复"
-            checked={draft.images}
-            onCheckedChange={(value) => update("images", value)}
-          />
-        </SettingRow>
-        <SettingRow title="群服消息同步" desc="在游戏服务器与群聊间同步消息">
-          <Switch
-            aria-label="群服消息同步"
-            checked={draft.sync}
-            onCheckedChange={(value) => update("sync", value)}
-          />
-        </SettingRow>
-        <SettingRow title="离线提醒" desc="服务器连接中断时发送提醒">
-          <Switch
-            aria-label="离线提醒"
-            checked={draft.alerts}
-            onCheckedChange={(value) => update("alerts", value)}
-          />
-        </SettingRow>
-        <SettingRow title="深色模式" desc="切换预览界面的明暗主题">
-          <Switch
-            aria-label="深色模式"
-            checked={dark}
-            onCheckedChange={toggleTheme}
-          />
-        </SettingRow>
-        <div className="settings-note">
-          <ShieldCheck className="size-4 shrink-0" />
-          <span>本页只保存预览偏好。正式控制台及其数据库配置不受影响。</span>
-        </div>
-      </section>
-      <div className="settings-save">
-        <span className="flex items-center gap-2 text-xs text-muted-foreground">
-          {dirty ? (
-            <>
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              有尚未保存的预览设置
-            </>
-          ) : (
-            <>
-              <CheckCheck className="size-4" />
-              预览设置已保存
-            </>
-          )}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!dirty}
-            onClick={() => setDraft(saved)}
+          <div
+            className="option-grid"
+            role="group"
+            aria-labelledby="connection-label"
           >
-            撤销更改
-          </Button>
-          <Button type="submit" disabled={!dirty}>
-            保存预览设置
-            <ArrowRight />
-          </Button>
+            {[
+              ["official", "QQ 官方机器人", "官方接口 · WebSocket 接入"],
+              ["onebot", "OneBot 11", "连接兼容的机器人客户端"],
+            ].map(([value, title, desc]) => (
+              <button
+                type="button"
+                key={value}
+                className={
+                  "option-tile " +
+                  (draft.connection === value ? "selected" : "")
+                }
+                aria-pressed={draft.connection === value}
+                onClick={() => update("connection", value)}
+              >
+                <PlugZap className="size-5" />
+                <strong>{title}</strong>
+                <small>{desc}</small>
+                {draft.connection === value && (
+                  <Check className="option-check size-4" />
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+        <section className="soft-panel">
+          <div className="panel-title">
+            <div>
+              <h2>消息与外观</h2>
+              <p>让每一次回复都恰到好处。</p>
+            </div>
+            <Sparkles className="size-4 text-muted-foreground" />
+          </div>
+          <SettingRow title="指令图片回复" desc="允许指定指令将回复渲染成图片">
+            <Switch
+              aria-label="指令图片回复"
+              checked={draft.images}
+              onCheckedChange={(value) => update("images", value)}
+            />
+          </SettingRow>
+          <SettingRow title="群服消息同步" desc="在游戏服务器与群聊间同步消息">
+            <Switch
+              aria-label="群服消息同步"
+              checked={draft.sync}
+              onCheckedChange={(value) => update("sync", value)}
+            />
+          </SettingRow>
+          <SettingRow title="离线提醒" desc="服务器连接中断时发送提醒">
+            <Switch
+              aria-label="离线提醒"
+              checked={draft.alerts}
+              onCheckedChange={(value) => update("alerts", value)}
+            />
+          </SettingRow>
+          <SettingRow title="深色模式" desc="切换预览界面的明暗主题">
+            <Switch
+              aria-label="深色模式"
+              checked={dark}
+              onCheckedChange={toggleTheme}
+            />
+          </SettingRow>
+          <div className="settings-note">
+            <ShieldCheck className="size-4 shrink-0" />
+            <span>
+              本区域只保存预览偏好；上方的网站接入设置独立保存到后台。
+            </span>
+          </div>
+        </section>
+        <div className="settings-save">
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            {dirty ? (
+              <>
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                有尚未保存的预览设置
+              </>
+            ) : (
+              <>
+                <CheckCheck className="size-4" />
+                预览设置已保存
+              </>
+            )}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!dirty}
+              onClick={() => setDraft(saved)}
+            >
+              撤销更改
+            </Button>
+            <Button type="submit" disabled={!dirty}>
+              保存预览设置
+              <ArrowRight />
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 

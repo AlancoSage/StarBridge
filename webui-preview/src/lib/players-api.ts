@@ -308,6 +308,8 @@ export function checkSetup(signal?: AbortSignal): Promise<SetupStatus> {
   return request("/api/admin-auth/setup", "", "GET", undefined, signal);
 }
 
+export { request as apiRequest };
+
 export function login(
   username: string,
   password: string,
