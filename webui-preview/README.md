@@ -52,6 +52,10 @@ npm run preview
 
 [深色下拉效果](screenshots/select-dark.png) · [浅色下拉效果](screenshots/select-light.png)
 
+弹窗、表格、文本框与滚动区域统一使用细圆角滚动条，轨道透明、无上下箭头，滑块随深浅主题配色并在悬停与拖动时增强显示。保留键盘、滚轮与触摸滚动，系统高对比模式采用系统颜色。已在 Edge 实测弹窗滚轮、原生滑块拖动、手机底部操作和表格横向滚动；导航及组件内部原有的隐藏轨道保持隐藏。
+
+[深色滚动条](screenshots/scrollbar-dark.png) · [浅色滚动条](screenshots/scrollbar-light.png)
+
 ![浅色总览](screenshots/overview-light.png)
 
 [深色总览](screenshots/overview-dark.png) · [手机效果](screenshots/overview-mobile.png)
