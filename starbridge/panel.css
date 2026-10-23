@@ -120,6 +120,7 @@ a { color: var(--accent); }
 .secret input { flex: 1 1 200px; }
 .notice { padding: 12px 15px; background: var(--warning-soft); border: 1px solid var(--border); color: var(--warning); font-size: 12px; line-height: 1.8; border-radius: 10px; margin: 0 0 20px; overflow-wrap: anywhere; }
 .notice:empty { display: none; }
+:where(form, .extension-actions, .registration-save, .toolbar, button) + .notice:not(:empty) { margin-top: 16px; }
 .notice.success { color: var(--positive); background: var(--positive-soft); }
 .notice.error { color: var(--danger); background: var(--danger-soft); }
 .notice button { margin-left: 8px; }
