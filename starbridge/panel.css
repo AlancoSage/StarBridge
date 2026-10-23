@@ -136,20 +136,20 @@ a { color: var(--accent); }
 .sidebar-brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; letter-spacing: .4px; }
 #nav-close { display: none; }
 .sidebar-nav { flex: 1; min-height: 0; padding: 14px 12px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
-.sidebar-nav button { width: 100%; display: flex; align-items: center; gap: 12px; color: var(--muted); background: transparent; border: 0; border-radius: 9px; padding: 11px 13px; text-align: left; min-height: 42px; }
+.sidebar-nav button { width: 100%; display: flex; align-items: center; gap: 12px; color: var(--muted); background: transparent; border: 0; border-radius: 9px; padding: 10px 13px; text-align: left; min-height: 40px; line-height: 20px; }
 .sidebar-nav button:hover { background: var(--surface-soft); color: var(--text); }
 .sidebar-nav button.active { color: var(--accent); background: var(--accent-soft); }
 .sidebar-nav svg { width: 18px; height: 18px; flex: 0 0 18px; }
-.sidebar-group { margin-bottom: 8px; }
+.sidebar-group { margin: 4px 0 0; }
 .sidebar-group-title, .sidebar-nav [data-area] { font-size: 13px; font-weight: 650; }
 .sidebar-group-title .nav-label, .sidebar-nav [data-area] .nav-label { flex: 1; }
 .nav-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav-caret { margin-left: auto; font-size: 12px; color: var(--dim); transform: rotate(-90deg); }
 .sidebar-group-title[aria-expanded="true"] .nav-caret { transform: none; }
-.sidebar-pages { margin: 4px 0 8px; display: grid; gap: 3px; }
-.sidebar-pages .sidebar-page { font-size: 13px; font-weight: 450; padding-left: 20px; }
+.sidebar-pages { margin: 2px 0 6px; display: grid; gap: 2px; }
+.sidebar-pages .sidebar-page { font-size: 13px; font-weight: 450; min-height: 34px; padding: 7px 13px 7px 43px; }
 .sidebar-page .nav-label { flex: 1; }
-.nav-count { font-size: 10px; color: var(--dim); padding: 2px 5px; border-radius: 5px; background: var(--surface-soft); }
+.nav-count { font-size: 10px; line-height: 1.2; color: var(--dim); padding: 2px 5px; border-radius: 5px; background: var(--surface-soft); }
 .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
 .sidebar-foot-link { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; font-size: 13px; color: var(--muted); background: transparent; text-decoration: none; border: 0; border-radius: 9px; }
 .sidebar-foot-link:hover { background: var(--surface-soft); color: var(--accent); }
@@ -188,7 +188,7 @@ body.nav-collapsed { --sidebar-width: 76px; }
 .nav-collapsed .app-sidebar .nav-label, .nav-collapsed .nav-caret, .nav-collapsed .nav-count { display: none; }
 .nav-collapsed .sidebar-brand { justify-content: center; padding: 18px 12px; }
 .nav-collapsed .sidebar-nav { padding-inline: 10px; }
-.nav-collapsed .sidebar-nav button { justify-content: center; padding: 12px; }
+.nav-collapsed .sidebar-nav button { justify-content: center; padding: 10px; }
 .nav-collapsed .sidebar-footer { padding-inline: 10px; }
 .nav-collapsed .sidebar-foot-link, .nav-collapsed .sidebar-profile { justify-content: center; padding-inline: 8px; }
 .save-bar { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: calc(var(--sidebar-width) + 24px); right: 24px; max-width: 940px; margin: auto; z-index: 25; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--dialog-shadow); }
@@ -595,8 +595,9 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   .nav-collapsed .app-sidebar .nav-label, .nav-collapsed .nav-caret, .nav-collapsed .nav-count { display: initial; }
   .nav-collapsed .sidebar-brand { justify-content: space-between; padding: 18px 22px; }
   .nav-collapsed .sidebar-nav { padding-inline: 12px; }
-  .nav-collapsed .sidebar-nav button { justify-content: flex-start; padding: 11px 13px; }
-  .nav-collapsed .sidebar-pages .sidebar-page { padding-left: 20px; }
+  .sidebar-nav button, .nav-collapsed .sidebar-nav button { min-height: 44px; padding: 12px 13px; }
+  .nav-collapsed .sidebar-nav button { justify-content: flex-start; }
+  .sidebar-pages .sidebar-page, .nav-collapsed .sidebar-pages .sidebar-page { min-height: 44px; padding: 12px 13px 12px 43px; }
   .nav-collapsed .sidebar-footer { padding: 12px; }
   .nav-collapsed .sidebar-profile { justify-content: flex-start; padding: 12px 10px 4px; }
   .nav-collapsed .sidebar-foot-link { justify-content: flex-start; padding: 10px 12px; }
