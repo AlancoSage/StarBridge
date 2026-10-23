@@ -14,36 +14,74 @@ const renderedData = new Map();
 const noticeTimers = new Map();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const activeMotion = new Map();
-function stopMotion() { for (const animation of activeMotion.values()) animation.cancel(); activeMotion.clear(); }
-function enterMotion(element, distance = 4, delay = 0) {
+let motionPreference = null;
+try {
+  const preference = localStorage.getItem('starbridge.panel.motion');
+  if (preference === 'on' || preference === 'off') motionPreference = preference;
+} catch {}
+function motionEnabled() { return motionPreference === 'on' || (motionPreference !== 'off' && !reducedMotion.matches); }
+function stopMotion(includeCss = false) {
+  for (const animation of activeMotion.values()) animation.cancel();
+  activeMotion.clear();
+  if (includeCss) for (const animation of document.getAnimations?.() || []) animation.cancel();
+}
+function enterMotion(element, distance = 10, delay = 0) {
   activeMotion.get(element)?.cancel();
-  if (reducedMotion.matches || document.hidden || !element.animate) return;
+  if (!motionEnabled() || document.hidden || !element.animate) return;
   const animation = element.animate([
-    {opacity: .55, transform: `translateY(${distance}px)`},
+    {opacity: .15, transform: `translateY(${distance}px)`},
     {opacity: 1, transform: 'none'},
-  ], {duration: 160, delay, fill: 'backwards', easing: 'cubic-bezier(.2,.7,.2,1)'});
+  ], {duration: 260, delay, fill: 'backwards', easing: 'cubic-bezier(.2,.7,.2,1)'});
   activeMotion.set(element, animation);
   const release = () => { if (activeMotion.get(element) === animation) activeMotion.delete(element); };
   animation.addEventListener('finish', release, {once:true});
   animation.addEventListener('cancel', release, {once:true});
 }
-reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) stopMotion(); });
+function renderMotionPreference(replay = false) {
+  const enabled = motionEnabled();
+  document.documentElement.dataset.motion = enabled ? 'on' : 'off';
+  for (const id of ['motion-toggle', 'login-motion-toggle']) {
+    const control = $(id);
+    control.setAttribute('aria-pressed', String(enabled));
+    control.setAttribute('aria-label', enabled ? '关闭界面动画' : '开启界面动画');
+    control.title = '界面动画已' + (enabled ? '开启' : '关闭') + (motionPreference === null ? '（跟随系统）' : '') + '，点击' + (enabled ? '关闭' : '开启');
+    control.querySelector('.motion-label').textContent = '动画 ' + (enabled ? '开' : '关');
+  }
+  if (!enabled) stopMotion(true);
+  else if (replay && !document.hidden) {
+    if ($('content').hidden) enterMotion($('owner-setup').hidden ? $('login') : $('owner-setup'));
+    else enterPageMotion(document.body.dataset.view || 'overview');
+  }
+}
+function toggleMotion() {
+  motionPreference = motionEnabled() ? 'off' : 'on';
+  try { localStorage.setItem('starbridge.panel.motion', motionPreference); } catch {}
+  renderMotionPreference(true);
+}
+$('motion-toggle').onclick = $('login-motion-toggle').onclick = toggleMotion;
+reducedMotion.addEventListener('change', () => renderMotionPreference());
+window.addEventListener('storage', event => {
+  if (event.key !== 'starbridge.panel.motion' && event.key !== null) return;
+  motionPreference = event.newValue === 'on' || event.newValue === 'off' ? event.newValue : null;
+  renderMotionPreference();
+});
 function enterPageMotion(name) {
   stopMotion();
-  if (reducedMotion.matches || document.hidden) return;
+  if (!motionEnabled() || document.hidden) return;
   const view = $('view-' + name);
+  if (!view) return;
   const candidates = name === 'overview'
-    ? [...view.querySelectorAll('.overview-stats > .stat-card')]
-    : [document.querySelector('.page-head'), ...view.querySelectorAll(':scope > .toolbar, :scope > .section-head, :scope > .panel > h2, .section-head, .connection-layout > .bot-card, .connection-layout > .connection-guide')];
+    ? [...view.querySelectorAll('.console-welcome, .overview-stats > .stat-card, .overview-workspace > *, .overview-shortcuts')]
+    : [document.querySelector('.page-head'), ...view.querySelectorAll(':scope > .toolbar, :scope > .section-head, :scope > .panel, :scope > .panel > h2, :scope > .panel > .section-head, :scope > .panel > .toolbar, :scope > .panel > .catalog-filters, :scope > .service-space > *, .connection-layout > .bot-card, .connection-layout > .connection-guide')];
   const targets = [];
   for (const element of candidates) {
-    if (!element || !element.getClientRects().length || targets.some(target => target.contains(element) || element.contains(target))) continue;
+    if (!element || !element.getClientRects().length || element.querySelector('table') || targets.some(target => target.contains(element) || element.contains(target))) continue;
     const bounds = element.getBoundingClientRect();
     if (bounds.bottom <= 0 || bounds.top >= innerHeight || bounds.height > innerHeight * .8 || bounds.width * bounds.height > innerWidth * innerHeight * .65) continue;
     targets.push(element);
-    if (targets.length === 4) break;
+    if (targets.length === 6) break;
   }
-  targets.forEach((element, index) => enterMotion(element, 6, index * 20));
+  targets.forEach((element, index) => enterMotion(element, 10, index * 40));
 }
 function renderChanged(key, data, render) {
   const signature = JSON.stringify(data);
@@ -227,7 +265,7 @@ document.addEventListener('keydown', event => {
 });
 const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
 function panelAllowed(name){return (!(name in communityFeatures)||communityFeatures[name])&&(!panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]));}
-renderSidebar(); renderTheme();
+renderSidebar(); renderTheme(); renderMotionPreference();
 window.setCommunityFeatures = data => {
   const next=Object.fromEntries(Object.entries(data).map(([key,value])=>[key,typeof value==='boolean'?value:value.settings.enabled]));
   if(JSON.stringify(next)===JSON.stringify(communityFeatures))return;
@@ -483,7 +521,7 @@ function addServer(server) {
   commandHead.append(commandTitle, button('＋ 添加命令', () => addCommandDraft(card)));
   commandGroup.append(commandHead, commands, node('p', '还没有指令，点击「＋ 添加命令」开始配置。', 'hint command-group-empty'));
   $('command-editors').append(commandGroup);
-  card.append(button('管理远程命令 →', () => { selectTab('commands'); commandGroup.scrollIntoView({block: 'center', behavior: reducedMotion.matches ? 'instant' : 'smooth'}); }));
+  card.append(button('管理远程命令 →', () => { selectTab('commands'); commandGroup.scrollIntoView({block: 'center', behavior: motionEnabled() ? 'smooth' : 'instant'}); }));
   for (const [key, value] of Object.entries(server.commands || {})) addPair(commands, key, value);
   const details = document.createElement('details');
   details.append(node('summary', '安装插件 · 下载连接配置'));
@@ -1012,7 +1050,7 @@ function startAutoRefresh() {
   if (token && !document.hidden) timer = setInterval(refresh, 5000);
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopMotion();
+  if (document.hidden) stopMotion(true);
   startAutoRefresh();
   if (!document.hidden && token) refresh();
 });

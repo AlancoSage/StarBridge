@@ -165,10 +165,16 @@ a { color: var(--accent); }
 #panel-avatar, .profile-avatar { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 650; }
 .topbar { position: fixed; inset: 0 0 auto var(--sidebar-width); z-index: 30; height: var(--top); display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 0 var(--gutter); background: var(--surface); border-bottom: 1px solid var(--border); }
 .topbar-leading, .topbar-actions { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.topbar-actions { flex-shrink: 0; }
 .topbar-title { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-button { display: inline-flex; justify-content: center; align-items: center; gap: 6px; padding: 0; flex: 0 0 36px; min-width: 36px; width: 36px; height: 36px; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 9px; }
 .icon-button:hover { color: var(--accent); background: var(--surface-soft); }
 .icon-button svg { width: 18px; height: 18px; }
+.motion-toggle { width: auto; min-width: 84px; padding: 0 10px; gap: 7px; font-size: 12px; }
+.motion-toggle[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+.motion-toggle[aria-pressed="false"] { color: var(--dim); }
+.motion-label { white-space: nowrap; }
+.login-motion-toggle { display: none; }
 .top-status { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .header-alert { padding: 8px 10px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 450; line-height: 1.4; }
 .header-alert:hover { background: var(--surface-hover); color: var(--text); }
@@ -509,6 +515,7 @@ button.text-button.danger { color: var(--danger); }
 .logged-out .workspace { margin-left: 0; padding: 24px 16px; min-height: 100dvh; }
 .logged-out .workspace > footer { max-width: 430px; margin: 36px auto 0; justify-content: center; border: 0; }
 .logged-out .workspace > footer > span:last-child { display: none; }
+.logged-out .login-motion-toggle { display: inline-flex; position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 45; background: var(--surface); }
 .login-box { width: min(100%, 440px); max-width: 440px; margin: clamp(24px, 13vh, 140px) auto 0; padding: 32px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
 .login-icon { width: 42px; height: 42px; color: var(--accent); margin: 0 auto 22px; }
 .login-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -577,6 +584,10 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   .stat-card > strong { font-size: 23px; }
   .overview-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 1100px) {
+  .toolbar-search { flex: 0 0 36px; width: 36px; height: 36px; min-height: 36px; padding: 9px; }
+  .toolbar-search span, .toolbar-search kbd { display: none; }
+}
 @media (max-width: 1050px) {
   .overview-workspace { grid-template-columns: minmax(0, 1fr); }
   .connection-layout { grid-template-columns: minmax(0, 1fr); }
@@ -627,8 +638,8 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   .topbar-title { font-size: 13px; }
   .top-status, #panel-alert-count { display: none; }
   .icon-button { width: 36px; height: 36px; min-height: 36px; }
-  .toolbar-search { flex: 0 0 36px; width: 36px; height: 36px; min-height: 36px; padding: 9px; }
-  .toolbar-search span, .toolbar-search kbd { display: none; }
+  .motion-toggle { min-width: 36px; padding: 0; }
+  .motion-toggle .motion-label { display: none; }
   .workspace { padding-top: calc(var(--top) + 22px); }
   .page-head { flex-wrap: wrap; margin-bottom: 22px; gap: 16px; }
   .page-head h1 { font-size: 23px; }
@@ -682,6 +693,7 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   select option { min-height: 44px; }
 }
 @media (max-width: 360px) {
+  .topbar-title { display: none; }
   .overview-shortcuts { grid-template-columns: minmax(0, 1fr); }
   .stat-card { padding: 14px; }
   .stat-card-head svg { display: none; }
@@ -699,33 +711,31 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   .logged-out .workspace > footer { margin-top: 24px; }
 }
 
-/* Short, finite feedback avoids continuously repainted effects. */
-@media (prefers-reduced-motion: no-preference) {
-  .logged-out .login-box, body.has-unsaved .save-bar:not([hidden]) { animation: surface-enter 160ms ease-out; }
-  .player-dialog[open] { animation: dialog-enter 180ms cubic-bezier(.2,.7,.2,1); }
-  .player-dialog[open]::backdrop, .mobile-backdrop:not([hidden]) { animation: overlay-enter 140ms ease-out; }
-  .sidebar-pages:not([hidden]) { animation: nav-list-enter 140ms ease-out; }
-  #theme-toggle svg:not([hidden]) { animation: theme-icon-enter 160ms ease-out; }
-  select::picker(select) { animation: surface-enter 120ms ease-out; }
-  select::picker-icon, .nav-caret { transition: transform 120ms ease-out; }
-  button:active:not(:disabled):not(.feature-switch) { transform: translateY(1px); }
-}
-@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
-  .app-sidebar { transition: transform 180ms cubic-bezier(.2,.7,.2,1), visibility 0s linear 180ms; }
+/* Finite entry and interaction feedback follow the local motion preference. */
+.logged-out .login-box, body.has-unsaved .save-bar:not([hidden]) { animation: surface-enter 220ms cubic-bezier(.2,.7,.2,1); }
+.player-dialog[open] { animation: dialog-enter 240ms cubic-bezier(.2,.7,.2,1); }
+.player-dialog[open]::backdrop, .mobile-backdrop:not([hidden]) { animation: overlay-enter 180ms ease-out; }
+.sidebar-pages:not([hidden]) { animation: nav-list-enter 180ms cubic-bezier(.2,.7,.2,1); }
+#theme-toggle svg:not([hidden]) { animation: theme-icon-enter 200ms ease-out; }
+select::picker(select) { animation: surface-enter 160ms ease-out; }
+select::picker-icon, .nav-caret { transition: transform 160ms ease-out; }
+button:active:not(:disabled):not(.feature-switch) { transform: translateY(1px); }
+@media (max-width: 900px) {
+  .app-sidebar { transition: transform 220ms cubic-bezier(.2,.7,.2,1), visibility 0s linear 220ms; }
   .nav-open .app-sidebar { transition-delay: 0s; }
 }
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .stat-card, .overview-shortcuts button.secondary { transition: transform 160ms cubic-bezier(.2,.7,.2,1), border-color 120ms, background-color 120ms, color 120ms; }
-  .stat-card:hover { border-color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .stat-card, .overview-shortcuts button.secondary { transition: transform 180ms cubic-bezier(.2,.7,.2,1), border-color 120ms, background-color 120ms, color 120ms; }
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
   .overview-shortcuts button.secondary:hover { transform: translateY(-2px); }
   .overview-shortcuts button.secondary:active:not(:disabled) { transform: translateY(0) scale(.985); }
 }
 @keyframes surface-enter {
-  from { opacity: .65; transform: translateY(5px); }
+  from { opacity: .3; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes dialog-enter {
-  from { opacity: .65; transform: translateY(6px) scale(.985); }
+  from { opacity: .3; transform: translateY(10px) scale(.98); }
   to { opacity: 1; transform: none; }
 }
 @keyframes overlay-enter {
@@ -733,16 +743,22 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   to { opacity: 1; }
 }
 @keyframes nav-list-enter {
-  from { opacity: .6; transform: translateX(-3px); }
+  from { opacity: .3; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes theme-icon-enter {
-  from { opacity: .5; transform: rotate(-25deg) scale(.9); }
+  from { opacity: .4; transform: rotate(-40deg) scale(.85); }
   to { opacity: 1; transform: none; }
 }
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+:root[data-motion="off"] dialog::backdrop { transition: none !important; animation: none !important; }
+:root[data-motion="off"] select::picker(select), :root[data-motion="off"] select::picker-icon { transition: none !important; animation: none !important; }
+:root[data-motion="off"] button:active:not(:disabled), :root[data-motion="off"] .stat-card:hover, :root[data-motion="off"] .overview-shortcuts button.secondary { transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; animation: none !important; }
-  button:active:not(:disabled) { transform: none; }
+  :root:not([data-motion="on"]) *, :root:not([data-motion="on"]) *::before, :root:not([data-motion="on"]) *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  :root:not([data-motion="on"]) dialog::backdrop { transition: none !important; animation: none !important; }
+  :root:not([data-motion="on"]) select::picker(select), :root:not([data-motion="on"]) select::picker-icon { transition: none !important; animation: none !important; }
+  :root:not([data-motion="on"]) button:active:not(:disabled), :root:not([data-motion="on"]) .stat-card:hover, :root:not([data-motion="on"]) .overview-shortcuts button.secondary { transform: none; }
 }
 @media (forced-colors: active) {
   input:is([type="checkbox"], [type="radio"]):not(:where(.switch-row input)) {
