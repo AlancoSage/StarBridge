@@ -1,6 +1,10 @@
 /* Shared design tokens keep every component consistent in both themes. */
+@font-face {
+  font-family: "Source Han Sans CN"; font-style: normal; font-weight: 250 900; font-display: swap;
+  src: url("/fonts/source-han-sans-sc-f971e3bff46f76b4.woff2") format("woff2");
+}
 :root {
-  color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  color-scheme: light; font-family: "Source Han Sans CN", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
   font-size: 14px; color: var(--text); background: var(--background);
   --background: #fff; --surface: #fff; --surface-soft: #fafafa; --surface-hover: #f2f2f2;
   --text: #171717; --muted: #616161; --dim: #767676; --border: #dedede;

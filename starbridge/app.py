@@ -16,6 +16,7 @@ from aiohttp import web
 
 from .bot import Bot, clean_text
 from .brand_icon import ICON_PNG
+from .panel_font import FONT_URL, SHA256 as PANEL_FONT_SHA256, font_data as panel_font_data
 from .qq_connection import QQConnection
 from .qq_identity import OFFICIAL_DEFAULTS, user_id
 from .reply_images import RenderError, command_key
@@ -245,6 +246,14 @@ async def mod_bridge_script(request):
 
 async def dashboard_style(request):
     return web.FileResponse(Path(__file__).parent / "panel.css", headers={"Cache-Control": "no-cache"})
+
+
+async def dashboard_font(request):
+    headers = {"Cache-Control": "public, max-age=31536000, immutable",
+               "ETag": '"' + PANEL_FONT_SHA256 + '"', "X-Content-Type-Options": "nosniff"}
+    if any(tag.value in (PANEL_FONT_SHA256, '*') for tag in (request.if_none_match or ())):
+        return web.Response(status=304, headers=headers)
+    return web.Response(body=await asyncio.to_thread(panel_font_data), content_type="font/woff2", headers=headers)
 
 
 async def extension_script(request):
@@ -689,6 +698,7 @@ def create_app(cfg, config_path=None, restart_event=None):
     database_routes(app, STATE, authorized, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
+        web.get(FONT_URL, dashboard_font),
         web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),
         web.get("/database-panel.js", database_script),

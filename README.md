@@ -2,7 +2,7 @@
 
 项目名称为 **VexBot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.31**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.32**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，内置管理面板和独立社区官网使用 HTML / CSS / JavaScript，可选新版控制台使用 React / TypeScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
@@ -67,7 +67,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.31 的完整部署包为 `VexBot-Windows-0.6.31.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.31.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.32 的完整部署包为 `VexBot-Windows-0.6.32.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.32.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -203,7 +203,7 @@ npm run dev
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.31 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.32 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。
@@ -279,7 +279,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 插件开发参见 [插件开发文档](docs/plugin-development.md)，完整示例见 [社群小助手](examples/community_helper.json)。导入示例后默认停用，在面板启用后可发送「服讯」「问候 内容」。插件入服通知默认关闭，可在插件设置中打开。插件 JSON 不运行脚本，不支持自动查询归属地。
 
-面板使用本地 HTML / CSS / JavaScript 和系统字体，采用浅色卡片、圆角和短暂的控件反馈。标题、提示、弹窗和保存栏使用 160–180 毫秒的透明度与小幅位移动画，按钮悬停使用 120 毫秒反馈；整页、玩家表格和定时刷新不触发入场动画。没有背景模糊、持续动画、Canvas 或 WebGL；浏览器的减少动态效果选项会关闭动画与过渡。实时数据每 5 秒刷新一次，仅绘制当前页面且数据变化时才重建列表，隐藏页面暂停轮询并取消正在播放的短动画，返回前台立即刷新。玩家表格不会因心跳时间变化而重建，保留选择状态与键盘焦点。
+面板使用本地 HTML / CSS / JavaScript 和随包提供的思源黑体，字体通过 Bot 同源加载，加载失败时回退系统字体；许可见 [思源黑体授权说明](docs/source-han-sans-license.md)。界面采用浅色卡片、圆角和短暂的控件反馈。标题、提示、弹窗和保存栏使用 160–180 毫秒的透明度与小幅位移动画，按钮悬停使用 120 毫秒反馈；整页、玩家表格和定时刷新不触发入场动画。没有背景模糊、持续动画、Canvas 或 WebGL；浏览器的减少动态效果选项会关闭动画与过渡。实时数据每 5 秒刷新一次，仅绘制当前页面且数据变化时才重建列表，隐藏页面暂停轮询并取消正在播放的短动画，返回前台立即刷新。玩家表格不会因心跳时间变化而重建，保留选择状态与键盘焦点。
 
 浏览器检查使用关闭 GPU / GPU 合成、CPU 降速 6 倍的 Edge 环境验证导航、表格刷新和后台暂停，结果保存在 `data/panel-performance.json`。这是软件渲染模拟检查，实际体验仍取决于机器性能、浏览器版本和数据量。
 

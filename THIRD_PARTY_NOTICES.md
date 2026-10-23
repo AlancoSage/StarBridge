@@ -52,6 +52,12 @@ VexBot 自有代码采用 `AGPL-3.0-or-later`，见 [LICENSE](https://github.com
 | qrcode | 8.2 | [BSD-3-Clause](https://github.com/lincolnloop/python-qrcode/blob/v8.2/LICENSE)，用于本地生成付款二维码 |
 | colorama | 0.4.6（Windows） | [BSD-3-Clause](https://github.com/tartley/colorama/blob/0.4.6/LICENSE.txt)，qrcode 的 Windows 终端依赖 |
 
+## 控制台字体
+
+`starbridge/panel_font.py` 嵌入 Adobe 官方 **Source Han Sans CN VF（思源黑体简体中文地区版，2.005R）** 的原始 WOFF2 字体，支持连续字重 **250–900**。上游为 [adobe-fonts/source-han-sans](https://github.com/adobe-fonts/source-han-sans/blob/6c709ca72d3d7c46ab42ebecc1a26e7d69595a37/Variable/WOFF2/TTF/Subset/SourceHanSansCN-VF.ttf.woff2)，固定提交 `6c709ca72d3d7c46ab42ebecc1a26e7d69595a37`，原始字体大小 `7,711,988` 字节，SHA256 为 `f971e3bff46f76b49e1d5510556c2297c618ec4b491a295a4e741cdd38257799`。
+
+该文件直接采用上游提供的简中地区字库，仅通过可逆 Base64 包装兼容现有升级器，不重新分割字库、不转换字体格式，也不修改字形、名称、版权或许可元数据；解码后与上游原文件逐字节一致。原作者声明为 `Copyright 2014-2025 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.`，采用 **SIL Open Font License 1.1**。完整官方许可见 [source-han-sans-license.md](https://github.com/AlancoSage/StarBridge/blob/main/docs/source-han-sans-license.md)，可复现生成脚本为 `scripts/build_panel_font.py`。字体继续适用 OFL，与项目 AGPL 许可证分别声明。
+
 ## 图片回复字体
 
 `starbridge/reply_font.py` 嵌入未修改的 **Noto Sans SC Regular** 字体，仅采用可逆的 LZMA / Base85 包装，以兼容现有升级器允许的文件类型。上游为 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf)，固定提交 `f8d157532fbfaeda587e826d4cd5b21a49186f7c`，原始字体 SHA256 为 `faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9`。
