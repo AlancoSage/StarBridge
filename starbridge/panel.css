@@ -200,7 +200,6 @@ a { color: var(--accent); }
 .page-head p { margin-top: 9px; font-size: 12px; line-height: 1.9; max-width: 620px; }
 .page-actions { display: flex; flex-shrink: 0; gap: 9px; align-items: center; }
 #content { min-width: 0; container-type: inline-size; container-name: settings; }
-.workspace > footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; line-height: 1.8; }
 .mobile-backdrop { display: none; }
 body.nav-collapsed { --sidebar-width: 76px; }
 .nav-collapsed .app-sidebar .nav-label, .nav-collapsed .nav-caret, .nav-collapsed .nav-count { display: none; }
@@ -521,8 +520,6 @@ button.text-button.danger { color: var(--danger); }
 /* Login and standalone registration. */
 .logged-out .app-sidebar, .logged-out .topbar, .logged-out .mobile-backdrop, .logged-out .page-head { display: none; }
 .logged-out .workspace { margin-left: 0; padding: 24px 16px; min-height: 100dvh; }
-.logged-out .workspace > footer { max-width: 430px; margin: 36px auto 0; justify-content: center; border: 0; }
-.logged-out .workspace > footer > span:last-child { display: none; }
 .logged-out .login-motion-toggle { display: inline-flex; position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 45; background: var(--surface); }
 .login-box { width: min(100%, 440px); max-width: 440px; margin: clamp(24px, 13vh, 140px) auto 0; padding: 32px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
 .login-icon { width: 42px; height: 42px; color: var(--accent); margin: 0 auto 22px; }
@@ -696,7 +693,6 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
   .service-row .service-actions { max-width: 100%; }
   .feature-switch { min-height: 26px; }
   #view-extensions > .panel > .section-head { align-items: flex-start; flex-direction: column; }
-  .workspace > footer > span:last-child { display: none; }
   .login-box { padding: 26px 22px; margin-top: 8vh; }
   select option { min-height: 44px; }
 }
@@ -716,7 +712,6 @@ select:disabled { cursor: default; color: var(--dim); background: var(--surface-
 }
 @media (max-height: 600px) {
   .login-box { margin-top: 20px; }
-  .logged-out .workspace > footer { margin-top: 24px; }
 }
 
 /* Curated, locally bundled extension market. */
