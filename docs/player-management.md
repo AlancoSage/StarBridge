@@ -1,6 +1,6 @@
 # 玩家管理
 
-适用于 VexBot **0.6.35** 与 Paper / Spigot / Folia 游戏插件 **0.5.5**。Forge / NeoForge / Fabric 需使用[对应版本的模组](mod-game-ends.md)。
+适用于 VexBot **0.6.36** 与 Paper / Spigot / Folia 游戏插件 **0.5.5**。Forge / NeoForge / Fabric 需使用[对应版本的模组](mod-game-ends.md)。
 
 ## 用途
 

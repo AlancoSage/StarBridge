@@ -8,6 +8,7 @@ from .database import connect
 
 class Store:
     def __init__(self, path, mysql=None):
+        self.audit_observer = None
         if path != ":memory:" and not (mysql or {}).get("enabled"):
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.db = connect(path, mysql)
@@ -110,12 +111,22 @@ class Store:
         """)
 
     def close(self):
+        self.audit_observer = None
         self.db.close()
 
     def audit(self, kind, detail):
+        created = time.time()
         with self.db:
-            self.db.execute("INSERT INTO audit(time,kind,detail) VALUES(?,?,?)", (time.time(), kind, detail[:1000]))
+            self.db.execute("INSERT INTO audit(time,kind,detail) VALUES(?,?,?)", (created, kind, detail[:1000]))
             self.db.execute("DELETE FROM audit WHERE id < (SELECT COALESCE(MAX(id),0)-1000 FROM audit)")
+        observer = self.audit_observer
+        if observer is not None:
+            try:
+                observer(kind, detail, created)
+            except Exception:
+                # Optional console instrumentation must not undo committed work
+                # or log its original, potentially sensitive, parameters.
+                pass
 
     def logs(self):
         return [dict(r) for r in self.db.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 60")]

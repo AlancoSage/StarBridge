@@ -2,7 +2,7 @@
 
 项目名称为 **VexBot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.35**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.36**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，内置管理面板和独立社区官网使用 HTML / CSS / JavaScript，可选新版控制台使用 React / TypeScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
@@ -68,7 +68,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.35 的完整部署包为 `VexBot-Windows-0.6.35.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.35.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.36 的完整部署包为 `VexBot-Windows-0.6.36.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.36.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -156,7 +156,7 @@ groups = ["你的QQ群号"]
 | 消息与事件 | 群到游戏、游戏到群、进退服通知、退群解绑、绑定后改名片 |
 | 插件管理 | 导入插件、启用 / 停用；在内置关键词回复插件中创建、编辑、搜索和移除回复 |
 | 远程命令 | 按服务器通过命令列表配置和搜索控制台命令 |
-| 运行日志 | 按类型与内容筛选，支持暂停与继续更新 |
+| 运行日志 | [实时终端式日志](docs/runtime-logs.md)：等级、来源与内容筛选，暂停、跟随、展开、复制和下载 |
 | 软件设置 | 监听地址、端口、数据库路径、兼容管理 API 令牌；重启主程序 |
 | 扩展 | 在[插件市场](docs/plugin-market.md)搜索、分类浏览和安装精选规则；管理 JSON 插件、启用／停用、设置与版本回退 |
 | 管理员 | 创建团队账号、设置权限、修改密码与停用账号 |
@@ -206,7 +206,7 @@ npm run dev
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.35 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.36 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。

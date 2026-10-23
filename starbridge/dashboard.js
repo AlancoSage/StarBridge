@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 let token = '', revision = '', timer = null, busy = false, dirty = false, saving = false;
 let saved = null, canRestart = false, serial = 0;
 let savedFormSignature = null;
-let latestStatus = null, logsPaused = false, frozenLogs = [];
+let latestStatus = null;
 let panelIdentity = null;
 let panelAuthBusy = false, ownerSetupRequired = false;
 let communityFeatures = {whitelist:false,tickets:false,sanctions:false};
@@ -99,7 +99,7 @@ const pages = {
   authentication: ['成员', '游戏登录', '设置注册密码登录、绑定 QQ 确认和未登录限制。'],
   features: ['自动化', '消息与事件', '设置双向消息同步、进退服通知与绑定事件。'],
   commands: ['自动化', '远程命令', '为每台服务器配置允许执行的控制台命令。'],
-  logs: ['活动', '运行日志', '查看连接、消息、命令执行和配置变更记录。'],
+  logs: ['活动', '运行日志', '实时查看程序运行、连接、插件与操作记录。'],
   extensions: ['扩展', '插件管理', '导入插件、管理运行状态和调整插件设置。'],
   market: ['扩展', '插件市场', '发现社群插件，查看功能并安装到当前 VexBot。'],
   app: ['系统', '软件设置', '管理连接地址、数据存储与控制台访问。'],
@@ -294,6 +294,7 @@ function selectTab(name) {
   const wasNavOpen = navOpen;
   if (navOpen) setNavOpen(false);
   document.body.dataset.view = name;
+  if (name !== 'logs') window.stopRuntimeLogs?.();
   const area = Object.keys(areaPages).find(key => areaPages[key].includes(name));
   expandedAreas.add(area);
   renderSidebar();
@@ -308,6 +309,7 @@ function selectTab(name) {
   if (token && latestStatus) renderLiveView();
   if (token && name === 'extensions') window.loadExtensions?.();
   if (token && name === 'market') window.loadExtensionMarket?.();
+  if (token && name === 'logs') window.loadRuntimeLogs?.();
   if (token && name === 'accounts') window.loadRegistration?.();
   if (token && name === 'authentication') window.loadAuthentication?.();
   if (token && name === 'backups') window.loadBackups?.();
@@ -317,7 +319,7 @@ function selectTab(name) {
   if (token && ['managers','monitoring','statistics'].includes(name)) window.loadEnhancements?.(name);
   if (token && name === 'backups') window.loadBackupPolicy?.();
   if (token && ['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name)) window.loadServicePage?.(name);
-  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['market','diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
+  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['logs','market','diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
   if (changed && !$('content').hidden) enterPageMotion(name);
 }
 document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => selectTab(el.dataset.tab); });
@@ -337,7 +339,7 @@ const pageKeywords = {
   accounts: '注册 申请 邮箱 邮件 SMTP API 网站 账号 验证码',
   authentication: '登录 密码 QQ 验证 认证 AuthMe nLogin LoginSecurity LibreLogin 游戏 安全',
   features: '同步 通知 退群 名片 消息 事件',
-  commands: '执行 指令 控制台 远程命令', logs: '日志 活动 错误',
+  commands: '执行 指令 控制台 远程命令', logs: '日志 活动 错误 终端 实时 等级 堆栈 搜索 筛选 下载',
   app: '端口 地址 数据库 登录 重启 系统 软件设置',
   backups: '备份 恢复 导出 导入 数据 ZIP 迁移 回滚',
   website: '官网 网站 绑定 接入 解除 地址 部署 静态 API 信息 玩家 公开 资料 社区',
@@ -959,12 +961,6 @@ function logRow(l) {
 }
 function renderLogs() {
   if (!latestStatus) return;
-  const query = $('log-search').value.trim().toLowerCase(), kind = $('log-kind').value;
-  const rows = (logsPaused ? frozenLogs : latestStatus.logs).filter(l => (!kind || l.kind === kind) && (!query || l.detail.toLowerCase().includes(query)));
-  if (document.body.dataset.view === 'logs') renderChanged('logs', rows, () => {
-  $('logs').replaceChildren(...rows.map(logRow));
-  if (!rows.length) $('logs').append(node('p', '暂无符合条件的日志。', 'log-empty'));
-  });
   if (document.body.dataset.view === 'overview') renderChanged('mini-logs', latestStatus.logs.slice(0, 4), () => {
   $('mini-logs').replaceChildren(...latestStatus.logs.slice(0, 4).map(logRow));
   if (!latestStatus.logs.length) $('mini-logs').append(node('p', '暂无活动，等待机器人与插件连接。', 'log-empty'));
@@ -973,8 +969,6 @@ function renderLogs() {
 $('command-search').oninput = filterCommandCards;
 $('command-editors').addEventListener('input', filterCommandCards);
 $('binding-search').oninput = renderBindings; $('binding-server').onchange = renderBindings;
-$('log-search').oninput = renderLogs; $('log-kind').onchange = renderLogs;
-$('pause-logs').onclick = () => { logsPaused = !logsPaused; if (logsPaused) frozenLogs = [...(latestStatus?.logs || [])]; $('pause-logs').textContent = logsPaused ? '继续更新' : '暂停更新'; renderLogs(); };
 function collect() {
   const result = {
     app: {host: $('host').value.trim(), port: Number($('port').value), database: $('database').value.trim(), admin_token: $('admin-token').value},
@@ -1007,7 +1001,6 @@ function renderLiveView() {
     });
     renderLogs();
   } else if (view === 'connection') renderConnection();
-  else if (view === 'logs') renderLogs();
   else if (view === 'bindings') renderBindings();
   else if (view === 'players') renderPlayers();
 }
@@ -1039,6 +1032,7 @@ async function refresh() {
     renderLiveView();
     if (document.body.dataset.view === 'extensions') window.loadExtensions?.();
     if (document.body.dataset.view === 'market') window.loadExtensionMarket?.();
+    if (document.body.dataset.view === 'logs') window.loadRuntimeLogs?.();
     if (document.body.dataset.view === 'authentication') window.loadAuthentication?.();
     if (document.body.dataset.view === 'backups') window.loadBackups?.();
     if (document.body.dataset.view === 'schedules') window.loadSchedules?.();
@@ -1055,6 +1049,7 @@ function startAutoRefresh() {
 }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopMotion(true);
+  if (document.hidden) window.stopRuntimeLogs?.();
   startAutoRefresh();
   if (!document.hidden && token) refresh();
 });
@@ -1073,7 +1068,7 @@ async function enterPanel(accessToken) {
     await refresh(); startAutoRefresh();
   } catch (error) {
     try { await api('/api/admin-auth/logout',{method:'POST'}); } catch {}
-    token = ''; panelIdentity = null; clearInterval(timer);
+    token = ''; panelIdentity = null; clearInterval(timer); window.stopRuntimeLogs?.();
     document.body.classList.add('logged-out'); $('content').hidden = $('save-bar').hidden = $('logout').hidden = $('page-actions').hidden = true;
     $('owner-setup').hidden = true; $('login').hidden = false; setNavOpen(false);
     throw error;
