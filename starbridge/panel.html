@@ -9,7 +9,7 @@
 <script>try{const theme=localStorage.getItem('starbridge.panel.theme');document.documentElement.dataset.theme=['light','dark'].includes(theme)?theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch{document.documentElement.dataset.theme='light';}</script>
 <script>{let motion=null;try{motion=localStorage.getItem('starbridge.panel.motion');}catch{}document.documentElement.dataset.motion=motion==='on'||(motion!=='off'&&!matchMedia('(prefers-reduced-motion: reduce)').matches)?'on':'off';}</script>
 <link rel="stylesheet" href="/panel.css">
-</head>
+<script src="/form-validation.js" defer></script></head>
 <body class="logged-out">
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
 <symbol id="icon-home" viewBox="0 0 20 20"><path d="m3 9 7-6 7 6v8h-5v-5H8v5H3Z"/></symbol>

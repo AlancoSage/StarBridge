@@ -240,6 +240,10 @@ async def dashboard_script(request):
     return web.FileResponse(Path(__file__).parent / "dashboard.js", headers={"Cache-Control": "no-cache"})
 
 
+async def form_validation_script(request):
+    return web.FileResponse(Path(__file__).parent / "form-validation.js", headers={"Cache-Control": "no-cache"})
+
+
 async def mod_bridge_script(request):
     return web.FileResponse(Path(__file__).parent / "mod-bridge-panel.js", headers={"Cache-Control": "no-cache"})
 
@@ -698,6 +702,7 @@ def create_app(cfg, config_path=None, restart_event=None):
     database_routes(app, STATE, authorized, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
+        web.get("/form-validation.js", form_validation_script),
         web.get(FONT_URL, dashboard_font),
         web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),

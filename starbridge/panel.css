@@ -39,6 +39,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 input, textarea, select { width: 100%; min-width: 0; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--text); font-size: 14px; transition: border-color 120ms, background-color 120ms; }
 input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 2px var(--focus); background: var(--surface); }
 input::placeholder, textarea::placeholder { color: var(--dim); }
+.field-validation-invalid[aria-invalid="true"]:is(input, textarea, select) { border-color: var(--danger); }
+.field-validation-invalid[aria-invalid="true"]:is(input, textarea, select):focus { border-color: var(--danger); box-shadow: 0 0 0 2px var(--danger-soft); }
+.field-error { display: flex; align-items: flex-start; gap: 8px; width: 100%; min-width: 0; max-width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--danger); border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: 12px; line-height: 1.6; text-align: left; overflow-wrap: anywhere; animation: field-error-enter 160ms ease-out; }
+.field-error-icon { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.field-error-text { min-width: 0; }
+.field:has(> .field-error) { scroll-margin-block: calc(var(--top) + 16px) 112px; }
+dialog .field:has(> .field-error), .logged-out .field:has(> .field-error), .register-page .field:has(> .field-error) { scroll-margin-block: 16px; }
 input[readonly] { color: var(--muted); }
 textarea { min-height: 90px; resize: vertical; line-height: 1.8; }
 label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
@@ -732,6 +739,10 @@ button:active:not(:disabled):not(.feature-switch) { transform: translateY(1px); 
 }
 @keyframes surface-enter {
   from { opacity: .3; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes field-error-enter {
+  from { opacity: .3; transform: translateY(-3px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes dialog-enter {
