@@ -2,7 +2,7 @@
 
 项目名称为 **VexBot**。原有配置、数据和游戏端接入方式保持兼容；安装脚本与技术标识的关系见 [项目名称与兼容说明](docs/project-name.md)。
 
-当前正式版本为 **v0.6.34**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
+当前正式版本为 **v0.6.35**，配套 Bukkit 游戏插件 **0.5.5**、Velocity 密码找回插件 **0.1.1** 与 Forge / NeoForge / Fabric 模组 **0.1.2**。在线列表图片采用左侧汇总、右侧服务器详情的玻璃板布局。支持[可选 MySQL 数据存储](docs/mysql.md)，提供连接检测、SQLite 双向迁移与便携备份，默认仍使用 SQLite。支持[原登录插件密码找回](docs/native-password-reset.md)：支持 AuthMe、LimboAuth 和 LibreLogin，已验证绑定的 OneBot 玩家可私聊重置自己的原生游戏密码，默认关闭。支持[指定指令图片回复](docs/image-replies.md)、QQ 官方机器人 AppID / AppSecret 鉴权与官方 WebSocket Gateway，按应用与场景隔离身份；原有 OneBot 接入继续可用。登录统一使用用户名和密码，首次通过独立流程创建服主账号。项目以 VexBot 名称分发，面板和官网使用黑白 V 机器人图标；新安装的管理面板默认端口为 **5800**，已有配置仍使用原来的端口。
 
 面向 Minecraft 社区的 QQ 联动与管理工具。Bot 主程序使用 Python，Minecraft 插件与模组使用 Java，内置管理面板和独立社区官网使用 HTML / CSS / JavaScript，可选新版控制台使用 React / TypeScript；可选择 OneBot 11 或 [QQ 官方机器人](docs/qq-official.md) 接入。
 
@@ -51,6 +51,7 @@
 - 官网自助中心：本人查看绑定、提交与追踪白名单申请、查看自己的封禁记录；支持游戏验证码绑定与主动解绑，同一套接口供自建网站接入。
 - 备份保留策略：空间占用、按数量与天数清理、保护手动备份和恢复前备份；恢复前展示当前数据与备份差异，自动清理默认关闭。
 - 插件版本管理：导入同 ID 新版本、查看更新说明、保留最近五个版本并回退；更新与回退后均保持停用，确认权限和设置后再启用。
+- [插件市场](docs/plugin-market.md)：搜索、分类浏览和安装随软件提供的 6 款精选规则，查看详情、已安装和可更新状态，与现有插件设置、权限与回退记录共用。
 - 运行统计：多服在线趋势、每日活跃玩家与进退服记录；低频采样和 SVG 图表，支持采集开关及保留天数。操作说明见 [团队与运行管理](docs/team-and-operations.md)。
 
 ## 运行环境
@@ -67,7 +68,7 @@ Folia **1.21.8 正式 build 6 / Java 21** 完成 **35 项实服检查**，使用
 
 ## 1. 启动主程序
 
-从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.34 的完整部署包为 `VexBot-Windows-0.6.34.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.34.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
+从 [GitHub Releases](https://github.com/AlancoSage/StarBridge/releases) 下载完整 Bot 部署 ZIP 后解压即可安装，不需要仓库访问授权或 GitHub 令牌。v0.6.35 的完整部署包为 `VexBot-Windows-0.6.35.zip`，独立官网包为 `VexBot-website.zip`；同版提供内容相同的 `StarBridge-Windows-0.6.35.zip`，供旧升级器识别。游戏 JAR 也可单独下载，部署 ZIP 内部文件名仍兼容已有更新器；历史版本保留原附件名称，例如 `StarBridge-website.zip`。
 
 希望从源码部署或参与开发时，安装 Git 后执行：
 
@@ -157,7 +158,7 @@ groups = ["你的QQ群号"]
 | 远程命令 | 按服务器通过命令列表配置和搜索控制台命令 |
 | 运行日志 | 按类型与内容筛选，支持暂停与继续更新 |
 | 软件设置 | 监听地址、端口、数据库路径、兼容管理 API 令牌；重启主程序 |
-| 扩展 | 导入 JSON 插件、启用／停用、插件设置、重新加载与归档移除；下载示例和开发文档 |
+| 扩展 | 在[插件市场](docs/plugin-market.md)搜索、分类浏览和安装精选规则；管理 JSON 插件、启用／停用、设置与版本回退 |
 | 管理员 | 创建团队账号、设置权限、修改密码与停用账号 |
 | 故障监控 | 连接与邮件异常、知晓标记、启动宽限时间和可选群提醒 |
 | 运行统计 | 按服务器和时间查看在线趋势、每日活跃与进退服记录，调整采集和保留天数 |
@@ -205,7 +206,7 @@ npm run dev
 
 ## 3. 安装 Minecraft 插件
 
-Bot 0.6.34 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
+Bot 0.6.35 配套通用插件：当前源码构建输出 `bridge/target/VexBot-0.5.5.jar`，并保留内容相同的 `bridge/target/StarBridge-0.5.5.jar` 兼容副本；部署 ZIP 内使用后者。也可在面板「成员 → 游戏登录」或「玩家管理」点击「下载 Paper / Spigot / Folia 插件」。
 
 1. 将 JAR 放入游戏服务器的 `plugins` 文件夹。
 2. 启动一次服务器，生成 `plugins/StarBridge/config.yml`。未配置有效令牌时插件会自动停用。
@@ -279,7 +280,7 @@ Folia 使用相同的 `plugins/` 安装和 `config.yml`，不用另选模组版�
 
 关键词回复位于「扩展 → 关键词回复 → 管理回复」，支持添加、搜索、修改与删除，保存立即生效；可单独停用。升级后原 `[replies]` 自动迁移一次，原配置保留为备份，之后不会覆盖插件设置。插件设置保存在 `data/plugin-state.json`。
 
-插件开发参见 [插件开发文档](docs/plugin-development.md)，完整示例见 [社群小助手](examples/community_helper.json)。导入示例后默认停用，在面板启用后可发送「服讯」「问候 内容」。插件入服通知默认关闭，可在插件设置中打开。插件 JSON 不运行脚本，不支持自动查询归属地。
+使用现成规则可先到[插件市场](docs/plugin-market.md)浏览并安装，目录随软件版本更新，安装后在插件管理配置和启用。插件开发参见 [插件开发文档](docs/plugin-development.md)，完整示例见 [社群小助手](examples/community_helper.json)。导入示例后默认停用，在面板启用后可发送「服讯」「问候 内容」。插件入服通知默认关闭，可在插件设置中打开。插件 JSON 不运行脚本，不支持自动查询归属地。
 
 面板使用本地 HTML / CSS / JavaScript 和随包提供的思源黑体，字体通过 Bot 同源加载，加载失败时回退系统字体；许可见 [思源黑体授权说明](docs/source-han-sans-license.md)。界面采用浅色卡片和圆角，切换页面时标题与首批卡片短暂淡入、轻微上移：每次最多 6 块，单块 220–280 毫秒，相邻卡片间隔不超过 40 毫秒。弹窗、保存栏和按钮保留短时反馈，玩家表格不播放整体入场动画。
 

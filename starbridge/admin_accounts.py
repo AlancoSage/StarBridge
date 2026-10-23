@@ -170,6 +170,7 @@ def required(request):
     for prefix,scope in (('/api/diagnostics','diagnostics.run'),('/api/tickets','tickets.manage'),('/api/sanctions','sanctions.manage')):
         if path.startswith(prefix):return scope
     for prefix,scope in (('/api/player-','players.manage'),('/api/extensions','plugins.manage'),
+                         ('/api/extension-market','plugins.manage'),
                          ('/api/extension-documents','plugins.manage'),('/api/schedules','schedules.manage'),
                          ('/api/monitoring','monitoring.manage'),('/api/statistics','stats.read'),('/api/backup-policy','backups.manage')):
         if path.startswith(prefix):return scope

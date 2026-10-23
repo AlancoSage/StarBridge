@@ -1,6 +1,6 @@
 # 管理面板使用指南
 
-本页说明 Bot **0.6.34** 自带的 5800 内置面板在哪设置功能、怎样保存，以及怎样判断操作成功。第一次部署先阅读 [快速开始](quick-start.md)。源码中默认 5801 的 React 控制台使用不同导航，见[新版 WebUI 控制台指南](webui-preview.md)；其中玩家管理和网站详细设置读写同一后台，其余功能仍为预览。
+本页说明 Bot **0.6.35** 自带的 5800 内置面板在哪设置功能、怎样保存，以及怎样判断操作成功。第一次部署先阅读 [快速开始](quick-start.md)。源码中默认 5801 的 React 控制台使用不同导航，见[新版 WebUI 控制台指南](webui-preview.md)；其中玩家管理和网站详细设置读写同一后台，其余功能仍为预览。
 
 「接入空间 → 机器人连接 → 接入设置」可选择 OneBot 11 或 QQ 官方机器人。官机填写 AppID / AppSecret，管理员与群关联使用接入信息中的完整身份，步骤及能力限制见 [官机接入](qq-official.md)。
 
@@ -30,7 +30,7 @@
 | 接入空间 | 机器人连接、服务器列表、网站绑定、连接诊断 | 连接三个组件；见 [OneBot](onebot-connection.md)、[官网](website-deployment.md)、[诊断](diagnostics-and-templates.md) |
 | 自动化 | 消息与事件、游戏指令 | 配置文本联动、进退服通知与预设命令；见 [消息同步](message-sync.md)、[群命令](group-commands.md) |
 | 成员 | 玩家管理、账号绑定、注册账号、游戏登录 | 管理档案、查询绑定、设置邮件注册和认证；见 [玩家管理](player-management.md)、[QQ 绑定](account-binding.md)、[游戏登录](game-login.md) |
-| 扩展 | 插件管理、定时任务 | 启用关键词回复、导入 JSON 插件、管理任务；见 [插件指南](plugin-development.md)、[任务与申请](automation-and-whitelist.md) |
+| 扩展 | 插件市场、插件管理、定时任务 | 在[插件市场](plugin-market.md)浏览并安装规则，或导入 JSON 插件、管理任务；见 [插件指南](plugin-development.md)、[任务与申请](automation-and-whitelist.md) |
 | 活动 | 运行日志、故障提醒、服务器统计 | 查看真实连接和执行记录；见 [运行维护](team-and-operations.md) |
 | 设置 | 软件设置、功能开关、备份与恢复、管理员与权限、更新与回退、部署模板 | 管理运行环境、可选功能和维护操作；见 [备份](backups.md)、[更新](updates.md) |
 

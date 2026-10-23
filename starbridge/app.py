@@ -25,6 +25,7 @@ from .settings import ConfigConflict, ConfigFile, runtime_config
 from .players import PLAYER_ACTIONS, management_state, player_records
 from .catalog import Catalog, address, annotations, profile_fields
 from .extensions import PluginConflict, PluginManager
+from .extension_market import setup_routes as extension_market_routes
 from .registration import Registration
 from .registration_api import setup_routes as registration_routes
 from .authentication import Authentication
@@ -242,6 +243,10 @@ async def dashboard_script(request):
 
 async def form_validation_script(request):
     return web.FileResponse(Path(__file__).parent / "form-validation.js", headers={"Cache-Control": "no-cache"})
+
+
+async def extension_market_script(request):
+    return web.FileResponse(Path(__file__).parent / "extension-market-panel.js", headers={"Cache-Control": "no-cache"})
 
 
 async def mod_bridge_script(request):
@@ -700,12 +705,14 @@ def create_app(cfg, config_path=None, restart_event=None):
     deployment_routes(app, STATE, body, commit_config, authorized)
     update_routes(app, STATE, body)
     database_routes(app, STATE, authorized, body)
+    extension_market_routes(app, STATE, authorized, body)
     app.add_routes([
         web.get("/", dashboard), web.get("/dashboard.js", dashboard_script), web.get("/panel.css", dashboard_style), web.get("/health", health),
         web.get("/form-validation.js", form_validation_script),
         web.get(FONT_URL, dashboard_font),
         web.get("/mark.png", brand_icon),
         web.get("/extension-panel.js", extension_script),
+        web.get("/extension-market-panel.js", extension_market_script),
         web.get("/database-panel.js", database_script),
         web.get("/api/config", admin_config), web.put("/api/config", save_config),
         web.post('/api/reply-images/preview', reply_image_preview),

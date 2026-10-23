@@ -2,6 +2,8 @@
 
 插件接口版本：**1**。本接口用于扩展 VexBot 机器人主程序，与 Minecraft 服务端的 VexBot JAR 分开管理。
 
+使用现成规则时，可先到「扩展 → 插件市场」浏览、查看详情并安装，随后在插件管理配置和启用。目录随 VexBot 版本更新，安装与更新后均保持停用，详见[插件市场](plugin-market.md)。自己编写的规则继续使用下方的 JSON 导入流程。
+
 QQ 官机同样使用本规则接口。群权限范围填写完整 `qg:AppID:group_openid`，用户范围填写 `qug:AppID:member_openid` 或 `qup:AppID:user_openid`；身份按应用与场景分别检查。群规则接收平台下发的 @消息，通知发送受有效回复上下文及主动发送权限约束，详见 [官机接入](qq-official.md)。
 
 ## 用途与边界

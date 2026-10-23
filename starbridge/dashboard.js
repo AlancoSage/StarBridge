@@ -101,6 +101,7 @@ const pages = {
   commands: ['自动化', '远程命令', '为每台服务器配置允许执行的控制台命令。'],
   logs: ['活动', '运行日志', '查看连接、消息、命令执行和配置变更记录。'],
   extensions: ['扩展', '插件管理', '导入插件、管理运行状态和调整插件设置。'],
+  market: ['扩展', '插件市场', '发现社群插件，查看功能并安装到当前 VexBot。'],
   app: ['系统', '软件设置', '管理连接地址、数据存储与控制台访问。'],
   backups: ['系统', '备份与恢复', '保存社区数据，或从已校验的备份恢复。'],
   website: ['接入空间', '网站绑定', '绑定VexBot官网或自己的官网，设置网站地址和公开 API。'],
@@ -179,7 +180,7 @@ async function api(url, options = {}) {
 const areaPages = {
   overview: ['overview'], connections: ['connection', 'servers', 'website', 'diagnostics'],
   automation: ['commands', 'features'], community: ['players', 'bindings', 'accounts', 'authentication', 'whitelist', 'tickets', 'sanctions'],
-  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'community-features', 'backups', 'managers', 'updates', 'deployment'], extensions: ['extensions', 'schedules'],
+  activity: ['logs', 'monitoring', 'statistics'], system: ['app', 'community-features', 'backups', 'managers', 'updates', 'deployment'], extensions: ['market', 'extensions', 'schedules'],
 };
 const navMobile = matchMedia('(max-width: 900px)');
 const expandedAreas = new Set();
@@ -263,7 +264,7 @@ document.addEventListener('keydown', event => {
     event.preventDefault(); openGlobalSearch();
   }
 });
-const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
+const panelScopes={overview:'status.read',players:'players.manage',bindings:'players.manage',whitelist:'whitelist.review',extensions:'plugins.manage',market:'plugins.manage',schedules:'schedules.manage',monitoring:'monitoring.manage',statistics:'stats.read',backups:'backups.manage',diagnostics:'diagnostics.run',tickets:'tickets.manage',sanctions:'sanctions.manage'};
 function panelAllowed(name){return (!(name in communityFeatures)||communityFeatures[name])&&(!panelIdentity||panelIdentity.owner||panelIdentity.permissions.includes(panelScopes[name]));}
 renderSidebar(); renderTheme(); renderMotionPreference();
 window.setCommunityFeatures = data => {
@@ -306,6 +307,7 @@ function selectTab(name) {
   history.replaceState(null, '', '#' + name);
   if (token && latestStatus) renderLiveView();
   if (token && name === 'extensions') window.loadExtensions?.();
+  if (token && name === 'market') window.loadExtensionMarket?.();
   if (token && name === 'accounts') window.loadRegistration?.();
   if (token && name === 'authentication') window.loadAuthentication?.();
   if (token && name === 'backups') window.loadBackups?.();
@@ -315,7 +317,7 @@ function selectTab(name) {
   if (token && ['managers','monitoring','statistics'].includes(name)) window.loadEnhancements?.(name);
   if (token && name === 'backups') window.loadBackupPolicy?.();
   if (token && ['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name)) window.loadServicePage?.(name);
-  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
+  $('page-actions').hidden=!!panelIdentity&&!panelIdentity.owner||['market','diagnostics','updates','deployment','tickets','sanctions','community-features'].includes(name);
   if (changed && !$('content').hidden) enterPageMotion(name);
 }
 document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => selectTab(el.dataset.tab); });
@@ -341,6 +343,7 @@ const pageKeywords = {
   website: '官网 网站 绑定 接入 解除 地址 部署 静态 API 信息 玩家 公开 资料 社区',
   schedules: '定时 任务 公告 自动 备份 周期 星期 时间', whitelist: '白名单 申请 审核 入服 批准 拒绝',
   extensions: '插件 扩展 导入 开发 文档 命令 关键词 自动回复',
+  market: '插件市场 精选 安装 更新 扩展 搜索 分类 群规 地址 通知',
   managers:'多管理员 权限 团队 服主 审核员 账号',monitoring:'故障 提醒 QQ SMTP 失联 告警',statistics:'统计 活跃 趋势 曲线 进服 退服',
 };
 function openGlobalSearch() {
@@ -1035,6 +1038,7 @@ async function refresh() {
     $('binding-server').value = selectedServer;
     renderLiveView();
     if (document.body.dataset.view === 'extensions') window.loadExtensions?.();
+    if (document.body.dataset.view === 'market') window.loadExtensionMarket?.();
     if (document.body.dataset.view === 'authentication') window.loadAuthentication?.();
     if (document.body.dataset.view === 'backups') window.loadBackups?.();
     if (document.body.dataset.view === 'schedules') window.loadSchedules?.();
