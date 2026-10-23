@@ -427,6 +427,7 @@ export default function App() {
       <nav className="dock-position" aria-label="快捷导航">
         <FloatingDock
           items={dockItems}
+          desktopOrientation="vertical"
           desktopClassName="preview-dock"
           mobileClassName="mobile-dock"
           mobileButtonClassName="mobile-dock-button"

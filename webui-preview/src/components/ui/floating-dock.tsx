@@ -2,7 +2,7 @@ import { useMotionPreference } from "@/components/MotionPreference";
 // Adapted from linux-do/cdk; added accessible names and active-page state. MIT license in third-party/.
 /**
  * Note: Use position fixed according to your needs
- * Desktop navbar is better positioned at the bottom
+ * Desktop navbar supports horizontal and vertical layouts.
  * Mobile navbar is better positioned at bottom right.
  **/
 
@@ -24,6 +24,7 @@ export const FloatingDock = ({
   desktopClassName,
   mobileClassName,
   mobileButtonClassName,
+  desktopOrientation = "horizontal",
 }: {
   items: {
     title: string;
@@ -38,10 +39,15 @@ export const FloatingDock = ({
   desktopClassName?: string;
   mobileClassName?: string;
   mobileButtonClassName?: string;
+  desktopOrientation?: "horizontal" | "vertical";
 }) => {
   return (
     <>
-      <FloatingDockDesktop items={items} className={desktopClassName} />
+      <FloatingDockDesktop
+        items={items}
+        className={desktopClassName}
+        orientation={desktopOrientation}
+      />
       <FloatingDockMobile
         items={items}
         className={mobileClassName}
@@ -199,6 +205,7 @@ const FloatingDockDesktop = memo(
   ({
     items,
     className,
+    orientation,
   }: {
     items: {
       title: string;
@@ -211,27 +218,32 @@ const FloatingDockDesktop = memo(
       active?: boolean;
     }[];
     className?: string;
+    orientation: "horizontal" | "vertical";
   }) => {
-    const mouseX = useMotionValue(Infinity);
+    const mousePosition = useMotionValue(Infinity);
+    const vertical = orientation === "vertical";
 
     const handleMouseMove = useCallback(
       (e: React.MouseEvent) => {
         // getBoundingClientRect uses viewport coordinates, including after scrolling.
-        mouseX.set(e.clientX);
+        mousePosition.set(vertical ? e.clientY : e.clientX);
       },
-      [mouseX],
+      [mousePosition, vertical],
     );
 
     const handleMouseLeave = useCallback(() => {
-      mouseX.set(Infinity);
-    }, [mouseX]);
+      mousePosition.set(Infinity);
+    }, [mousePosition]);
 
     return (
       <motion.div
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        data-slot="dock-desktop"
+        data-orientation={orientation}
         className={cn(
-          "mx-auto hidden items-end gap-2 rounded-xl bg-gray-50 px-2 pb-2 md:flex dark:bg-neutral-900",
+          "mx-auto hidden gap-2 rounded-xl bg-gray-50 md:flex dark:bg-neutral-900",
+          vertical ? "flex-col items-center p-2" : "items-end px-2 pb-2",
           className,
         )}
       >
@@ -246,21 +258,56 @@ const FloatingDockDesktop = memo(
 
           return (
             <>
-              <div className="flex items-end gap-2">
+              <div
+                data-slot="dock-group"
+                className={cn(
+                  "flex gap-2",
+                  vertical ? "flex-col items-center" : "items-end",
+                )}
+              >
                 {firstRow.map((item) => (
-                  <IconContainer mouseX={mouseX} key={item.title} {...item} />
+                  <IconContainer
+                    mousePosition={mousePosition}
+                    orientation={orientation}
+                    key={item.title}
+                    {...item}
+                  />
                 ))}
               </div>
               {dividerIndex !== -1 && (
-                <div className="flex items-center justify-center px-1 mx-1 self-stretch mt-3">
-                  <div className="w-px h-full bg-border"></div>
+                <div
+                  data-slot="dock-divider"
+                  className={cn(
+                    "flex items-center justify-center self-stretch",
+                    vertical ? "mx-2 my-1 py-1" : "mx-1 mt-3 px-1",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "bg-border",
+                      vertical ? "h-px w-full" : "h-full w-px",
+                    )}
+                  />
                 </div>
               )}
-              <div className="flex items-end gap-2">
-                {secondRow.map((item) => (
-                  <IconContainer mouseX={mouseX} key={item.title} {...item} />
-                ))}
-              </div>
+              {secondRow.length > 0 && (
+                <div
+                  data-slot="dock-group"
+                  className={cn(
+                    "flex gap-2",
+                    vertical ? "flex-col items-center" : "items-end",
+                  )}
+                >
+                  {secondRow.map((item) => (
+                    <IconContainer
+                      mousePosition={mousePosition}
+                      orientation={orientation}
+                      key={item.title}
+                      {...item}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           );
         })()}
@@ -273,7 +320,8 @@ FloatingDockDesktop.displayName = "FloatingDockDesktop";
 
 const IconContainer = memo(
   ({
-    mouseX,
+    mousePosition,
+    orientation,
     title,
     icon,
     href,
@@ -283,7 +331,8 @@ const IconContainer = memo(
     external,
     active,
   }: {
-    mouseX: MotionValue;
+    mousePosition: MotionValue;
+    orientation: "horizontal" | "vertical";
     title: string;
     icon: React.ReactNode;
     href?: string;
@@ -296,11 +345,15 @@ const IconContainer = memo(
     const ref = useRef<HTMLDivElement>(null);
     const { reduced: reduceMotion } = useMotionPreference();
     const focusSize = useMotionValue(40);
+    const vertical = orientation === "vertical";
 
-    const distance = useTransform(mouseX, (val) => {
-      const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+    const distance = useTransform(mousePosition, (val) => {
+      const bounds = ref.current?.getBoundingClientRect();
+      if (!bounds) return Infinity;
 
-      return val - bounds.x - bounds.width / 2;
+      return vertical
+        ? val - bounds.y - bounds.height / 2
+        : val - bounds.x - bounds.width / 2;
     });
 
     const pointerSize = useTransform(distance, [-150, 0, 150], [40, 70, 40]);
@@ -367,17 +420,34 @@ const IconContainer = memo(
           <AnimatePresence>
             {(hovered || focused) && (
               <motion.div
-                initial={{ opacity: 0, y: reduceMotion ? 0 : 10, x: "-50%" }}
-                animate={{ opacity: 1, y: 0, x: "-50%" }}
-                exit={{ opacity: 0, y: reduceMotion ? 0 : 2, x: "-50%" }}
+                data-slot="dock-tooltip"
+                initial={
+                  vertical
+                    ? { opacity: 0, x: reduceMotion ? 0 : -10, y: "-50%" }
+                    : { opacity: 0, y: reduceMotion ? 0 : 10, x: "-50%" }
+                }
+                animate={
+                  vertical
+                    ? { opacity: 1, x: 0, y: "-50%" }
+                    : { opacity: 1, y: 0, x: "-50%" }
+                }
+                exit={
+                  vertical
+                    ? { opacity: 0, x: reduceMotion ? 0 : -2, y: "-50%" }
+                    : { opacity: 0, y: reduceMotion ? 0 : 2, x: "-50%" }
+                }
                 transition={{ duration: reduceMotion ? 0 : 0.16 }}
-                className="absolute -top-8 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white"
+                className={cn(
+                  "pointer-events-none absolute z-10 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white",
+                  vertical ? "top-1/2 left-full ml-3" : "-top-8 left-1/2",
+                )}
               >
                 {tooltip || title}
               </motion.div>
             )}
           </AnimatePresence>
           <motion.div
+            data-dock-glyph
             style={{
               width: reduceMotion ? 20 : iconSize,
               height: reduceMotion ? 20 : iconSize,
