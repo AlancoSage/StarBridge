@@ -273,6 +273,7 @@ window.setCommunityFeatures = data => {
 };
 function panelAccess(){
   renderSidebar();
+  $('binding-gate-panel').hidden = !panelIdentity?.owner;
   for(const el of document.querySelectorAll('[data-go]'))el.hidden=!!panelIdentity&&!panelAllowed(el.dataset.go);
   $('save-bar').hidden=!panelIdentity?.owner;
   for(const id of ['backup-upload','backup-file','backup-restore'])$(id).hidden=!panelIdentity?.owner;
@@ -308,6 +309,7 @@ function selectTab(name) {
   if (token && name === 'logs') window.loadRuntimeLogs?.();
   if (token && name === 'accounts') window.loadRegistration?.();
   if (token && name === 'authentication') window.loadAuthentication?.();
+  if (token && name === 'bindings') window.loadBindingGate?.();
   if (token && name === 'backups') window.loadBackups?.();
   if (token && name === 'website') window.loadWebsite?.();
   if (token && name === 'schedules') window.loadSchedules?.();
@@ -934,7 +936,7 @@ async function downloadPluginJar() {
     const response = await fetch('/api/plugin', {headers: {Authorization: 'Bearer ' + token}, signal: AbortSignal.timeout(30000), cache: 'no-store'});
     if (!response.ok) throw Error('插件下载失败：' + response.status);
     const url = URL.createObjectURL(await response.blob()), link = node('a');
-    link.href = url; link.download = 'VexBot-0.5.5.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.href = url; link.download = 'VexBot-0.5.6.jar'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     latestPlayerActionId = null;
     notice('player-notice', '新版插件已下载。替换游戏服务器 plugins 中的旧版游戏端 JAR，然后重启游戏服务器。', 'success');
   } catch (error) { notice('player-notice', error.message, 'error'); selectTab('players'); }
@@ -1030,6 +1032,7 @@ async function refresh() {
     if (document.body.dataset.view === 'market') window.loadExtensionMarket?.();
     if (document.body.dataset.view === 'logs') window.loadRuntimeLogs?.();
     if (document.body.dataset.view === 'authentication') window.loadAuthentication?.();
+    if (document.body.dataset.view === 'bindings') window.loadBindingGate?.();
     if (document.body.dataset.view === 'backups') window.loadBackups?.();
     if (document.body.dataset.view === 'schedules') window.loadSchedules?.();
     if (document.body.dataset.view === 'whitelist') window.loadWhitelist?.();
@@ -1150,7 +1153,7 @@ $('reload').onclick = async () => {
   catch (e) { notice('save-notice', e.message, 'error'); }
 };
 $('save').onclick = async () => {
-  if (saving) return;
+  if (saving || window.bindingGateBusy?.()) return;
   saving = true; $('save').disabled = true; $('save').textContent = '正在保存…';
   $('connection-save').textContent = '正在保存…';
   $('connection-dialog').setAttribute('aria-busy', 'true');
@@ -1194,4 +1197,4 @@ $('restart').onclick = async () => {
   } catch (e) { notice('restart-result', e.message, 'error'); }
   finally { $('restart').disabled = !canRestart; }
 };
-$('logout').onclick = async () => { if (dirty && !confirm('有未保存的更改，确认退出？')) return; if ($('command-create-dialog').open) $('command-create-dialog').close(); try{await api('/api/admin-auth/logout',{method:'POST'});}catch{}dirty = false; token = ''; clearInterval(timer); location.reload(); };
+$('logout').onclick = async () => { if (window.bindingGateBusy?.()) return; if ((dirty || window.bindingGateHasDraft?.()) && !confirm('有未保存的更改，确认退出？')) return; if ($('command-create-dialog').open) $('command-create-dialog').close(); try{await api('/api/admin-auth/logout',{method:'POST'});}catch{}dirty = false; token = ''; clearInterval(timer); location.reload(); };

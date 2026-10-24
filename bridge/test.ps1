@@ -18,5 +18,7 @@ if (-not (Test-Path -LiteralPath $api) -or (Get-FileHash -LiteralPath $api -Algo
 $testSources = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src\login-test\java') -Recurse -Filter '*.java' | ForEach-Object FullName)
 & "$JavaHome\bin\javac.exe" --release 17 -encoding UTF-8 -cp "$gson;$api;$classes" -d $testClasses @testSources
 if ($LASTEXITCODE -ne 0) { throw 'Java test compilation failed' }
-& "$JavaHome\bin\java.exe" -ea -cp "$testClasses;$classes;$gson;$api" cn.starbridge.GameLoginCheck
-if ($LASTEXITCODE -ne 0) { throw 'Java game login checks failed' }
+foreach ($check in @('GameLoginCheck', 'BindingGateCheck')) {
+    & "$JavaHome\bin\java.exe" -ea -cp "$testClasses;$classes;$gson;$api" "cn.starbridge.$check"
+    if ($LASTEXITCODE -ne 0) { throw "Java $check checks failed" }
+}

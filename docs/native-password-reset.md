@@ -4,8 +4,8 @@
 
 | 登录插件 | 安装位置 | VexBot 配套端 |
 | --- | --- | --- |
-| AuthMe Reloaded | Bukkit / Spigot / Paper | `VexBot-0.5.5.jar` |
-| LibreLogin | 普通 Paper | `VexBot-0.5.5.jar` |
+| AuthMe Reloaded | Bukkit / Spigot / Paper | `VexBot-0.5.6.jar` |
+| LibreLogin | 普通 Paper | `VexBot-0.5.6.jar` |
 | LimboAuth | Velocity 代理 | `VexBot-Velocity-0.1.1.jar` |
 | LibreLogin | Velocity 代理 | `VexBot-Velocity-0.1.1.jar` |
 

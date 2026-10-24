@@ -28,7 +28,7 @@ Get-VerifiedDependency -Path $asmCommons -Url 'https://repo.maven.apache.org/mav
 $sources = @(Get-ChildItem -LiteralPath (Join-Path $project 'src\main\java\cn\starbridge') -Filter '*.java' | ForEach-Object FullName)
 & "$JavaHome\bin\javac.exe" --release 8 -encoding UTF-8 -cp "$api;$gson" -d $classes @sources
 if ($LASTEXITCODE -ne 0) { throw 'Java 编译失败' }
-$jar = Join-Path $target 'VexBot-0.5.5.jar'
+$jar = Join-Path $target 'VexBot-0.5.6.jar'
 $toolClasses = Join-Path $target 'build-tools'
 New-Item -ItemType Directory -Force -Path $toolClasses | Out-Null
 & "$JavaHome\bin\javac.exe" --release 8 -encoding UTF-8 -cp "$asm;$asmCommons" -d $toolClasses (Join-Path $project 'tools\ShadeJar.java')
@@ -36,7 +36,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Dependency relocation tool compilation failed'
 & "$JavaHome\bin\java.exe" -cp "$toolClasses;$asm;$asmCommons" ShadeJar $classes (Join-Path $project 'src\main\resources') $gson $jar (Split-Path $project -Parent)
 if ($LASTEXITCODE -ne 0) { throw 'JAR 打包失败' }
 # Keep the installed updater's legacy filename pointing to the same bytes.
-foreach ($alias in @('Myrinbot-0.5.5.jar', 'StarBridge-0.5.5.jar')) {
+foreach ($alias in @('Myrinbot-0.5.6.jar', 'StarBridge-0.5.6.jar')) {
     Copy-Item -LiteralPath $jar -Destination (Join-Path $target $alias) -Force
 }
 Write-Output "插件已生成：$jar"

@@ -22,7 +22,7 @@ public final class PackagedJarCheck {
                 byte[] buffer = new byte[1024]; int length;
                 while ((length = descriptor.read(buffer)) != -1) bytes.write(buffer, 0, length);
                 String yaml = new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
-                assert yaml.contains("version: 0.5.5") && yaml.contains("folia-supported: true");
+                assert yaml.contains("version: 0.5.6") && yaml.contains("folia-supported: true");
                 assert yaml.contains("name: StarBridge\n") : "Existing plugin identity and data folder must remain compatible";
                 assert yaml.contains("prefix: VexBot") : "Logger prefix must display the new brand";
                 assert yaml.contains("main: cn.starbridge.StarBridgePlugin") && yaml.contains("starbridge.bind");
@@ -33,6 +33,7 @@ public final class PackagedJarCheck {
         // Resolving every declared signature catches hard dependencies on absent event classes.
         Class.forName("cn.starbridge.StarBridgePlugin", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.GameLogin", false, gson.getClassLoader()).getDeclaredMethods();
+        Class.forName("cn.starbridge.BindingGate", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.AuthMeLink", false, gson.getClassLoader()).getDeclaredMethods();
         Class.forName("cn.starbridge.BridgeScheduler", false, gson.getClassLoader()).getDeclaredMethods();
         System.out.println("Packaged Java 8 JAR checks passed: isolated Gson and production class signatures");

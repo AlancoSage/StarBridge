@@ -54,7 +54,7 @@ $('authentication-reload').onclick=()=>{if(!window.authenticationHasDraft()||con
 $('authentication-download').onclick=async()=>{
   try{
     const response=await fetch('/api/plugin',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:AbortSignal.timeout(10000)});
-    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='VexBot-0.5.5.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(!response.ok)throw Error('插件下载失败。');const url=URL.createObjectURL(await response.blob()),link=node('a');link.href=url;link.download='VexBot-0.5.6.jar';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(error){notice('authentication-notice',error.message,'error');}
 };
 $('authentication-guide').onclick=async()=>{

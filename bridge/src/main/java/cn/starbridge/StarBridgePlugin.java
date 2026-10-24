@@ -54,6 +54,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
     private volatile JsonObject snapshot = new JsonObject();
     private long lastWarning;
     private GameLogin login;
+    private BindingGate bindingGate;
     private PasswordReset passwordReset;
     private PasswordReset.Startup passwordResetStartup = PasswordReset.Startup.disabled();
 
@@ -84,6 +85,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         identities = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(64),
             r -> { Thread t = new Thread(r, "VexBot-Identity"); t.setDaemon(true); return t; });
         login = new GameLogin(this, this::post);
+        bindingGate = new BindingGate(this, this::post);
         try { passwordReset = new PasswordReset(this, this::post, passwordResetStartup); }
         catch (java.io.IOException unavailable) { getLogger().warning("原生密码重置证明文件不可用，已停用密码重置与绑定。请检查游戏端数据目录。"); }
         Bukkit.getPluginManager().registerEvents(this, this);
@@ -105,6 +107,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             inFlight.clear();
         }
         if (login != null) login.close();
+        if (bindingGate != null) bindingGate.close();
         if (passwordReset != null) passwordReset.close();
         if (io != null) io.shutdownNow();
         if (identities != null) identities.shutdownNow();
@@ -155,7 +158,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             records.add(record);
         }
         value.add("player_records", records);
-        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application", "managed_sanctions")));
+        value.add("capabilities", gson.toJsonTree(capabilities()));
         value.addProperty("java_version", System.getProperty("java.version", "unknown"));
         value.addProperty("server_software", Bukkit.getName());
         value.add("auth_sessions", login.snapshot());
@@ -244,7 +247,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         JsonObject value = new JsonObject();
         value.add("player_records", records);
         value.add("players", names);
-        value.add("capabilities", gson.toJsonTree(Arrays.asList("player_management", "game_authentication", "whitelist_application", "managed_sanctions")));
+        value.add("capabilities", gson.toJsonTree(capabilities()));
         value.addProperty("java_version", System.getProperty("java.version", "unknown"));
         value.addProperty("server_software", Bukkit.getName());
         value.add("auth_sessions", login.snapshot());
@@ -255,9 +258,15 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
         synchronized (playerLifecycle) { if (!stopping) snapshot = value; }
     }
 
+    private List<String> capabilities() {
+        List<String> value = new ArrayList<>(Arrays.asList("player_management", "game_authentication", "whitelist_application", "managed_sanctions"));
+        if (BindingGate.supported()) value.add("binding_gate");
+        return value;
+    }
+
     private JsonObject post(String route, JsonObject data) throws Exception {
         BridgeHttp.Response response = BridgeHttp.request(base + route, token, gson.toJson(data),
-            route.equals("/auth") ? 16000 : route.equals("/password-reset/claim") ? 3000 : 6000);
+            route.equals("/auth") ? 16000 : route.equals("/password-reset/claim") || route.equals("/binding-check") ? 3000 : 6000);
         if (response.status != 200) {
             if (route.equals("/auth")) {
                 try {
@@ -284,6 +293,7 @@ public final class StarBridgePlugin extends JavaPlugin implements Listener {
             payload.add("events", gson.toJsonTree(eventBatch));
             payload.add("results", gson.toJsonTree(resultBatch));
             JsonObject response = post("/tick", payload);
+            if (isEnabled()) bindingGate.accept(response);
             if (isEnabled()) BukkitCompatibility.runTask(this, () -> login.accept(response));
             if (response.has("allowed_commands")) {
                 Set<String> configured = new HashSet<>();

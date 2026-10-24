@@ -95,7 +95,7 @@ def managed_files(root):
 
 def state_files(config):
     config = Path(config).resolve(); base = config.parent
-    names = ['data/registration-settings.json', 'data/authentication-settings.json', 'data/plugin-state.json', 'data/website-settings.json']
+    names = ['data/registration-settings.json', 'data/authentication-settings.json', 'data/binding-gate-settings.json', 'data/plugin-state.json', 'data/website-settings.json']
     names += [p.relative_to(base).as_posix() for p in safe(base, 'plugins').glob('*.json')]
     return {'config.toml': config, **{name: safe(base, name) for name in names}}
 

@@ -94,7 +94,20 @@
 </dialog>
 </section>
 <section class="view" id="view-servers" hidden><div class="panel"><div class="section-head"><h2>服务器与群聊</h2><button id="add-server" class="secondary">＋ 添加服务器</button></div><p class="muted">每个群关联一台服，一台服可关联多个群。移除服务器保留已有绑定记录；更改 ID 将使用新的绑定范围。</p><div id="server-editors"></div></div></section>
-<section class="view" id="view-bindings" hidden><div class="panel"><div class="section-head"><div><h2>账号绑定列表</h2><p class="muted">使用游戏验证码验证身份，按服务器分别管理绑定关系。</p></div><span id="binding-total" class="pill">0 条记录</span></div><div class="toolbar"><input id="binding-search" type="search" placeholder="搜索玩家名、QQ 号或服务器…" aria-label="搜索账号绑定"><select id="binding-server" aria-label="筛选绑定服务器"><option value="">全部服务器</option></select></div><div class="table-wrap"><table><thead><tr><th>游戏玩家</th><th>QQ 账号</th><th>所属服务器</th><th>绑定时间</th></tr></thead><tbody id="bindings"></tbody></table></div></div><div class="panel"><h2>绑定方式</h2><p class="hint">游戏内输入 /qbind 获取验证码 → 在关联群发送「绑定 验证码」。验证码 5 分钟内有效，只能使用一次。玩家可发送「我的绑定」查询，或发送「解绑」解除关联。</p><button class="secondary small" style="margin-top:15px" data-go="features">设置退群解绑与群名片 →</button></div></section>
+<section class="view" id="view-bindings" hidden>
+<div class="panel" id="binding-gate-panel" hidden>
+<div class="section-head"><div><h2>强制绑定</h2><p class="muted">开启后，未绑定 QQ 的游戏 UUID 将在进服前被拒绝。</p></div><span id="binding-gate-count" class="pill">默认关闭</span></div>
+<p class="intro-note">先完成现有玩家的绑定，再按服务器开启。新玩家请联系管理员核实身份，在「玩家管理」按真实 UUID 新建档案并添加绑定，然后重新连接。</p>
+<form id="binding-gate-form">
+<div id="binding-gate-servers"></div>
+<p class="hint">需要 Paper / Spigot / Folia 游戏插件 0.5.6 或更新版本，连接成功后才能首次开启。当前 Forge / NeoForge / Fabric 模组暂不支持此进服前检查。</p>
+<div id="binding-gate-error" class="notice" role="status"></div>
+<div class="field" style="margin-top:20px"><label for="binding-gate-message">未绑定时的提示</label><textarea id="binding-gate-message" maxlength="300" rows="3" required aria-describedby="binding-gate-message-hint"></textarea><p class="hint" id="binding-gate-message-hint">拒绝连接时会附上玩家 UUID，方便管理员定位档案；仍需核实账号归属。绑定只检查本服 UUID，游戏登录与白名单继续分别生效。</p></div>
+<div class="registration-save"><span id="binding-gate-draft" class="hint">设置单独保存，默认关闭。</span><div class="extension-actions"><button id="binding-gate-reload" type="button" class="secondary">重新载入设置</button><button id="binding-gate-save" type="submit" disabled>保存强制绑定设置</button></div></div>
+</form><div id="binding-gate-notice" class="notice" role="status"></div>
+<button class="secondary small" data-go="players">前往玩家管理 →</button>
+</div>
+<div class="panel"><div class="section-head"><div><h2>账号绑定列表</h2><p class="muted">使用游戏验证码验证身份，按服务器分别管理绑定关系。</p></div><span id="binding-total" class="pill">0 条记录</span></div><div class="toolbar"><input id="binding-search" type="search" placeholder="搜索玩家名、QQ 号或服务器…" aria-label="搜索账号绑定"><select id="binding-server" aria-label="筛选绑定服务器"><option value="">全部服务器</option></select></div><div class="table-wrap"><table><thead><tr><th>游戏玩家</th><th>QQ 账号</th><th>所属服务器</th><th>绑定时间</th></tr></thead><tbody id="bindings"></tbody></table></div></div><div class="panel"><h2>绑定方式</h2><p class="hint">游戏内输入 /qbind 获取验证码 → 在关联群发送「绑定 验证码」。验证码 5 分钟内有效，只能使用一次。玩家可发送「我的绑定」查询，或发送「解绑」解除关联。已开启强制绑定的服务器，需要先由管理员核实并添加绑定才能首次进服。</p><button class="secondary small" style="margin-top:15px" data-go="features">设置退群解绑与群名片 →</button></div></section>
 <section class="view" id="view-logs" hidden>
 <div class="panel runtime-log-panel" id="runtime-log-panel" data-expanded="false" data-wrap="true">
 <div class="runtime-log-heading"><div><p class="runtime-log-eyebrow">RUNTIME CONSOLE</p><h2>实时日志</h2></div><div class="runtime-log-connection"><span id="runtime-log-status" class="runtime-log-status" data-state="inactive" role="status">等待连接</span><button id="runtime-log-reload" type="button" class="secondary small" title="重新连接并接收日志">重新连接</button></div></div>
@@ -310,6 +323,7 @@
 <script src="/operations-panel.js"></script>
 <script src="/registration-panel.js"></script>
 <script src="/authentication-panel.js"></script>
+<script src="/binding-gate-panel.js"></script>
 <script src="/native-password-panel.js"></script>
 <script src="/backup-panel.js"></script>
 <script src="/website-panel.js"></script>

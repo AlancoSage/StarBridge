@@ -21,6 +21,7 @@ import zlib
 
 from . import __version__
 from .authentication import Authentication, validate_settings as validate_auth
+from .binding_gate import validate_settings as validate_binding_gate
 from .native_passwords import NativePasswords, validate_settings as validate_native_passwords
 from .catalog import Catalog
 from .extensions import (atomic_json, encode, invalid_constant, validate_plugin, setting_value,
@@ -39,6 +40,7 @@ JOB_ID = re.compile(r"[a-f0-9]{32}")
 FILES = {"config.toml": 256 * 1024, "database.sqlite3": MAX_DATABASE,
          "data/registration-settings.json": 32 * 1024,
          "data/authentication-settings.json": 32 * 1024, "data/plugin-state.json": MAX_STATE,
+         "data/binding-gate-settings.json": 32 * 1024,
          "data/website-settings.json": 32 * 1024}
 REQUIRED = {"config.toml", "database.sqlite3"}
 TRANSIENT = ("codes", "jobs", "seen", "registration_challenges", "registration_sessions", "password_challenges", "native_password_proofs")
@@ -245,6 +247,9 @@ def check_settings(folder):
     authentication = safe_path(folder, "data/authentication-settings.json")
     if authentication.exists():
         validate_auth(read_json(authentication))
+    binding_gate = safe_path(folder, "data/binding-gate-settings.json")
+    if binding_gate.exists():
+        validate_binding_gate(read_json(binding_gate))
     definitions = dict(BUILTIN_PLUGINS)
     for path in sorted((folder / "plugins").glob("*.json")):
         definition = validate_plugin(read_json(path))
@@ -278,7 +283,7 @@ def unpack_archive(archive, folder):
         with zipfile.ZipFile(archive) as source:
             entries = source.infolist()
             names = [entry.filename for entry in entries]
-            if (not 3 <= len(entries) <= 37 or len(names) != len(set(names)) or "manifest.json" not in names):
+            if (not 3 <= len(entries) <= len(FILES) + MAX_PLUGINS + 1 or len(names) != len(set(names)) or "manifest.json" not in names):
                 raise BackupError("备份清单缺失、重复或文件数量超限")
             if sum(entry.file_size for entry in entries) > MAX_TOTAL:
                 raise BackupError("备份解压后超过大小上限", 413)

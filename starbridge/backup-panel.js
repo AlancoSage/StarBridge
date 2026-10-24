@@ -47,7 +47,7 @@ $('backup-create').onclick=()=>backupOperation(async()=>{
 });
 $('backup-refresh').onclick=()=>window.loadBackups();
 $('backup-upload').onclick=()=>{
-  if(dirty||window.registrationHasDraft?.()||window.authenticationHasDraft?.()||window.extensionHasDraft?.()||window.operationHasDraft?.()||window.websiteHasDraft?.()||window.enhancementHasDraft?.()){notice('backup-notice','请先保存或放弃面板中的未保存设置，再预览恢复。','error');return;}
+  if(dirty||window.registrationHasDraft?.()||window.authenticationHasDraft?.()||window.bindingGateHasDraft?.()||window.extensionHasDraft?.()||window.operationHasDraft?.()||window.websiteHasDraft?.()||window.enhancementHasDraft?.()){notice('backup-notice','请先保存或放弃面板中的未保存设置，再预览恢复。','error');return;}
   $('backup-file').click();
 };
 $('backup-file').onchange=()=>{
@@ -67,7 +67,7 @@ $('backup-file').onchange=()=>{
 $('backup-cancel').onclick=()=>{backupPreview=null;$('backup-preview').hidden=true;};
 $('backup-restore').onclick=()=>{
   if(!backupPreview)return;
-  if(dirty||window.registrationHasDraft?.()||window.authenticationHasDraft?.()||window.extensionHasDraft?.()||window.operationHasDraft?.()||window.websiteHasDraft?.()||window.enhancementHasDraft?.()){notice('backup-notice','请先保存或放弃未保存的设置。','error');return;}
+  if(dirty||window.registrationHasDraft?.()||window.authenticationHasDraft?.()||window.bindingGateHasDraft?.()||window.extensionHasDraft?.()||window.operationHasDraft?.()||window.websiteHasDraft?.()||window.enhancementHasDraft?.()){notice('backup-notice','请先保存或放弃未保存的设置。','error');return;}
   if(!confirm('确认用预览中的备份替换当前数据和业务设置？开始前会创建安全备份，随后重启服务。'))return;
   backupOperation(async()=>{
     const result=await backupApi('/api/backups/restore',{method:'POST',body:JSON.stringify({preview_id:backupPreview.preview_id})});

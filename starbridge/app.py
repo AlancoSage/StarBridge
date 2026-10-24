@@ -33,6 +33,8 @@ from .authentication import Authentication
 from .authentication_api import setup_routes as authentication_routes
 from .native_passwords import NativePasswords
 from .native_password_api import setup_routes as native_password_routes
+from .binding_gate import BindingGate
+from .binding_gate_api import setup_routes as binding_gate_routes
 from .backup_api import setup_routes as backup_routes
 from .operations_api import setup_routes as operations_routes
 from .website_api import setup_routes as website_routes
@@ -203,6 +205,7 @@ async def tick(request):
             state["store"].ack(sid, [result["id"]])
     state["sanctions"].observe(sid, records)
     return web.json_response({"jobs": state["store"].poll(sid),
+                              "binding_policy": state["binding_gate"].policy(sid),
                               "authentication": state["authentication"].policy(sid), "authentication_results": auth_results,
                               "allowed_commands": list(server.get("commands", {}).values())})
 
@@ -689,11 +692,12 @@ def create_app(cfg, config_path=None, restart_event=None):
     bot.authentication = authentication
     native_passwords = NativePasswords(bot)
     bot.native_passwords = native_passwords
+    binding_gate = BindingGate(base, bot)
     billing = Billing(base, bot)
     bot.billing = billing
     app = web.Application(client_max_size=256 * 1024, middlewares=[database_errors])
     app[STATE] = {"config": deepcopy(cfg), "store": store, "catalog": catalog, "onebot": onebot, "bot": bot, "plugins": plugins, "registration": registration, "authentication": authentication, "native_passwords": native_passwords,
-                  "billing": billing, "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
+                  "binding_gate": binding_gate, "billing": billing, "game_events": asyncio.Queue(maxsize=256), "settings_lock": asyncio.Lock(),
                   "config_file": ConfigFile(config_path) if config_path else None, "restart_event": restart_event, "plugin_temp": plugin_temp}
     app.cleanup_ctx.append(lifecycle)
     registration_routes(app, STATE, authorized, body)
@@ -705,6 +709,7 @@ def create_app(cfg, config_path=None, restart_event=None):
     app[STATE]["runtime"] = RuntimeFeatures(app[STATE])
     registration.mail_observer = app[STATE]["runtime"].mail_result
     admin_routes(app, STATE, body)
+    binding_gate_routes(app, STATE, body, bridge)
     enhancement_routes(app, STATE, body)
     community_routes(app, STATE, body)
     deployment_routes(app, STATE, body, commit_config, authorized)
