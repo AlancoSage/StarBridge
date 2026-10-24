@@ -40,13 +40,9 @@ function enterMotion(element, distance = 10, delay = 0) {
 function renderMotionPreference(replay = false) {
   const enabled = motionEnabled();
   document.documentElement.dataset.motion = enabled ? 'on' : 'off';
-  for (const id of ['motion-toggle', 'login-motion-toggle']) {
-    const control = $(id);
-    control.setAttribute('aria-pressed', String(enabled));
-    control.setAttribute('aria-label', enabled ? '关闭界面动画' : '开启界面动画');
-    control.title = '界面动画已' + (enabled ? '开启' : '关闭') + (motionPreference === null ? '（跟随系统）' : '') + '，点击' + (enabled ? '关闭' : '开启');
-    control.querySelector('.motion-label').textContent = '动画 ' + (enabled ? '开' : '关');
-  }
+  const control = $('motion-toggle');
+  control.checked = enabled;
+  control.title = '界面动画已' + (enabled ? '开启' : '关闭') + (motionPreference === null ? '（跟随系统）' : '');
   if (!enabled) stopMotion(true);
   else if (replay && !document.hidden) {
     if ($('content').hidden) enterMotion($('owner-setup').hidden ? $('login') : $('owner-setup'));
@@ -54,11 +50,11 @@ function renderMotionPreference(replay = false) {
   }
 }
 function toggleMotion() {
-  motionPreference = motionEnabled() ? 'off' : 'on';
+  motionPreference = $('motion-toggle').checked ? 'on' : 'off';
   try { localStorage.setItem('starbridge.panel.motion', motionPreference); } catch {}
   renderMotionPreference(true);
 }
-$('motion-toggle').onclick = $('login-motion-toggle').onclick = toggleMotion;
+$('motion-toggle').onchange = toggleMotion;
 reducedMotion.addEventListener('change', () => renderMotionPreference());
 window.addEventListener('storage', event => {
   if (event.key !== 'starbridge.panel.motion' && event.key !== null) return;
@@ -1137,7 +1133,7 @@ $('owner-setup-form').addEventListener('submit', async event => {
 });
 checkOwnerSetup().catch(() => notice('login-notice','暂时无法检查首次设置状态，请刷新页面重试。','error',{persistent:true}));
 for (const event of ['input', 'change']) $('content').addEventListener(event, e => {
-  if (e.target.matches('input,textarea,select') && !e.target.readOnly && e.target.type !== 'search'
+  if (e.target.matches('input,textarea,select') && !e.target.readOnly && e.target.type !== 'search' && !e.target.hasAttribute('data-local-preference')
       && e.target.closest('#view-app, #connection-dialog, #feature-editors, #reply-image-settings, #server-editors, #command-editors')) markDirty();
 });
 document.querySelectorAll('[data-reveal]').forEach(btn => { btn.onclick = () => {
